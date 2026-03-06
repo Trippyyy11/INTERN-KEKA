@@ -16,15 +16,26 @@ import {
     MoreHorizontal,
     ThumbsUp,
     MessageSquare,
-    FileText
+    FileText,
+    Sun,
+    Moon
 } from 'lucide-react';
 
 export default function Dashboard({ user, onLogout }) {
     const [activeSidebar, setActiveSidebar] = useState('Home');
     const [activeSubTab, setActiveSubTab] = useState('Leave');
 
+    // Check initial theme preference
+    const getInitialTheme = () => {
+        const saved = localStorage.getItem('theme');
+        if (saved) return saved === 'light';
+        return window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
+    };
+    const [isLightMode, setIsLightMode] = useState(getInitialTheme());
+
     // Home states
     const [homeTab, setHomeTab] = useState('Organization');
+    const [postText, setPostText] = useState('');
 
     // Me -> Attendance states
     const [attendanceTab, setAttendanceTab] = useState('Attendance Log');
@@ -60,6 +71,21 @@ export default function Dashboard({ user, onLogout }) {
         fetchPublicData();
         return () => clearInterval(timer);
     }, [user]);
+
+    // Apply light mode class to body based on state
+    useEffect(() => {
+        if (isLightMode) {
+            document.body.classList.add('light-theme');
+            localStorage.setItem('theme', 'light');
+        } else {
+            document.body.classList.remove('light-theme');
+            localStorage.setItem('theme', 'dark');
+        }
+    }, [isLightMode]);
+
+    const toggleTheme = () => {
+        setIsLightMode(!isLightMode);
+    };
 
     const fetchGlobalFinances = async () => {
         try {
@@ -261,21 +287,12 @@ export default function Dashboard({ user, onLogout }) {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', zIndex: 1 }}>
                             <div>
                                 <h3 style={{ marginBottom: '1rem', color: 'var(--text-main)', fontSize: '1rem', fontWeight: '500' }}>Quick Access</h3>
-                                {/* Inbox */}
-                                <div className="panel" style={{ marginBottom: '1rem', display: 'flex', gap: '1rem', alignItems: 'center', background: '#171e2b' }}>
-                                    <div style={{ padding: '0.5rem', background: 'rgba(255,255,255,0.05)', borderRadius: 'var(--radius-md)' }}><Mail size={32} color="#9ca3af" /></div>
-                                    <div>
-                                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.2rem' }}>Inbox</div>
-                                        <div style={{ fontWeight: '500', fontSize: '0.9rem' }}>Good job!</div>
-                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>You have no pending actions</div>
-                                    </div>
-                                </div>
 
                                 {/* Holidays */}
                                 <div className="panel holiday-card" style={{ marginBottom: '1rem' }}>
                                     <div className="panel-header" style={{ marginBottom: '0.5rem', borderBottom: 'none' }}>
                                         <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)' }}>Holidays</span>
-                                        <span className="view-details" style={{ color: '#f59e0b' }}>View All</span>
+                                        <span className="view-details" style={{ color: '#f59e0b', cursor: 'pointer' }} onClick={() => { setActiveSidebar('Org'); setActiveSubTab('Holidays'); }}>View All</span>
                                     </div>
                                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.5rem 0' }}>
                                         <span style={{ color: 'rgba(255,255,255,0.5)', cursor: 'pointer' }}>{'<'}</span>
@@ -288,7 +305,7 @@ export default function Dashboard({ user, onLogout }) {
                                 </div>
 
                                 {/* On Leave Today */}
-                                <div className="panel" style={{ marginBottom: '1rem', background: '#171e2b' }}>
+                                <div className="panel" style={{ marginBottom: '1rem' }}>
                                     <div className="panel-header" style={{ marginBottom: '1rem', fontSize: '0.9rem', fontWeight: '500' }}>On Leave Today</div>
                                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
                                         <div className="avatar" style={{ border: '2px solid var(--border-dark)', background: '#64748b' }}>
@@ -299,7 +316,7 @@ export default function Dashboard({ user, onLogout }) {
                                 </div>
 
                                 {/* Working Remotely */}
-                                <div className="panel" style={{ background: '#171e2b' }}>
+                                <div className="panel">
                                     <div className="panel-header" style={{ marginBottom: '1rem', fontSize: '0.9rem', fontWeight: '500' }}>Working Remotely</div>
                                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
                                         <div className="avatar" style={{ border: '2px solid #10b981', background: '#10b981' }}>
@@ -316,35 +333,47 @@ export default function Dashboard({ user, onLogout }) {
                             <div style={{ display: 'flex', marginBottom: '1rem' }}>
                                 <button
                                     className="btn"
+                                    style={{
+                                        background: 'var(--bg-panel)',
+                                        color: 'var(--primary)',
+                                        border: '1px solid var(--border-dark)',
+                                        borderBottom: 'none',
+                                        borderRadius: '4px 4px 0 0',
+                                        fontWeight: '500',
+                                        padding: '0.5rem 1rem'
+                                    }}
                                     onClick={() => setHomeTab('Organization')}
-                                    style={{ background: homeTab === 'Organization' ? 'var(--bg-panel)' : 'var(--bg-main)', color: homeTab === 'Organization' ? 'var(--primary)' : 'var(--text-muted)', border: '1px solid var(--primary)', borderRadius: '4px 0 0 4px' }}>
+                                >
                                     Organization
                                 </button>
-                                <button
-                                    className="btn"
-                                    onClick={() => setHomeTab('Content')}
-                                    style={{ background: homeTab === 'Content' ? 'var(--bg-panel)' : 'var(--bg-main)', color: homeTab === 'Content' ? 'var(--primary)' : 'var(--text-muted)', border: '1px solid var(--primary)', borderRadius: '0 4px 4px 0' }}>
-                                    Content
-                                </button>
+                                <div style={{ flex: 1, borderBottom: '1px solid var(--border-dark)' }}></div>
                             </div>
 
                             {homeTab === 'Organization' ? (
                                 <>
-                                    <div className="panel" style={{ marginBottom: '1rem', background: '#171e2b' }}>
+                                    <div className="panel" style={{ marginBottom: '1rem' }}>
                                         <div style={{ display: 'flex', gap: '1rem', borderBottom: '1px solid var(--border-dark)', paddingBottom: '1rem', marginBottom: '1rem', fontSize: '0.85rem' }}>
-                                            <span style={{ color: '#f59e0b', borderBottom: '2px solid #f59e0b', paddingBottom: '1rem', marginBottom: '-1rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>✎ Post</span>
-                                            <span style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>📊 Poll</span>
-                                            <span style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>🏆 Praise</span>
+                                            <span style={{ color: '#f59e0b', borderBottom: '2px solid #f59e0b', paddingBottom: '1rem', marginBottom: '-1rem', display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}>✎ Post</span>
+                                            <span style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}>📊 Poll</span>
+                                            <span style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}>🏆 Praise</span>
                                         </div>
-                                        <textarea placeholder="Write your post here and mention your peers" style={{ width: '100%', background: 'transparent', border: 'none', color: 'white', resize: 'none', height: '60px', outline: 'none', padding: '0.5rem 0' }} />
+                                        <textarea
+                                            value={postText}
+                                            onChange={(e) => setPostText(e.target.value)}
+                                            placeholder="Write your post here and mention your peers"
+                                            style={{ width: '100%', background: 'transparent', border: 'none', color: 'var(--text-main)', resize: 'none', height: '60px', outline: 'none', padding: '0.5rem 0' }}
+                                        />
+                                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
+                                            <button className="btn btn-primary" onClick={() => { if (postText) { alert(`Posted: ${postText}`); setPostText(''); } }} disabled={!postText}>Post</button>
+                                        </div>
                                     </div>
 
-                                    <div className="panel" style={{ marginBottom: '1rem', background: '#171e2b', padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div className="panel" style={{ marginBottom: '1rem', padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                         <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>No announcements</div>
-                                        <button className="btn" style={{ background: '#f59e0b', color: 'white', padding: '0.2rem 0.6rem', borderRadius: '4px', fontWeight: 'bold' }}>+</button>
+                                        <button className="btn" style={{ background: '#f59e0b', color: 'white', padding: '0.2rem 0.6rem', borderRadius: '4px', fontWeight: 'bold' }} onClick={() => alert('Add Announcement (Coming Soon)')}>+</button>
                                     </div>
 
-                                    <div className="panel" style={{ background: '#171e2b' }}>
+                                    <div className="panel">
                                         <div style={{ display: 'flex', gap: '2rem', borderBottom: '1px solid var(--border-dark)', paddingBottom: '0.5rem', marginBottom: '1.5rem', fontSize: '0.85rem' }}>
                                             <span style={{ color: 'var(--text-main)', borderBottom: '2px solid var(--text-main)', paddingBottom: '0.5rem', marginBottom: '-0.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>🎂 1 Birthday</span>
                                             <span style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>🎉 0 Work Anniversaries</span>
@@ -881,7 +910,9 @@ export default function Dashboard({ user, onLogout }) {
         <div className="dashboard-layout">
             {/* Sidebar Navigation */}
             <aside className="sidebar">
-                <div className="sidebar-brand">keka<span style={{ color: 'white', fontSize: '1rem', marginLeft: '0.1rem', marginTop: '-0.5rem' }}>*</span></div>
+                <div className="sidebar-brand">
+                    <span style={{ color: 'var(--primary)' }}>TP</span>Interns
+                </div>
                 <nav className="sidebar-nav">
                     {sidebarItems.map(item => (
                         <div
@@ -890,7 +921,7 @@ export default function Dashboard({ user, onLogout }) {
                             onClick={() => { setActiveSidebar(item.name); setActiveSubTab('Leave'); }}
                         >
                             {item.icon}
-                            <span className="nav-text" style={{ display: 'block', fontSize: '0.65rem', marginTop: '0.2rem' }}>{item.name}</span>
+                            <span className="nav-text">{item.name}</span>
                         </div>
                     ))}
                 </nav>
@@ -899,13 +930,31 @@ export default function Dashboard({ user, onLogout }) {
             {/* Main Content Component */}
             <main className="main-content">
                 <header className="topbar">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        <div style={{ fontSize: '1rem', fontWeight: '500' }}>{systemSettings?.companyName || 'Teaching Pariksha'}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+                        <div style={{ fontSize: '1.5rem', fontWeight: '500', color: '#fff' }}>{systemSettings?.companyName || 'Teaching Pariksha'}</div>
+                        <div style={{ fontSize: '0.85rem', color: 'rgba(255, 255, 255, 0.8)', borderLeft: '1px solid rgba(255, 255, 255, 0.3)', paddingLeft: '1.5rem' }}>
+                            {new Date().toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+                        </div>
                     </div>
                     <div className="topbar-actions">
                         <button className="btn btn-danger" onClick={onLogout} style={{ padding: '0.25rem 0.75rem' }}>Log Out</button>
-                        <Bell size={20} style={{ cursor: 'pointer' }} />
-                        <div className="avatar" style={{ cursor: 'pointer', background: '#10b981' }}>{user?.name?.substring(0, 2).toUpperCase() || 'ME'}</div>
+
+                        <button
+                            onClick={toggleTheme}
+                            style={{ background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                            title={`Switch to ${isLightMode ? 'Dark' : 'Light'} Mode`}
+                        >
+                            {isLightMode ? <Moon size={20} /> : <Sun size={20} />}
+                        </button>
+
+                        <Bell size={20} style={{ cursor: 'pointer', color: '#fff' }} />
+                        <div
+                            className="avatar"
+                            style={{ cursor: 'pointer', background: '#10b981' }}
+                            onClick={() => { setActiveSidebar('Me'); setActiveSubTab('Profile'); }}
+                        >
+                            {user?.name?.substring(0, 2).toUpperCase() || 'ME'}
+                        </div>
                     </div>
                 </header>
                 <div className="dashboard-content">

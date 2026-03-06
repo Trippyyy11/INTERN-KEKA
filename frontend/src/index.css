@@ -1,22 +1,24 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700&display=swap');
 
 :root {
-  --primary: #e59836;
-  --primary-hover: #d28626;
+  /* Core Theme Colors */
+  --primary: #9b59b6;
+  --primary-hover: #8e44ad;
+  --bg-sidebar: #262626;
+
+  /* Dark Mode Defaults */
   --bg-main: #131924;
   --bg-panel: #1b2432;
-  --bg-sidebar: #131924;
   --border-dark: #2a3441;
-
-  --text-main: #f8fafc;
+  --text-main: #ffffff;
   --text-muted: #94a3b8;
 
   --success: #10b981;
   --warning: #f59e0b;
   --danger: #ef4444;
   --info: #3b82f6;
-
   --font-inter: 'Inter', sans-serif;
+  --font-outfit: 'Outfit', sans-serif;
   --transition: all 0.2s ease-in-out;
 
   --radius-sm: 4px;
@@ -24,10 +26,25 @@
   --radius-lg: 12px;
 }
 
+/* Light Mode Overrides (Manual Toggle) */
+body.light-theme {
+  --bg-main: #f3f4f6;
+  --bg-panel: #ffffff;
+  --border-dark: #e5e7eb;
+  --text-main: #111827;
+  --text-muted: #6b7280;
+  /* Sidebar remains dark referencing the Remunix UI pattern */
+  --bg-sidebar: #262626;
+
+  background-color: var(--bg-main);
+  color: var(--text-main);
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  font-family: var(--font-outfit);
 }
 
 body {
@@ -92,13 +109,13 @@ ul {
 }
 
 .sidebar {
-  width: 80px;
+  width: 260px;
+  /* Permanently expanded width */
   background-color: var(--bg-sidebar);
   border-right: 1px solid var(--border-dark);
   display: flex;
   flex-direction: column;
   z-index: 10;
-  /* transition: width 0.3s; */
 }
 
 /* 
@@ -108,9 +125,11 @@ ul {
 */
 
 .sidebar .nav-text {
-  display: none;
+  /* display: none; */
   margin-left: 1rem;
   white-space: nowrap;
+  font-size: 0.95rem;
+  font-weight: 400;
 }
 
 /*
@@ -120,14 +139,16 @@ ul {
 */
 
 .sidebar-brand {
-  height: 60px;
+  height: 80px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  background-color: var(--primary);
+  justify-content: flex-start;
+  padding-left: 1.5rem;
+  background-color: var(--bg-sidebar);
   color: white;
-  font-weight: 800;
+  font-weight: 700;
   font-size: 1.5rem;
+  font-family: var(--font-outfit);
 }
 
 /*
@@ -144,14 +165,13 @@ ul {
 }
 
 .nav-item {
-  padding: 0.75rem 0;
+  padding: 0.85rem 1.5rem;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  gap: 0.4rem;
-  color: var(--text-muted);
-  font-size: 0.75rem;
-  font-weight: 500;
+  justify-content: flex-start;
+  gap: 0.75rem;
+  color: #a3a3a3;
   cursor: pointer;
   transition: var(--transition);
   position: relative;
@@ -171,11 +191,17 @@ ul {
 }
 */
 
-.nav-item:hover,
 .nav-item.active {
-  color: var(--primary);
-  background-color: rgba(255, 255, 255, 0.05);
-  border-left: 3px solid var(--primary);
+  color: #ffffff;
+}
+
+.nav-item:hover {
+  color: #ffffff;
+  background-color: var(--primary);
+  border-radius: var(--radius-lg);
+  margin: 0.25rem 1.5rem;
+  padding: 0.85rem 1rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
 .main-content {
@@ -184,12 +210,13 @@ ul {
   flex-direction: column;
   overflow: hidden;
   position: relative;
+  border: 1px solid #0f141e;
 }
 
 /* Topbar */
 .topbar {
   height: 60px;
-  background-color: var(--primary);
+  background: linear-gradient(135deg, #8D23FF 0%, #160527 100%);
   display: flex;
   align-items: center;
   justify-content: space-between;
