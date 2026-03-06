@@ -20,35 +20,28 @@ export const registerInit = async (req, res) => {
             return res.status(400).json({ message: 'User already exists and is verified.' });
         }
 
-        const otp = crypto.randomInt(100000, 999999).toString();
+        const otp = '123456'; // Default for dev
         const otpExpiry = Date.now() + 10 * 60 * 1000;
-        console.log('DEBUG OTP for', email, ':', otp);
+        console.log('DEBUG OTP (Disabled):', otp);
 
         let user = await User.findOne({ email });
         if (user) {
             user.name = name;
-            user.otp = otp;
-            user.otpExpiry = otpExpiry;
+            user.isVerified = true; // Auto-verify
             await user.save();
         } else {
-            user = await User.create({ name, email, otp, otpExpiry, isVerified: false });
+            user = await User.create({ name, email, isVerified: true }); // Auto-verify
         }
 
-        console.log('Sending OTP to:', user.email);
+        // Email sending disabled for improvement period
+        /*
         try {
-            await sendEmail({
-                email: user.email,
-                subject: 'Verify your email - Teaching Pariksha',
-                message: `Your verification code is: ${otp}`,
-                html: `<h3>Welcome!</h3><p>Your verification code is: <strong>${otp}</strong></p>`
-            });
-            console.log('Email sent successfully');
-        } catch (err) {
-            console.error('Email failed to send, but proceeding for dev: ', err.message);
-        }
+            await sendEmail({...});
+        } catch (err) { ... }
+        */
 
-        console.log('Registration Step 1 finishing');
-        res.status(200).json({ message: 'OTP sent to email.' });
+        console.log('Registration Step 1 finishing - OTP Disabled');
+        res.status(200).json({ message: 'OTP bypass: User created/verified.' });
     } catch (error) {
         console.error('Registration Step 1 CRITICAL ERROR:', error);
         res.status(500).json({ message: error.message });
@@ -152,7 +145,8 @@ export const loginUser = async (req, res) => {
         const user = await User.findOne({ email });
 
         if (user && user.password && (await user.matchPassword(password))) {
-            if (!user.isVerified) return res.status(401).json({ message: 'Verify email first.', unverified: true });
+            // isVerified check disabled for improvement period
+            // if (!user.isVerified) return res.status(401).json({ message: 'Verify email first.', unverified: true });
             if (!user.isApproved) return res.status(401).json({ message: 'Account pending approval from Admin.' });
 
             res.json({

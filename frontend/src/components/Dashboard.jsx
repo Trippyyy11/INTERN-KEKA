@@ -252,56 +252,67 @@ export default function Dashboard({ user, onLogout }) {
                         <span>WELCOME <span style={{ color: 'var(--danger)' }}>1</span></span>
                     </div>
 
-                    <div style={{ background: 'linear-gradient(90deg, #b45309, #d97706)', borderRadius: 'var(--radius-lg)', padding: '2rem', marginBottom: '2rem', color: 'white' }}>
-                        <h1 style={{ fontSize: '1.5rem', fontWeight: '600' }}>Welcome {user?.name || 'Tuba Zainab'}!</h1>
+                    <div className="welcome-banner">
+                        <h1>Welcome {user?.name || 'Tuba Zainab'}!</h1>
                     </div>
 
-                    <div className="grid" style={{ gridTemplateColumns: 'minmax(300px, 1fr) 2fr', gap: '2rem' }}>
+                    <div className="grid" style={{ gridTemplateColumns: 'minmax(300px, 350px) 1fr', gap: '2rem', minHeight: '600px', backgroundImage: 'url("data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'400\' height=\'600\' viewBox=\'0 0 400 600\'><path d=\'M350,600 C350,500 320,400 400,300 C380,300 360,320 340,350 C340,250 300,150 400,50 C380,100 350,150 340,200 C320,150 300,100 250,50 C280,100 300,150 310,220 C280,200 250,180 200,150 C240,180 280,220 310,260 C250,250 200,240 150,250 C200,270 250,290 320,300 C280,320 250,340 200,400 C300,350 310,400 350,600 Z\' fill=\'rgba(255,255,255,0.03)\'/></svg>")', backgroundPosition: 'right bottom', backgroundRepeat: 'no-repeat' }}>
                         {/* Quick Access Sidebar */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', zIndex: 1 }}>
                             <div>
-                                <h3 style={{ marginBottom: '1rem', color: 'var(--text-main)', fontSize: '0.9rem' }}>Quick Access</h3>
-                                <div className="panel" style={{ marginBottom: '1rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                                    <div style={{ width: '48px', height: '48px', background: '#374151', borderRadius: 'var(--radius-md)', display: 'flex', justifyContent: 'center', alignItems: 'center' }}><Mail size={24} color="#9ca3af" /></div>
-                                    <div><div style={{ fontWeight: '500' }}>Good job!</div><div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>You have no pending actions</div></div>
-                                </div>
-                                <div className="panel" style={{ marginBottom: '1rem', borderLeft: '4px solid var(--primary)' }}>
-                                    <div className="panel-header" style={{ marginBottom: '0.5rem' }}><span style={{ fontSize: '0.85rem' }}>Holidays</span><span className="view-details">View All</span></div>
-                                    <h3 style={{ color: 'var(--primary)', fontSize: '1.25rem', marginBottom: '0.25rem' }}>Idul Fitr</h3>
-                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Sat, 21 March, 2026</div>
-                                </div>
-                            </div>
-
-                            {/* Who is in today */}
-                            <div className="panel">
-                                <div className="panel-header" style={{ marginBottom: '1rem' }}>Who is in today ({todayStatus.length})</div>
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                                    {todayStatus.map(status => (
-                                        <div key={status._id} title={`${status.user?.name} - ${status.status}`} className="avatar" style={{ border: status.status === 'Work From Home' ? '2px solid #06b6d4' : 'none' }}>
-                                            {status.user?.name?.substring(0, 2).toUpperCase()}
-                                        </div>
-                                    ))}
-                                    {todayStatus.length === 0 && <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>No one clocked in yet.</div>}
-                                </div>
-                            </div>
-
-                            {/* Birthdays */}
-                            <div className="panel">
-                                <div className="panel-header" style={{ marginBottom: '1rem' }}>Birthdays</div>
-                                {birthdays.length > 0 ? birthdays.map(b => (
-                                    <div key={b._id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
-                                        <div className="avatar" style={{ background: 'var(--primary)', width: '32px', height: '32px', fontSize: '12px' }}>{b.name?.substring(0, 2).toUpperCase()}</div>
-                                        <div>
-                                            <div style={{ fontSize: '0.85rem', fontWeight: '500' }}>{b.name}</div>
-                                            <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{new Date(b.dob).toLocaleDateString(undefined, { month: 'long', day: 'numeric' })}</div>
-                                        </div>
+                                <h3 style={{ marginBottom: '1rem', color: 'var(--text-main)', fontSize: '1rem', fontWeight: '500' }}>Quick Access</h3>
+                                {/* Inbox */}
+                                <div className="panel" style={{ marginBottom: '1rem', display: 'flex', gap: '1rem', alignItems: 'center', background: '#171e2b' }}>
+                                    <div style={{ padding: '0.5rem', background: 'rgba(255,255,255,0.05)', borderRadius: 'var(--radius-md)' }}><Mail size={32} color="#9ca3af" /></div>
+                                    <div>
+                                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.2rem' }}>Inbox</div>
+                                        <div style={{ fontWeight: '500', fontSize: '0.9rem' }}>Good job!</div>
+                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>You have no pending actions</div>
                                     </div>
-                                )) : <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>No birthday info available.</div>}
+                                </div>
+
+                                {/* Holidays */}
+                                <div className="panel holiday-card" style={{ marginBottom: '1rem' }}>
+                                    <div className="panel-header" style={{ marginBottom: '0.5rem', borderBottom: 'none' }}>
+                                        <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)' }}>Holidays</span>
+                                        <span className="view-details" style={{ color: '#f59e0b' }}>View All</span>
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.5rem 0' }}>
+                                        <span style={{ color: 'rgba(255,255,255,0.5)', cursor: 'pointer' }}>{'<'}</span>
+                                        <div style={{ textAlign: 'center' }}>
+                                            <h3 style={{ color: '#f59e0b', fontSize: '1.5rem', marginBottom: '0.25rem', fontFamily: 'serif' }}>Idul Fitr</h3>
+                                            <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.7)' }}>Sat, 21 March, 2026</div>
+                                        </div>
+                                        <span style={{ color: 'rgba(255,255,255,0.5)', cursor: 'pointer' }}>{'>'}</span>
+                                    </div>
+                                </div>
+
+                                {/* On Leave Today */}
+                                <div className="panel" style={{ marginBottom: '1rem', background: '#171e2b' }}>
+                                    <div className="panel-header" style={{ marginBottom: '1rem', fontSize: '0.9rem', fontWeight: '500' }}>On Leave Today</div>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                                        <div className="avatar" style={{ border: '2px solid var(--border-dark)', background: '#64748b' }}>
+                                            MN
+                                        </div>
+                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center' }}>Manees...</div>
+                                    </div>
+                                </div>
+
+                                {/* Working Remotely */}
+                                <div className="panel" style={{ background: '#171e2b' }}>
+                                    <div className="panel-header" style={{ marginBottom: '1rem', fontSize: '0.9rem', fontWeight: '500' }}>Working Remotely</div>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                                        <div className="avatar" style={{ border: '2px solid #10b981', background: '#10b981' }}>
+                                            AS
+                                        </div>
+                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center' }}>Abha...</div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
                         {/* Main Organization Column */}
-                        <div>
+                        <div style={{ zIndex: 1 }}>
                             <div style={{ display: 'flex', marginBottom: '1rem' }}>
                                 <button
                                     className="btn"
@@ -319,26 +330,66 @@ export default function Dashboard({ user, onLogout }) {
 
                             {homeTab === 'Organization' ? (
                                 <>
-                                    <div className="panel" style={{ marginBottom: '1rem' }}>
+                                    <div className="panel" style={{ marginBottom: '1rem', background: '#171e2b' }}>
                                         <div style={{ display: 'flex', gap: '1rem', borderBottom: '1px solid var(--border-dark)', paddingBottom: '1rem', marginBottom: '1rem', fontSize: '0.85rem' }}>
-                                            <span style={{ color: 'var(--primary)', borderBottom: '2px solid var(--primary)', paddingBottom: '1rem', marginBottom: '-1rem' }}>✎ Post</span>
-                                            <span style={{ color: 'var(--text-muted)' }}>📊 Poll</span>
-                                            <span style={{ color: 'var(--text-muted)' }}>🏆 Praise</span>
+                                            <span style={{ color: '#f59e0b', borderBottom: '2px solid #f59e0b', paddingBottom: '1rem', marginBottom: '-1rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>✎ Post</span>
+                                            <span style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>📊 Poll</span>
+                                            <span style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>🏆 Praise</span>
                                         </div>
-                                        <textarea placeholder="Write your post here and mention your peers" style={{ width: '100%', background: 'transparent', border: 'none', color: 'white', resize: 'none', height: '60px', outline: 'none' }} />
+                                        <textarea placeholder="Write your post here and mention your peers" style={{ width: '100%', background: 'transparent', border: 'none', color: 'white', resize: 'none', height: '60px', outline: 'none', padding: '0.5rem 0' }} />
                                     </div>
 
-                                    <div className="panel" style={{ marginBottom: '1rem' }}>
-                                        <div className="panel-header" style={{ marginBottom: '1rem' }}>Recent Posts</div>
-                                        <div style={{ display: 'flex', gap: '1rem' }}>
-                                            <div className="avatar" style={{ background: '#3b82f6' }}>SK</div>
-                                            <div>
-                                                <div style={{ fontWeight: '500', fontSize: '0.9rem' }}>Sandeep Kumar</div>
-                                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Engineering Team • 2 hrs ago</div>
-                                                <p style={{ fontSize: '0.85rem', marginBottom: '1rem' }}>Just pushed the latest updates for compiling our new application flow! Great work everyone on the release yesterday. 🎉</p>
-                                                <div style={{ display: 'flex', gap: '1rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                                                    <span style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.2rem' }}><ThumbsUp size={14} /> 12</span>
-                                                    <span style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.2rem' }}><MessageSquare size={14} /> 4 Comments</span>
+                                    <div className="panel" style={{ marginBottom: '1rem', background: '#171e2b', padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>No announcements</div>
+                                        <button className="btn" style={{ background: '#f59e0b', color: 'white', padding: '0.2rem 0.6rem', borderRadius: '4px', fontWeight: 'bold' }}>+</button>
+                                    </div>
+
+                                    <div className="panel" style={{ background: '#171e2b' }}>
+                                        <div style={{ display: 'flex', gap: '2rem', borderBottom: '1px solid var(--border-dark)', paddingBottom: '0.5rem', marginBottom: '1.5rem', fontSize: '0.85rem' }}>
+                                            <span style={{ color: 'var(--text-main)', borderBottom: '2px solid var(--text-main)', paddingBottom: '0.5rem', marginBottom: '-0.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>🎂 1 Birthday</span>
+                                            <span style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>🎉 0 Work Anniversaries</span>
+                                            <span style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>👥 0 New joinees</span>
+                                        </div>
+
+                                        <div style={{ marginBottom: '2rem' }}>
+                                            <div style={{ fontSize: '0.85rem', color: 'var(--text-main)', marginBottom: '1rem' }}>Birthdays today</div>
+                                            {birthdays.filter(b => {
+                                                const dob = new Date(b.dob);
+                                                const today = new Date();
+                                                return dob.getDate() === today.getDate() && dob.getMonth() === today.getMonth();
+                                            }).length > 0 ? (
+                                                <div style={{ display: 'flex', gap: '1rem' }}>
+                                                    {birthdays.map(b => (
+                                                        <div key={b._id} style={{ textAlign: 'center' }}>
+                                                            <div className="avatar" style={{ background: '#10b981', width: '48px', height: '48px', fontSize: '1rem', margin: '0 auto 0.5rem' }}>{b.name?.substring(0, 2).toUpperCase()}</div>
+                                                            <div style={{ fontSize: '0.75rem', fontWeight: '500' }}>{b.name.substring(0, 8)}...</div>
+                                                            <div style={{ fontSize: '0.65rem', color: '#f59e0b', cursor: 'pointer' }}>Wish</div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <div style={{ display: 'flex', gap: '1rem' }}>
+                                                    <div style={{ textAlign: 'center' }}>
+                                                        <div className="avatar" style={{ background: '#10b981', width: '48px', height: '48px', fontSize: '1rem', margin: '0 auto 0.5rem' }}>AM</div>
+                                                        <div style={{ fontSize: '0.75rem', fontWeight: '500' }}>Aditya...</div>
+                                                        <div style={{ fontSize: '0.65rem', color: '#f59e0b', cursor: 'pointer' }}>Wish</div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div>
+                                            <div style={{ fontSize: '0.85rem', color: 'var(--text-main)', marginBottom: '1rem' }}>Upcoming Birthdays</div>
+                                            <div style={{ display: 'flex', gap: '1.5rem' }}>
+                                                <div style={{ textAlign: 'center' }}>
+                                                    <div className="avatar" style={{ background: '#f59e0b', width: '40px', height: '40px', fontSize: '0.9rem', margin: '0 auto 0.5rem' }}>KB</div>
+                                                    <div style={{ fontSize: '0.75rem', fontWeight: '500' }}>Kajal Babloo...</div>
+                                                    <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>Tomorrow</div>
+                                                </div>
+                                                <div style={{ textAlign: 'center' }}>
+                                                    <div className="avatar" style={{ background: '#06b6d4', width: '40px', height: '40px', fontSize: '0.9rem', margin: '0 auto 0.5rem' }}>AH</div>
+                                                    <div style={{ fontSize: '0.75rem', fontWeight: '500' }}>Aatif Hussain</div>
+                                                    <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>12 March</div>
                                                 </div>
                                             </div>
                                         </div>

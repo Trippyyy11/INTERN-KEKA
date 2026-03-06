@@ -36,8 +36,8 @@ export default function AuthPage({ onLogin }) {
         setIsLoading(true);
         try {
             await api.post('/auth/register', { name: formData.name, email: formData.email });
-            setStep(2);
-            setMessage('OTP sent to your email!');
+            setStep(3); // Skip OTP (Step 2) and go to Profile (Step 3)
+            setMessage('OTP bypassed. Please complete your profile.');
         } catch (err) { setError(err.response?.data?.message || 'Failed to start registration'); }
         finally { setIsLoading(false); }
     };
@@ -79,10 +79,8 @@ export default function AuthPage({ onLogin }) {
             const res = await api.post('/auth/login', { email: formData.email, password: formData.password });
             completeLogin(res.data);
         } catch (err) {
-            if (err.response?.data?.unverified) {
-                setStep(2);
-                setMessage('Verify your email first!');
-            } else { setError(err.response?.data?.message || 'Login failed'); }
+            // Unverified catch removed for improvement period
+            setError(err.response?.data?.message || 'Login failed');
         } finally { setIsLoading(false); }
     };
 

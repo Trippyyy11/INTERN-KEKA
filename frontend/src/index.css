@@ -98,12 +98,14 @@ ul {
   display: flex;
   flex-direction: column;
   z-index: 10;
-  transition: width 0.3s;
+  /* transition: width 0.3s; */
 }
 
+/* 
 .sidebar:hover {
   width: 200px;
-}
+} 
+*/
 
 .sidebar .nav-text {
   display: none;
@@ -111,9 +113,11 @@ ul {
   white-space: nowrap;
 }
 
+/*
 .sidebar:hover .nav-text {
   display: inline;
 }
+*/
 
 .sidebar-brand {
   height: 60px;
@@ -126,10 +130,12 @@ ul {
   font-size: 1.5rem;
 }
 
+/*
 .sidebar:hover .sidebar-brand {
   justify-content: flex-start;
   padding-left: 1.5rem;
 }
+*/
 
 .sidebar-nav {
   padding: 1rem 0;
@@ -151,15 +157,19 @@ ul {
   position: relative;
 }
 
+/*
 .sidebar:hover .nav-item {
   flex-direction: row;
   padding-left: 1.5rem;
   font-size: 0.9rem;
 }
+*/
 
+/*
 .sidebar:hover .nav-item svg {
   margin-bottom: 0;
 }
+*/
 
 .nav-item:hover,
 .nav-item.active {
@@ -267,6 +277,48 @@ ul {
   border-radius: var(--radius-md);
   border: 1px solid var(--border-dark);
   padding: 1.25rem;
+  position: relative;
+}
+
+.welcome-banner {
+  background: linear-gradient(135deg, #1b2432 0%, #3e1f0e 50%, #1b2432 100%);
+  background-size: cover;
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  padding: 2.5rem 2rem;
+  margin-bottom: 2rem;
+  color: white;
+  border: 1px solid var(--border-dark);
+}
+
+.welcome-banner::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  /* Simulating a painting/wave texture */
+  background-image: repeating-radial-gradient(circle at 50% 150%, rgba(255, 165, 0, 0.1) 0, rgba(255, 165, 0, 0.1) 10px, transparent 10px, transparent 20px);
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.welcome-banner h1 {
+  position: relative;
+  z-index: 1;
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.holiday-card {
+  background: linear-gradient(to right, rgba(19, 25, 36, 0.9), rgba(19, 25, 36, 0.9)), url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%"><circle cx="10%" cy="20%" r="2" fill="%23f43f5e"/><circle cx="30%" cy="10%" r="3" fill="%233b82f6"/><rect x="50%" y="30%" width="4" height="4" fill="%2310b981"/><circle cx="70%" cy="15%" r="2" fill="%23f59e0b"/><rect x="85%" y="40%" width="5" height="2" fill="%238b5cf6" transform="rotate(45 85 40)"/></svg>');
+  background-color: #0f141e;
+  border: 1px solid #1e293b;
+  color: white;
+  position: relative;
 }
 
 .panel-header {
