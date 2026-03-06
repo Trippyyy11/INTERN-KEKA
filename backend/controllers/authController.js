@@ -1,63 +1,160 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
+import OrgConfig from '../models/OrgConfig.js';
+import sendEmail from '../utils/sendEmail.js';
+import crypto from 'crypto';
 
-// Generate JWT
 const generateToken = (id) => {
-    return jwt.sign({ id }, process.env.JWT_SECRET, {
-        expiresIn: '30d',
-    });
+    return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '30d' });
 };
 
-// @desc    Register new user
+// @desc    Step 1: Register Name & Email, Send OTP
 // @route   POST /api/auth/register
-// @access  Public (or Admin only depending on setup)
-export const registerUser = async (req, res) => {
+export const registerInit = async (req, res) => {
     try {
-        const { name, email, password, role } = req.body;
-
-        if (!name || !email || !password) {
-            return res.status(400).json({ message: 'Please add all fields' });
-        }
+        const { name, email } = req.body;
+        if (!name || !email) return res.status(400).json({ message: 'Name and Email are required' });
 
         const userExists = await User.findOne({ email });
-
-        if (userExists) {
-            return res.status(400).json({ message: 'User already exists' });
+        if (userExists && userExists.isVerified && userExists.password) {
+            return res.status(400).json({ message: 'User already exists and is verified.' });
         }
 
-        const user = await User.create({
-            name,
-            email,
-            password,
-            role: role || 'Intern'
-        });
+        const otp = crypto.randomInt(100000, 999999).toString();
+        const otpExpiry = Date.now() + 10 * 60 * 1000;
+        console.log('DEBUG OTP for', email, ':', otp);
 
+        let user = await User.findOne({ email });
         if (user) {
-            res.status(201).json({
+            user.name = name;
+            user.otp = otp;
+            user.otpExpiry = otpExpiry;
+            await user.save();
+        } else {
+            user = await User.create({ name, email, otp, otpExpiry, isVerified: false });
+        }
+
+        console.log('Sending OTP to:', user.email);
+        try {
+            await sendEmail({
+                email: user.email,
+                subject: 'Verify your email - Teaching Pariksha',
+                message: `Your verification code is: ${otp}`,
+                html: `<h3>Welcome!</h3><p>Your verification code is: <strong>${otp}</strong></p>`
+            });
+            console.log('Email sent successfully');
+        } catch (err) {
+            console.error('Email failed to send, but proceeding for dev: ', err.message);
+        }
+
+        console.log('Registration Step 1 finishing');
+        res.status(200).json({ message: 'OTP sent to email.' });
+    } catch (error) {
+        console.error('Registration Step 1 CRITICAL ERROR:', error);
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Step 2: Verify OTP
+// @route   POST /api/auth/verify-otp
+export const verifyOTP = async (req, res) => {
+    try {
+        const { email, otp } = req.body;
+        const user = await User.findOne({ email });
+
+        if (!user) return res.status(404).json({ message: 'User not found' });
+        if (user.otp !== otp || user.otpExpiry < Date.now()) {
+            return res.status(400).json({ message: 'Invalid or expired OTP' });
+        }
+
+        user.isVerified = true;
+        user.otp = undefined;
+        user.otpExpiry = undefined;
+        await user.save();
+
+        res.status(200).json({ message: 'Email verified. Please complete your profile.' });
+    } catch (error) { res.status(500).json({ message: error.message }); }
+};
+
+// @desc    Resend OTP
+// @route   POST /api/auth/resend-otp
+export const resendOTP = async (req, res) => {
+    try {
+        const { email } = req.body;
+        const user = await User.findOne({ email });
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        const otp = crypto.randomInt(100000, 999999).toString();
+        user.otp = otp;
+        user.otpExpiry = Date.now() + 10 * 60 * 1000;
+        await user.save();
+
+        try {
+            await sendEmail({
+                email: user.email,
+                subject: 'New Verification Code - Teaching Pariksha',
+                message: `Your new verification code is: ${otp}`,
+                html: `<p>Your new verification code is: <strong>${otp}</strong></p>`
+            });
+            res.status(200).json({ message: 'New OTP sent to your email.' });
+        } catch (err) { res.status(500).json({ message: 'Failed to send email.' }); }
+    } catch (error) { res.status(500).json({ message: error.message }); }
+};
+
+// @desc    Step 3: Complete Profile & Set Password
+// @route   POST /api/auth/complete-registration
+export const completeRegistration = async (req, res) => {
+    try {
+        const { email, password, designation, department, joiningDate, dob, place, phoneNumber } = req.body;
+        const user = await User.findOne({ email });
+
+        if (!user || !user.isVerified) return res.status(400).json({ message: 'Please verify email first.' });
+
+        // First user with password set will be Super Admin
+        const usersCount = await User.countDocuments({ password: { $exists: true, $ne: null } });
+        const isFirstUser = usersCount === 0;
+
+        user.password = password;
+        user.designation = designation;
+        user.department = department;
+        user.joiningDate = joiningDate;
+        user.dob = dob;
+        user.place = place;
+        user.phoneNumber = phoneNumber;
+        user.isApproved = isFirstUser;
+        user.role = isFirstUser ? 'Super Admin' : 'Employee';
+
+        await user.save();
+
+        if (isFirstUser) {
+            return res.status(200).json({
                 _id: user.id,
                 name: user.name,
                 email: user.email,
                 role: user.role,
                 token: generateToken(user._id),
+                message: 'First user registered and auto-approved!'
             });
-        } else {
-            res.status(400).json({ message: 'Invalid user data' });
         }
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
+
+        res.status(200).json({
+            message: 'Account created! Pending Admin approval.',
+            requiresApproval: true
+        });
+    } catch (error) { res.status(500).json({ message: error.message }); }
 };
 
-// @desc    Authenticate a user
+// @desc    Login
 // @route   POST /api/auth/login
-// @access  Public
 export const loginUser = async (req, res) => {
     try {
         const { email, password } = req.body;
-
         const user = await User.findOne({ email });
 
-        if (user && (await user.matchPassword(password))) {
+        if (user && user.password && (await user.matchPassword(password))) {
+            if (!user.isVerified) return res.status(401).json({ message: 'Verify email first.', unverified: true });
+            if (!user.isApproved) return res.status(401).json({ message: 'Account pending approval from Admin.' });
+
             res.json({
                 _id: user.id,
                 name: user.name,
@@ -66,20 +163,27 @@ export const loginUser = async (req, res) => {
                 token: generateToken(user._id),
             });
         } else {
-            res.status(401).json({ message: 'Invalid credentials' });
+            res.status(401).json({ message: 'Invalid credentials or account incomplete' });
         }
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
+    } catch (error) { res.status(500).json({ message: error.message }); }
 };
 
-// @desc    Get user data
-// @route   GET /api/auth/me
-// @access  Private
-export const getMe = async (req, res) => {
+// @desc    Get Org Config Options (Depts/Desigs) for dropdowns
+// @route   GET /api/auth/options
+export const getOrgOptions = async (req, res) => {
     try {
-        res.status(200).json(req.user);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
+        const depts = await OrgConfig.find({ type: 'Department' });
+        const desigs = await OrgConfig.find({ type: 'Designation' });
+        res.json({ departments: depts, designations: desigs });
+    } catch (error) { res.status(500).json({ message: error.message }); }
+};
+
+export const getMe = async (req, res) => { res.status(200).json(req.user); };
+
+export const promoteToSuperAdmin = async (req, res) => {
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    user.role = 'Super Admin';
+    await user.save();
+    res.json({ message: 'Promoted' });
 };

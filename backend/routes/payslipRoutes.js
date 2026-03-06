@@ -1,9 +1,12 @@
 import express from 'express';
-import { getMyPayslips, createPayslip } from '../controllers/payslipController.js';
-import { protect, adminOnly } from '../middlewares/authMiddleware.js';
+import { getMyPayslips, getAllPayslips, createPayslip } from '../controllers/payslipController.js';
+import { protect, authorize } from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
 
-router.route('/').get(protect, getMyPayslips).post(protect, adminOnly, createPayslip);
+router.get('/', protect, getMyPayslips);
+router.get('/all', protect, authorize(['Super Admin']), getAllPayslips);
+router.post('/', protect, authorize(['Super Admin']), createPayslip);
 
 export default router;
+

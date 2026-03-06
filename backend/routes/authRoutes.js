@@ -1,11 +1,17 @@
 import express from 'express';
-import { registerUser, loginUser, getMe } from '../controllers/authController.js';
-import { protect } from '../middlewares/authMiddleware.js';
+import { registerInit, verifyOTP, completeRegistration, loginUser, getMe, promoteToSuperAdmin, getOrgOptions, resendOTP } from '../controllers/authController.js';
+import { protect, authorize } from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
 
-router.post('/register', registerUser);
+router.post('/register', registerInit); // Step 1
+router.post('/verify-otp', verifyOTP); // Step 2
+router.post('/complete-registration', completeRegistration); // Step 3
+router.post('/resend-otp', resendOTP);
 router.post('/login', loginUser);
+router.get('/options', getOrgOptions); // For registration dropdowns
+
 router.get('/me', protect, getMe);
+router.put('/promote/:id', protect, authorize(['Super Admin']), promoteToSuperAdmin);
 
 export default router;

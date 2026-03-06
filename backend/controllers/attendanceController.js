@@ -73,3 +73,18 @@ export const getLogs = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+
+// @desc    Get Today's Status for all employees
+// @route   GET /api/attendance/status/today
+// @access  Private
+export const getTodayStatus = async (req, res) => {
+    try {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const attendance = await Attendance.find({ date: today }).populate('user', 'name avatar department');
+        res.status(200).json(attendance);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
