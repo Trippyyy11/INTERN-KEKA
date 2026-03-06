@@ -12,6 +12,11 @@
   --border-dark: #2a3441;
   --text-main: #ffffff;
   --text-muted: #94a3b8;
+  --bg-gradient-topbar: linear-gradient(135deg, #8D23FF 0%, #160527 100%);
+  --bg-gradient-welcome: linear-gradient(135deg, #1b2432 0%, #3e1f0e 50%, #1b2432 100%);
+  --bg-gradient-profile: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4c1d95 100%);
+  --text-on-banner: #ffffff;
+  --text-topbar: #ffffff;
 
   --success: #10b981;
   --warning: #f59e0b;
@@ -33,6 +38,12 @@ body.light-theme {
   --border-dark: #e5e7eb;
   --text-main: #111827;
   --text-muted: #6b7280;
+  --bg-gradient-topbar: linear-gradient(135deg, #8D23FF 0%, #160527 100%);
+  --bg-gradient-welcome: linear-gradient(135deg, #1b2432 0%, #3e1f0e 50%, #1b2432 100%);
+  --bg-gradient-profile: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4c1d95 100%);
+  --text-on-banner: #ffffff;
+  --text-topbar: #ffffff;
+  /* Keep topbar text white since gradient is still somewhat dark/purple */
   /* Sidebar remains dark referencing the Remunix UI pattern */
   --bg-sidebar: #262626;
 
@@ -216,12 +227,12 @@ ul {
 /* Topbar */
 .topbar {
   height: 60px;
-  background: linear-gradient(135deg, #8D23FF 0%, #160527 100%);
+  background: var(--bg-gradient-topbar);
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 1.5rem;
-  color: white;
+  color: var(--text-topbar);
 }
 
 .search-bar {
@@ -308,14 +319,14 @@ ul {
 }
 
 .welcome-banner {
-  background: linear-gradient(135deg, #1b2432 0%, #3e1f0e 50%, #1b2432 100%);
+  background: var(--bg-gradient-welcome);
   background-size: cover;
   position: relative;
   overflow: hidden;
   border-radius: var(--radius-lg);
   padding: 2.5rem 2rem;
   margin-bottom: 2rem;
-  color: white;
+  color: var(--text-on-banner);
   border: 1px solid var(--border-dark);
 }
 

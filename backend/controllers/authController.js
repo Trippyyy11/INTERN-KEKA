@@ -142,7 +142,7 @@ export const completeRegistration = async (req, res) => {
 export const loginUser = async (req, res) => {
     try {
         const { email, password } = req.body;
-        const user = await User.findOne({ email });
+        const user = await User.findOne({ email }).populate('reportingManager', 'name email');
 
         if (user && user.password && (await user.matchPassword(password))) {
             // isVerified check disabled for improvement period
@@ -154,6 +154,10 @@ export const loginUser = async (req, res) => {
                 name: user.name,
                 email: user.email,
                 role: user.role,
+                designation: user.designation,
+                place: user.place,
+                reportingManager: user.reportingManager,
+                welcomeProfile: user.welcomeProfile,
                 token: generateToken(user._id),
             });
         } else {
@@ -180,4 +184,26 @@ export const promoteToSuperAdmin = async (req, res) => {
     user.role = 'Super Admin';
     await user.save();
     res.json({ message: 'Promoted' });
+};
+
+// @desc    Update Welcome Profile responses
+// @route   PUT /api/auth/welcome-profile
+export const updateWelcomeProfile = async (req, res) => {
+    try {
+        const { about, loveJob, interests } = req.body;
+        const user = await User.findById(req.user._id);
+
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        user.welcomeProfile = {
+            about: about !== undefined ? about : user.welcomeProfile.about,
+            loveJob: loveJob !== undefined ? loveJob : user.welcomeProfile.loveJob,
+            interests: interests !== undefined ? interests : user.welcomeProfile.interests
+        };
+
+        await user.save();
+        res.status(200).json(user.welcomeProfile);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
 };

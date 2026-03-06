@@ -35,7 +35,14 @@ export default function Dashboard({ user, onLogout }) {
 
     // Home states
     const [homeTab, setHomeTab] = useState('Organization');
+    const [homeSubTab, setHomeSubTab] = useState('Welcome');
     const [postText, setPostText] = useState('');
+    const [welcomeResponses, setWelcomeResponses] = useState({
+        about: user?.welcomeProfile?.about || '',
+        loveJob: user?.welcomeProfile?.loveJob || '',
+        interests: user?.welcomeProfile?.interests || ''
+    });
+    const [editingResponse, setEditingResponse] = useState(null); // 'about', 'loveJob', 'interests' or null
 
     // Me -> Attendance states
     const [attendanceTab, setAttendanceTab] = useState('Attendance Log');
@@ -76,6 +83,7 @@ export default function Dashboard({ user, onLogout }) {
     const [poll, setPoll] = useState({ question: '', option1: '', option2: '' });
     const [praise, setPraise] = useState({ user: '', message: '' });
     const [wishedUsers, setWishedUsers] = useState([]);
+    const [showHolidayModal, setShowHolidayModal] = useState(false);
 
     useEffect(() => {
         const timer = setInterval(() => setCurrentTime(new Date().toLocaleTimeString()), 1000);
@@ -143,6 +151,28 @@ export default function Dashboard({ user, onLogout }) {
             setOrgConfigs(res.data);
         } catch (err) { console.error('Failed to fetch configs'); }
     }
+
+    const handleAttendAction = async (type) => {
+        try {
+            await api.post('/attendance/mark', { type });
+            fetchStats();
+            alert(`Attendance marked as ${type}`);
+        } catch (err) { alert('Action failed'); }
+    };
+
+    const handleSaveResponse = async (key) => {
+        try {
+            const res = await api.put('/auth/welcome-profile', {
+                [key]: welcomeResponses[key]
+            });
+            // Update local state is already done via onChange
+            setEditingResponse(null);
+            alert('Response saved successfully!');
+        } catch (err) {
+            console.error('Failed to save response:', err);
+            alert('Failed to save response. Please try again.');
+        }
+    };
 
     const handleApproveUser = async (id) => {
         try {
@@ -284,8 +314,8 @@ export default function Dashboard({ user, onLogout }) {
                 {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => <div key={d} style={{ textAlign: 'center', fontSize: '0.75rem', color: 'var(--text-muted)' }}>{d}</div>)}
                 <div style={{ gridColumn: 'span 2' }}></div> {/* Offset for March 2026 */}
                 {days.map(d => {
-                    let bg = 'rgba(255,255,255,0.05)';
-                    let color = 'white';
+                    let bg = 'var(--bg-panel)';
+                    let color = 'var(--text-main)';
                     if (d === 4) bg = '#84cc16'; // Holiday
                     if (d === 5) bg = '#06b6d4'; // Leave
                     if (d === 7 || d === 8 || d === 14 || d === 15 || d === 21 || d === 22 || d === 28 || d === 29) {
@@ -309,304 +339,477 @@ export default function Dashboard({ user, onLogout }) {
             return (
                 <div className="page-content">
                     <div style={{ display: 'flex', gap: '1rem', borderBottom: '1px solid var(--border-dark)', paddingBottom: '0.5rem', marginBottom: '1.5rem', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 'bold' }}>
-                        <span style={{ color: 'var(--text-main)', borderBottom: '2px solid var(--primary)', paddingBottom: '0.5rem' }}>DASHBOARD</span>
-                        <span>WELCOME <span style={{ color: 'var(--danger)' }}>1</span></span>
+                        <span
+                            style={{ color: homeSubTab === 'Dashboard' ? 'var(--text-main)' : 'var(--text-muted)', borderBottom: homeSubTab === 'Dashboard' ? '2px solid var(--primary)' : 'none', paddingBottom: '0.5rem', cursor: 'pointer', marginBottom: '-0.5rem' }}
+                            onClick={() => setHomeSubTab('Dashboard')}
+                        >
+                            DASHBOARD
+                        </span>
+                        <span
+                            style={{ color: homeSubTab === 'Welcome' ? 'var(--text-main)' : 'var(--text-muted)', borderBottom: homeSubTab === 'Welcome' ? '2px solid var(--primary)' : 'none', paddingBottom: '0.5rem', cursor: 'pointer', marginBottom: '-0.5rem' }}
+                            onClick={() => setHomeSubTab('Welcome')}
+                        >
+                            WELCOME <span style={{ color: 'var(--danger)' }}>1</span>
+                        </span>
                     </div>
 
-                    <div className="welcome-banner">
-                        <h1>Welcome {user?.name || 'Tuba Zainab'}!</h1>
-                    </div>
-
-                    <div className="grid" style={{ gridTemplateColumns: 'minmax(300px, 350px) 1fr', gap: '2rem', minHeight: '600px', backgroundImage: 'url("data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'400\' height=\'600\' viewBox=\'0 0 400 600\'><path d=\'M350,600 C350,500 320,400 400,300 C380,300 360,320 340,350 C340,250 300,150 400,50 C380,100 350,150 340,200 C320,150 300,100 250,50 C280,100 300,150 310,220 C280,200 250,180 200,150 C240,180 280,220 310,260 C250,250 200,240 150,250 C200,270 250,290 320,300 C280,320 250,340 200,400 C300,350 310,400 350,600 Z\' fill=\'rgba(255,255,255,0.03)\'/></svg>")', backgroundPosition: 'right bottom', backgroundRepeat: 'no-repeat' }}>
-                        {/* Quick Access Sidebar */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', zIndex: 1 }}>
-                            <div>
-                                <h3 style={{ marginBottom: '1rem', color: 'var(--text-main)', fontSize: '1rem', fontWeight: '500' }}>Quick Access</h3>
-
-                                {dashData.holidays.length > 0 ? (
-                                    <div className="panel holiday-card" style={{ marginBottom: '1rem' }}>
-                                        <div className="panel-header" style={{ marginBottom: '0.5rem', borderBottom: 'none' }}>
-                                            <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)' }}>Holidays</span>
-                                            <span className="view-details" style={{ color: '#f59e0b', cursor: 'pointer' }} onClick={() => { setActiveSidebar('Org'); setActiveSubTab('Holidays'); }}>View All</span>
-                                        </div>
-                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.5rem 0' }}>
-                                            <div style={{ textAlign: 'center', width: '100%' }}>
-                                                <h3 style={{ color: '#f59e0b', fontSize: '1.5rem', marginBottom: '0.25rem', fontFamily: 'serif' }}>{dashData.holidays[0].name}</h3>
-                                                <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.7)' }}>{new Date(dashData.holidays[0].date).toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' })}</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="panel holiday-card" style={{ marginBottom: '1rem' }}>
-                                        <div className="panel-header" style={{ marginBottom: '0.5rem', borderBottom: 'none' }}>
-                                            <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)' }}>Holidays</span>
-                                        </div>
-                                        <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)', textAlign: 'center', padding: '1rem 0' }}>No upcoming holidays</div>
-                                    </div>
-                                )}
-
-                                {/* On Leave Today */}
-                                <div className="panel" style={{ marginBottom: '1rem' }}>
-                                    <div className="panel-header" style={{ marginBottom: '1rem', fontSize: '0.9rem', fontWeight: '500' }}>On Leave Today</div>
-                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.8rem' }}>
-                                        {dashData.leaves.length > 0 ? dashData.leaves.map(l => (
-                                            <div key={l._id} style={{ textAlign: 'center' }}>
-                                                <div className="avatar" style={{ border: '2px solid var(--border-dark)', background: '#64748b' }}>
-                                                    {l.user?.name?.substring(0, 2).toUpperCase()}
-                                                </div>
-                                                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>{l.user?.name?.split(' ')[0]}</div>
-                                            </div>
-                                        )) : <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>None today</div>}
-                                    </div>
-                                </div>
-
-                                {/* Working Remotely */}
-                                <div className="panel">
-                                    <div className="panel-header" style={{ marginBottom: '1rem', fontSize: '0.9rem', fontWeight: '500' }}>Working Remotely</div>
-                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.8rem' }}>
-                                        {dashData.workingRemotely.length > 0 ? dashData.workingRemotely.map(w => (
-                                            <div key={w._id} style={{ textAlign: 'center' }}>
-                                                <div className="avatar" style={{ border: '2px solid #10b981', background: '#10b981' }}>
-                                                    {w.user?.name?.substring(0, 2).toUpperCase()}
-                                                </div>
-                                                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>{w.user?.name?.split(' ')[0]}</div>
-                                            </div>
-                                        )) : <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>None today</div>}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Main Organization Column */}
-                        <div style={{ zIndex: 1 }}>
-                            <div style={{ display: 'flex', marginBottom: '1rem' }}>
-                                <button
-                                    className="btn"
-                                    style={{
-                                        background: 'var(--bg-panel)',
-                                        color: 'var(--primary)',
-                                        border: '1px solid var(--border-dark)',
-                                        borderBottom: 'none',
-                                        borderRadius: '4px 4px 0 0',
-                                        fontWeight: '500',
-                                        padding: '0.5rem 1rem'
-                                    }}
-                                    onClick={() => setHomeTab('Organization')}
-                                >
-                                    Organization
-                                </button>
-                                <div style={{ flex: 1, borderBottom: '1px solid var(--border-dark)' }}></div>
+                    {homeSubTab === 'Dashboard' && (
+                        <>
+                            <div className="welcome-banner">
+                                <h1>Welcome {user?.name || 'Tuba Zainab'}!</h1>
                             </div>
 
-                            {homeTab === 'Organization' ? (
-                                <>
-                                    <div className="panel" style={{ marginBottom: '1rem' }}>
-                                        <div style={{ display: 'flex', gap: '1rem', borderBottom: '1px solid var(--border-dark)', paddingBottom: '1rem', marginBottom: '1rem', fontSize: '0.85rem' }}>
-                                            <span
-                                                style={{ color: orgActionTab === 'Post' ? '#f59e0b' : 'var(--text-muted)', borderBottom: orgActionTab === 'Post' ? '2px solid #f59e0b' : 'none', paddingBottom: '1rem', marginBottom: '-1rem', display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}
-                                                onClick={() => setOrgActionTab('Post')}
-                                            >✎ Post</span>
-                                            <span
-                                                style={{ color: orgActionTab === 'Poll' ? '#f59e0b' : 'var(--text-muted)', borderBottom: orgActionTab === 'Poll' ? '2px solid #f59e0b' : 'none', paddingBottom: '1rem', marginBottom: '-1rem', display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}
-                                                onClick={() => setOrgActionTab('Poll')}
-                                            >📊 Poll</span>
-                                            <span
-                                                style={{ color: orgActionTab === 'Praise' ? '#f59e0b' : 'var(--text-muted)', borderBottom: orgActionTab === 'Praise' ? '2px solid #f59e0b' : 'none', paddingBottom: '1rem', marginBottom: '-1rem', display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}
-                                                onClick={() => setOrgActionTab('Praise')}
-                                            >🏆 Praise</span>
-                                        </div>
-                                        {orgActionTab === 'Post' && (
-                                            <>
-                                                <textarea
-                                                    value={postText}
-                                                    onChange={(e) => setPostText(e.target.value)}
-                                                    placeholder="Write your post here and mention your peers"
-                                                    style={{ width: '100%', background: 'transparent', border: 'none', color: 'var(--text-main)', resize: 'none', height: '60px', outline: 'none', padding: '0.5rem 0' }}
-                                                />
-                                                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
-                                                    <button className="btn btn-primary" onClick={() => { if (postText) { alert(`Posted: ${postText}`); setPostText(''); } }} disabled={!postText}>Post</button>
+                            <div className="grid" style={{ gridTemplateColumns: 'minmax(300px, 350px) 1fr', gap: '2rem', minHeight: '600px', backgroundImage: 'url("data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'400\' height=\'600\' viewBox=\'0 0 400 600\'><path d=\'M350,600 C350,500 320,400 400,300 C380,300 360,320 340,350 C340,250 300,150 400,50 C380,100 350,150 340,200 C320,150 300,100 250,50 C280,100 300,150 310,220 C280,200 250,180 200,150 C240,180 280,220 310,260 C250,250 200,240 150,250 C200,270 250,290 320,300 C280,320 250,340 200,400 C300,350 310,400 350,600 Z\' fill=\'rgba(255,255,255,0.03)\'/></svg>")', backgroundPosition: 'right bottom', backgroundRepeat: 'no-repeat' }}>
+                                {/* Quick Access Sidebar */}
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', zIndex: 1 }}>
+                                    <div>
+                                        <h3 style={{ marginBottom: '1rem', color: 'var(--text-main)', fontSize: '1rem', fontWeight: '500' }}>Quick Access</h3>
+
+                                        {dashData.holidays.length > 0 ? (
+                                            <div className="panel holiday-card" style={{ marginBottom: '1rem' }}>
+                                                <div className="panel-header" style={{ marginBottom: '0.5rem', borderBottom: 'none' }}>
+                                                    <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)' }}>Holidays</span>
+                                                    <span className="view-details" style={{ color: '#f59e0b', cursor: 'pointer' }} onClick={() => setShowHolidayModal(true)}>View All</span>
                                                 </div>
-                                            </>
-                                        )}
-                                        {orgActionTab === 'Poll' && (
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-                                                <input
-                                                    type="text"
-                                                    value={poll.question}
-                                                    onChange={(e) => setPoll({ ...poll, question: e.target.value })}
-                                                    placeholder="Ask something..."
-                                                    style={{ ...inputStyle, padding: '0.4rem' }}
-                                                />
-                                                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                    <input
-                                                        type="text"
-                                                        value={poll.option1}
-                                                        onChange={(e) => setPoll({ ...poll, option1: e.target.value })}
-                                                        placeholder="Option 1"
-                                                        style={{ ...inputStyle, padding: '0.4rem', fontSize: '0.75rem' }}
-                                                    />
-                                                    <input
-                                                        type="text"
-                                                        value={poll.option2}
-                                                        onChange={(e) => setPoll({ ...poll, option2: e.target.value })}
-                                                        placeholder="Option 2"
-                                                        style={{ ...inputStyle, padding: '0.4rem', fontSize: '0.75rem' }}
-                                                    />
-                                                </div>
-                                                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                                                    <button className="btn btn-primary" style={{ fontSize: '0.75rem', padding: '0.3rem 1rem' }} onClick={() => { alert('Poll Created!'); setPoll({ question: '', option1: '', option2: '' }); }}>Create Poll</button>
+                                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.5rem 0' }}>
+                                                    <div style={{ textAlign: 'center', width: '100%' }}>
+                                                        <h3 style={{ color: '#f59e0b', fontSize: '1.5rem', marginBottom: '0.25rem', fontFamily: 'serif' }}>{dashData.holidays[0].name}</h3>
+                                                        <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.7)' }}>{new Date(dashData.holidays[0].date).toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' })}</div>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        )}
-                                        {orgActionTab === 'Praise' && (
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-                                                <select
-                                                    value={praise.user}
-                                                    onChange={(e) => setPraise({ ...praise, user: e.target.value })}
-                                                    style={{ ...inputStyle, padding: '0.4rem', fontSize: '0.75rem' }}
-                                                >
-                                                    <option value="">Select a peer to recognize</option>
-                                                    {allUsers.map(u => <option key={u._id} value={u.name}>{u.name}</option>)}
-                                                </select>
-                                                <textarea
-                                                    value={praise.message}
-                                                    onChange={(e) => setPraise({ ...praise, message: e.target.value })}
-                                                    placeholder="What did they do great?"
-                                                    style={{ width: '100%', background: 'transparent', border: '1px solid var(--border-dark)', color: 'var(--text-main)', resize: 'none', height: '40px', outline: 'none', padding: '0.5rem', fontSize: '0.75rem', borderRadius: '4px' }}
-                                                />
-                                                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                                                    <button className="btn btn-primary" style={{ padding: '0.3rem 1rem', fontSize: '0.75rem' }} onClick={() => { if (praise.user && praise.message) { alert(`Praise sent to ${praise.user}!`); setPraise({ user: '', message: '' }); } }}>Send Praise</button>
+                                        ) : (
+                                            <div className="panel holiday-card" style={{ marginBottom: '1rem' }}>
+                                                <div className="panel-header" style={{ marginBottom: '0.5rem', borderBottom: 'none' }}>
+                                                    <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)' }}>Holidays</span>
                                                 </div>
+                                                <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)', textAlign: 'center', padding: '1rem 0' }}>No upcoming holidays</div>
                                             </div>
                                         )}
-                                    </div>
 
-                                    <div className="panel" style={{ marginBottom: '1rem', padding: '1.5rem' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: dashData.announcements.length > 0 ? '1rem' : 0 }}>
-                                            <div style={{ fontSize: '0.9rem', fontWeight: '500' }}>Announcements</div>
-                                            <button className="btn" style={{ background: '#f59e0b', color: 'white', padding: '0.2rem 0.6rem', borderRadius: '4px', fontWeight: 'bold' }} onClick={() => setShowAnnouncementModal(true)}>+</button>
-                                        </div>
-                                        {dashData.announcements.length > 0 ? dashData.announcements.map(a => (
-                                            <div key={a._id} style={{ marginBottom: '0.5rem', padding: '0.5rem', background: 'rgba(255,255,255,0.03)', borderRadius: '4px' }}>
-                                                <div style={{ fontWeight: '500', fontSize: '0.85rem', color: 'var(--text-main)' }}>{a.title}</div>
-                                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{a.content}</div>
-                                            </div>
-                                        )) : (
-                                            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>No announcements</div>
-                                        )}
-                                    </div>
-
-                                    <div className="panel">
-                                        <div style={{ display: 'flex', gap: '2rem', borderBottom: '1px solid var(--border-dark)', paddingBottom: '0.5rem', marginBottom: '1.5rem', fontSize: '0.85rem' }}>
-                                            <span
-                                                style={{ color: orgActivityTab === 'Birthdays' ? 'var(--text-main)' : 'var(--text-muted)', borderBottom: orgActivityTab === 'Birthdays' ? '2px solid var(--text-main)' : 'none', paddingBottom: '0.5rem', marginBottom: '-0.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}
-                                                onClick={() => setOrgActivityTab('Birthdays')}
-                                            >🎂 {dashData.birthdays.today.length} Birthday{dashData.birthdays.today.length !== 1 ? 's' : ''}</span>
-                                            <span
-                                                style={{ color: orgActivityTab === 'Anniversaries' ? 'var(--text-main)' : 'var(--text-muted)', borderBottom: orgActivityTab === 'Anniversaries' ? '2px solid var(--text-main)' : 'none', paddingBottom: '0.5rem', marginBottom: '-0.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}
-                                                onClick={() => setOrgActivityTab('Anniversaries')}
-                                            >🎉 0 Work Anniversaries</span>
-                                            <span
-                                                style={{ color: orgActivityTab === 'NewJoinees' ? 'var(--text-main)' : 'var(--text-muted)', borderBottom: orgActivityTab === 'NewJoinees' ? '2px solid var(--text-main)' : 'none', paddingBottom: '0.5rem', marginBottom: '-0.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}
-                                                onClick={() => setOrgActivityTab('NewJoinees')}
-                                            >👥 {dashData.newJoinees.length} New joinee{dashData.newJoinees.length !== 1 ? 's' : ''}</span>
-                                        </div>
-
-                                        {orgActivityTab === 'Birthdays' && (
-                                            <>
-                                                <div style={{ marginBottom: '2rem' }}>
-                                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-main)', marginBottom: '1rem' }}>Birthdays today</div>
-                                                    {dashData.birthdays.today.length > 0 ? (
-                                                        <div style={{ display: 'flex', gap: '1rem' }}>
-                                                            {dashData.birthdays.today.map(b => (
-                                                                <div key={b._id} style={{ textAlign: 'center' }}>
-                                                                    <div className="avatar" style={{ background: '#10b981', width: '48px', height: '48px', fontSize: '1rem', margin: '0 auto 0.5rem' }}>
-                                                                        {b.name?.substring(0, 2).toUpperCase()}
-                                                                    </div>
-                                                                    <div style={{ fontSize: '0.75rem', fontWeight: '500' }}>{b.name?.split(' ')[0]}</div>
-                                                                    <div
-                                                                        style={{ fontSize: '0.65rem', color: wishedUsers.includes(b._id) ? 'var(--text-muted)' : '#f59e0b', cursor: wishedUsers.includes(b._id) ? 'default' : 'pointer' }}
-                                                                        onClick={() => { if (!wishedUsers.includes(b._id)) setWishedUsers([...wishedUsers, b._id]); }}
-                                                                    >
-                                                                        {wishedUsers.includes(b._id) ? 'Wished!' : 'Wish'}
-                                                                    </div>
-                                                                </div>
-                                                            ))}
+                                        {/* On Leave Today */}
+                                        <div className="panel" style={{ marginBottom: '1rem' }}>
+                                            <div className="panel-header" style={{ marginBottom: '1rem', fontSize: '0.9rem', fontWeight: '500' }}>On Leave Today</div>
+                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.8rem' }}>
+                                                {dashData.leaves.length > 0 ? dashData.leaves.map(l => (
+                                                    <div key={l._id} style={{ textAlign: 'center' }}>
+                                                        <div className="avatar" style={{ border: '2px solid var(--border-dark)', background: '#64748b' }}>
+                                                            {l.user?.name?.substring(0, 2).toUpperCase()}
                                                         </div>
-                                                    ) : (
-                                                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', padding: '0.5rem 0' }}>None today</div>
-                                                    )}
+                                                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>{l.user?.name?.split(' ')[0]}</div>
+                                                    </div>
+                                                )) : <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>None today</div>}
+                                            </div>
+                                        </div>
+
+                                        {/* Working Remotely */}
+                                        <div className="panel">
+                                            <div className="panel-header" style={{ marginBottom: '1rem', fontSize: '0.9rem', fontWeight: '500' }}>Working Remotely</div>
+                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.8rem' }}>
+                                                {dashData.workingRemotely.length > 0 ? dashData.workingRemotely.map(w => (
+                                                    <div key={w._id} style={{ textAlign: 'center' }}>
+                                                        <div className="avatar" style={{ border: '2px solid #10b981', background: '#10b981' }}>
+                                                            {w.user?.name?.substring(0, 2).toUpperCase()}
+                                                        </div>
+                                                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>{w.user?.name?.split(' ')[0]}</div>
+                                                    </div>
+                                                )) : <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>None today</div>}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Main Organization Column */}
+                                <div style={{ zIndex: 1 }}>
+                                    <div style={{ display: 'flex', marginBottom: '1rem' }}>
+                                        <button
+                                            className="btn"
+                                            style={{
+                                                background: 'var(--bg-panel)',
+                                                color: 'var(--primary)',
+                                                border: '1px solid var(--border-dark)',
+                                                borderBottom: 'none',
+                                                borderRadius: '4px 4px 0 0',
+                                                fontWeight: '500',
+                                                padding: '0.5rem 1rem'
+                                            }}
+                                            onClick={() => setHomeTab('Organization')}
+                                        >
+                                            Organization
+                                        </button>
+                                        <div style={{ flex: 1, borderBottom: '1px solid var(--border-dark)' }}></div>
+                                    </div>
+
+                                    {homeTab === 'Organization' ? (
+                                        <>
+                                            <div className="panel" style={{ marginBottom: '1rem' }}>
+                                                <div style={{ display: 'flex', gap: '1rem', borderBottom: '1px solid var(--border-dark)', paddingBottom: '1rem', marginBottom: '1rem', fontSize: '0.85rem' }}>
+                                                    <span
+                                                        style={{ color: orgActionTab === 'Post' ? '#f59e0b' : 'var(--text-muted)', borderBottom: orgActionTab === 'Post' ? '2px solid #f59e0b' : 'none', paddingBottom: '1rem', marginBottom: '-1rem', display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}
+                                                        onClick={() => setOrgActionTab('Post')}
+                                                    >✎ Post</span>
+                                                    <span
+                                                        style={{ color: orgActionTab === 'Poll' ? '#f59e0b' : 'var(--text-muted)', borderBottom: orgActionTab === 'Poll' ? '2px solid #f59e0b' : 'none', paddingBottom: '1rem', marginBottom: '-1rem', display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}
+                                                        onClick={() => setOrgActionTab('Poll')}
+                                                    >📊 Poll</span>
+                                                    <span
+                                                        style={{ color: orgActionTab === 'Praise' ? '#f59e0b' : 'var(--text-muted)', borderBottom: orgActionTab === 'Praise' ? '2px solid #f59e0b' : 'none', paddingBottom: '1rem', marginBottom: '-1rem', display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}
+                                                        onClick={() => setOrgActionTab('Praise')}
+                                                    >🏆 Praise</span>
+                                                </div>
+                                                {orgActionTab === 'Post' && (
+                                                    <>
+                                                        <textarea
+                                                            value={postText}
+                                                            onChange={(e) => setPostText(e.target.value)}
+                                                            placeholder="Write your post here and mention your peers"
+                                                            style={{ width: '100%', background: 'transparent', border: 'none', color: 'var(--text-main)', resize: 'none', height: '60px', outline: 'none', padding: '0.5rem 0' }}
+                                                        />
+                                                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
+                                                            <button className="btn btn-primary" onClick={() => { if (postText) { alert(`Posted: ${postText}`); setPostText(''); } }} disabled={!postText}>Post</button>
+                                                        </div>
+                                                    </>
+                                                )}
+                                                {orgActionTab === 'Poll' && (
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+                                                        <input
+                                                            type="text"
+                                                            value={poll.question}
+                                                            onChange={(e) => setPoll({ ...poll, question: e.target.value })}
+                                                            placeholder="Ask something..."
+                                                            style={{ ...inputStyle, padding: '0.4rem' }}
+                                                        />
+                                                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                            <input
+                                                                type="text"
+                                                                value={poll.option1}
+                                                                onChange={(e) => setPoll({ ...poll, option1: e.target.value })}
+                                                                placeholder="Option 1"
+                                                                style={{ ...inputStyle, padding: '0.4rem', fontSize: '0.75rem' }}
+                                                            />
+                                                            <input
+                                                                type="text"
+                                                                value={poll.option2}
+                                                                onChange={(e) => setPoll({ ...poll, option2: e.target.value })}
+                                                                placeholder="Option 2"
+                                                                style={{ ...inputStyle, padding: '0.4rem', fontSize: '0.75rem' }}
+                                                            />
+                                                        </div>
+                                                        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                                                            <button className="btn btn-primary" style={{ fontSize: '0.75rem', padding: '0.3rem 1rem' }} onClick={() => { alert('Poll Created!'); setPoll({ question: '', option1: '', option2: '' }); }}>Create Poll</button>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {orgActionTab === 'Praise' && (
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+                                                        <select
+                                                            value={praise.user}
+                                                            onChange={(e) => setPraise({ ...praise, user: e.target.value })}
+                                                            style={{ ...inputStyle, padding: '0.4rem', fontSize: '0.75rem' }}
+                                                        >
+                                                            <option value="">Select a peer to recognize</option>
+                                                            {allUsers.map(u => <option key={u._id} value={u.name}>{u.name}</option>)}
+                                                        </select>
+                                                        <textarea
+                                                            value={praise.message}
+                                                            onChange={(e) => setPraise({ ...praise, message: e.target.value })}
+                                                            placeholder="What did they do great?"
+                                                            style={{ width: '100%', background: 'transparent', border: '1px solid var(--border-dark)', color: 'var(--text-main)', resize: 'none', height: '40px', outline: 'none', padding: '0.5rem', fontSize: '0.75rem', borderRadius: '4px' }}
+                                                        />
+                                                        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                                                            <button className="btn btn-primary" style={{ padding: '0.3rem 1rem', fontSize: '0.75rem' }} onClick={() => { if (praise.user && praise.message) { alert(`Praise sent to ${praise.user}!`); setPraise({ user: '', message: '' }); } }}>Send Praise</button>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            <div className="panel" style={{ marginBottom: '1rem', padding: '1.5rem' }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: dashData.announcements.length > 0 ? '1rem' : 0 }}>
+                                                    <div style={{ fontSize: '0.9rem', fontWeight: '500' }}>Announcements</div>
+                                                    <button className="btn" style={{ background: '#f59e0b', color: 'white', padding: '0.2rem 0.6rem', borderRadius: '4px', fontWeight: 'bold' }} onClick={() => setShowAnnouncementModal(true)}>+</button>
+                                                </div>
+                                                {dashData.announcements.length > 0 ? dashData.announcements.map(a => (
+                                                    <div key={a._id} style={{ marginBottom: '0.5rem', padding: '0.5rem', background: 'var(--border-dark)', borderRadius: '4px', opacity: 0.8 }}>
+                                                        <div style={{ fontWeight: '500', fontSize: '0.85rem', color: 'var(--text-main)' }}>{a.title}</div>
+                                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{a.content}</div>
+                                                    </div>
+                                                )) : (
+                                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>No announcements</div>
+                                                )}
+                                            </div>
+
+                                            <div className="panel">
+                                                <div style={{ display: 'flex', gap: '2rem', borderBottom: '1px solid var(--border-dark)', paddingBottom: '0.5rem', marginBottom: '1.5rem', fontSize: '0.85rem' }}>
+                                                    <span
+                                                        style={{ color: orgActivityTab === 'Birthdays' ? 'var(--text-main)' : 'var(--text-muted)', borderBottom: orgActivityTab === 'Birthdays' ? '2px solid var(--text-main)' : 'none', paddingBottom: '0.5rem', marginBottom: '-0.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}
+                                                        onClick={() => setOrgActivityTab('Birthdays')}
+                                                    >🎂 {dashData.birthdays.today.length} Birthday{dashData.birthdays.today.length !== 1 ? 's' : ''}</span>
+                                                    <span
+                                                        style={{ color: orgActivityTab === 'Anniversaries' ? 'var(--text-main)' : 'var(--text-muted)', borderBottom: orgActivityTab === 'Anniversaries' ? '2px solid var(--text-main)' : 'none', paddingBottom: '0.5rem', marginBottom: '-0.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}
+                                                        onClick={() => setOrgActivityTab('Anniversaries')}
+                                                    >🎉 0 Work Anniversaries</span>
+                                                    <span
+                                                        style={{ color: orgActivityTab === 'NewJoinees' ? 'var(--text-main)' : 'var(--text-muted)', borderBottom: orgActivityTab === 'NewJoinees' ? '2px solid var(--text-main)' : 'none', paddingBottom: '0.5rem', marginBottom: '-0.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}
+                                                        onClick={() => setOrgActivityTab('NewJoinees')}
+                                                    >👥 {dashData.newJoinees.length} New joinee{dashData.newJoinees.length !== 1 ? 's' : ''}</span>
                                                 </div>
 
-                                                <div>
-                                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-main)', marginBottom: '1rem' }}>Upcoming Birthdays</div>
-                                                    <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
-                                                        {dashData.birthdays.upcoming.length > 0 ? dashData.birthdays.upcoming.map(b => (
-                                                            <div key={b._id} style={{ textAlign: 'center' }}>
-                                                                <div className="avatar" style={{ background: '#f59e0b', width: '40px', height: '40px', fontSize: '0.9rem', margin: '0 auto 0.5rem' }}>
-                                                                    {b.name?.substring(0, 2).toUpperCase()}
+                                                {orgActivityTab === 'Birthdays' && (
+                                                    <>
+                                                        <div style={{ marginBottom: '2rem' }}>
+                                                            <div style={{ fontSize: '0.85rem', color: 'var(--text-main)', marginBottom: '1rem' }}>Birthdays today</div>
+                                                            {dashData.birthdays.today.length > 0 ? (
+                                                                <div style={{ display: 'flex', gap: '1rem' }}>
+                                                                    {dashData.birthdays.today.map(b => (
+                                                                        <div key={b._id} style={{ textAlign: 'center' }}>
+                                                                            <div className="avatar" style={{ background: '#10b981', width: '48px', height: '48px', fontSize: '1rem', margin: '0 auto 0.5rem' }}>
+                                                                                {b.name?.substring(0, 2).toUpperCase()}
+                                                                            </div>
+                                                                            <div style={{ fontSize: '0.75rem', fontWeight: '500' }}>{b.name?.split(' ')[0]}</div>
+                                                                            <div
+                                                                                style={{ fontSize: '0.65rem', color: wishedUsers.includes(b._id) ? 'var(--text-muted)' : '#f59e0b', cursor: wishedUsers.includes(b._id) ? 'default' : 'pointer' }}
+                                                                                onClick={() => { if (!wishedUsers.includes(b._id)) setWishedUsers([...wishedUsers, b._id]); }}
+                                                                            >
+                                                                                {wishedUsers.includes(b._id) ? 'Wished!' : 'Wish'}
+                                                                            </div>
+                                                                        </div>
+                                                                    ))}
                                                                 </div>
-                                                                <div style={{ fontSize: '0.75rem', fontWeight: '500' }}>{b.name?.split(' ')[0]}</div>
+                                                            ) : (
+                                                                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', padding: '0.5rem 0' }}>None today</div>
+                                                            )}
+                                                        </div>
+
+                                                        <div>
+                                                            <div style={{ fontSize: '0.85rem', color: 'var(--text-main)', marginBottom: '1rem' }}>Upcoming Birthdays</div>
+                                                            <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
+                                                                {dashData.birthdays.upcoming.length > 0 ? dashData.birthdays.upcoming.map(b => (
+                                                                    <div key={b._id} style={{ textAlign: 'center' }}>
+                                                                        <div className="avatar" style={{ background: '#f59e0b', width: '40px', height: '40px', fontSize: '0.9rem', margin: '0 auto 0.5rem' }}>
+                                                                            {b.name?.substring(0, 2).toUpperCase()}
+                                                                        </div>
+                                                                        <div style={{ fontSize: '0.75rem', fontWeight: '500' }}>{b.name?.split(' ')[0]}</div>
+                                                                        <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
+                                                                            {new Date(b.dob).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}
+                                                                        </div>
+                                                                    </div>
+                                                                )) : (
+                                                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', padding: '0.5rem 0' }}>None in next 30 days</div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </>
+                                                )}
+
+                                                {orgActivityTab === 'Anniversaries' && (
+                                                    <div style={{ padding: '1rem 0', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                                                        No work anniversaries today.
+                                                    </div>
+                                                )}
+
+                                                {orgActivityTab === 'NewJoinees' && (
+                                                    <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
+                                                        {dashData.newJoinees.length > 0 ? dashData.newJoinees.map(j => (
+                                                            <div key={j._id} style={{ textAlign: 'center' }}>
+                                                                <div className="avatar" style={{ border: '2px solid #06b6d4', background: '#06b6d4', width: '40px', height: '40px', fontSize: '0.9rem', margin: '0 auto 0.5rem' }}>
+                                                                    {j.name?.substring(0, 2).toUpperCase()}
+                                                                </div>
+                                                                <div style={{ fontSize: '0.75rem', fontWeight: '500' }}>{j.name?.split(' ')[0]}</div>
                                                                 <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
-                                                                    {new Date(b.dob).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}
+                                                                    Joined {new Date(j.joiningDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}
                                                                 </div>
                                                             </div>
                                                         )) : (
-                                                            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', padding: '0.5rem 0' }}>None in next 30 days</div>
+                                                            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', padding: '1rem 0' }}>No new joinees in the last 30 days.</div>
                                                         )}
                                                     </div>
-                                                </div>
-                                            </>
-                                        )}
-
-                                        {orgActivityTab === 'Anniversaries' && (
-                                            <div style={{ padding: '1rem 0', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                                                No work anniversaries today.
-                                            </div>
-                                        )}
-
-                                        {orgActivityTab === 'NewJoinees' && (
-                                            <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
-                                                {dashData.newJoinees.length > 0 ? dashData.newJoinees.map(j => (
-                                                    <div key={j._id} style={{ textAlign: 'center' }}>
-                                                        <div className="avatar" style={{ border: '2px solid #06b6d4', background: '#06b6d4', width: '40px', height: '40px', fontSize: '0.9rem', margin: '0 auto 0.5rem' }}>
-                                                            {j.name?.substring(0, 2).toUpperCase()}
-                                                        </div>
-                                                        <div style={{ fontSize: '0.75rem', fontWeight: '500' }}>{j.name?.split(' ')[0]}</div>
-                                                        <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
-                                                            Joined {new Date(j.joiningDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}
-                                                        </div>
-                                                    </div>
-                                                )) : (
-                                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', padding: '1rem 0' }}>No new joinees in the last 30 days.</div>
                                                 )}
                                             </div>
-                                        )}
-                                    </div>
-                                </>
-                            ) : (
-                                <div className="panel" style={{ marginBottom: '1rem' }}>
-                                    <div className="panel-header" style={{ marginBottom: '1rem' }}>Knowledge Base & Content</div>
-                                    <div className="grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                                        <div style={{ padding: '1rem', border: '1px solid var(--border-dark)', borderRadius: 'var(--radius-md)', display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                                            <FileText size={24} color="var(--primary)" />
-                                            <div>
-                                                <div style={{ fontWeight: '500' }}>Company Handbook 2026</div>
-                                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Updated 2 days ago</div>
+                                        </>
+                                    ) : (
+                                        <div className="panel" style={{ marginBottom: '1rem' }}>
+                                            <div className="panel-header" style={{ marginBottom: '1rem' }}>Knowledge Base & Content</div>
+                                            <div className="grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                                <div style={{ padding: '1rem', border: '1px solid var(--border-dark)', borderRadius: 'var(--radius-md)', display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                                                    <FileText size={24} color="var(--primary)" />
+                                                    <div>
+                                                        <div style={{ fontWeight: '500' }}>Company Handbook 2026</div>
+                                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Updated 2 days ago</div>
+                                                    </div>
+                                                </div>
+                                                <div style={{ padding: '1rem', border: '1px solid var(--border-dark)', borderRadius: 'var(--radius-md)', display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                                                    <FileText size={24} color="#f59e0b" />
+                                                    <div>
+                                                        <div style={{ fontWeight: '500' }}>Travel & Expenses Policy</div>
+                                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Updated 1 month ago</div>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
-                                        <div style={{ padding: '1rem', border: '1px solid var(--border-dark)', borderRadius: 'var(--radius-md)', display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                                            <FileText size={24} color="#f59e0b" />
-                                            <div>
-                                                <div style={{ fontWeight: '500' }}>Travel & Expenses Policy</div>
-                                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Updated 1 month ago</div>
-                                            </div>
+                                    )}
+                                </div>
+                            </div>
+                        </>
+                    )}
+
+                    {homeSubTab === 'Welcome' && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', minHeight: '600px' }}>
+                            {/* Detailed Profile Banner */}
+                            <div style={{
+                                background: 'var(--bg-gradient-profile)',
+                                borderRadius: 'var(--radius-lg)',
+                                padding: '2rem',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                position: 'relative',
+                                overflow: 'hidden'
+                            }}>
+                                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: 0.1, backgroundImage: 'url("data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' viewBox=\'0 0 100 100\'><path d=\'M0,50 Q25,25 50,50 T100,50\' fill=\'none\' stroke=\'white\' stroke-width=\'2\'/></svg>")', backgroundSize: '100px 100px' }}></div>
+
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', zIndex: 1 }}>
+                                    <div
+                                        className="avatar"
+                                        style={{ width: '80px', height: '80px', fontSize: '2rem', background: '#34d399', color: '#064e3b', border: '4px solid rgba(255,255,255,0.2)', cursor: 'pointer' }}
+                                        onClick={() => { setActiveSidebar('Me'); setActiveSubTab('Profile'); }}
+                                    >
+                                        {user?.name?.substring(0, 2).toUpperCase() || 'SM'}
+                                    </div>
+                                    <div style={{ color: 'var(--text-on-banner)' }}>
+                                        <h2 style={{ fontSize: '1.75rem', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                            {user?.name || 'Shruti Mendhe'}
+                                            <span
+                                                style={{ fontSize: '1rem', color: 'var(--text-on-banner)', opacity: 0.5, cursor: 'pointer' }}
+                                                onClick={() => { navigator.clipboard.writeText(window.location.href); alert('Profile link copied!'); }}
+                                                title="Copy profile link"
+                                            >
+                                                🔗
+                                            </span>
+                                        </h2>
+                                        <div style={{ fontSize: '0.9rem', color: 'var(--text-on-banner)', opacity: 0.8, marginTop: '0.25rem' }}>
+                                            {user?.designation || 'Specialist'} - {user?.place || 'Nagpur'}
                                         </div>
                                     </div>
                                 </div>
-                            )}
+                                <div style={{ zIndex: 1, display: 'flex', alignItems: 'center', gap: '0.75rem', background: 'rgba(0,0,0,0.4)', padding: '0.75rem 1.25rem', borderRadius: '40px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                                    <div style={{ width: '24px', height: '24px', borderRadius: '50%', border: '2px solid #10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10b981', fontSize: '10px', fontWeight: 'bold' }}>✓</div>
+                                    <div>
+                                        <div style={{ color: 'var(--text-on-banner)', fontSize: '0.85rem', fontWeight: '500' }}>Profile completed successfully!</div>
+                                        <div
+                                            style={{ color: 'var(--text-on-banner)', opacity: 0.7, fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.25rem', cursor: 'pointer', marginTop: '2px' }}
+                                            onClick={() => { setActiveSidebar('Me'); setActiveSubTab('Profile'); }}
+                                        >
+                                            Go to My Profile <span style={{ fontSize: '10px' }}>›</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="grid" style={{ gridTemplateColumns: '3fr 1fr', gap: '2rem' }}>
+                                <div>
+                                    <h3 style={{ fontSize: '1.1rem', marginBottom: '0.5rem', color: 'var(--text-main)', fontWeight: '500' }}>Introduce yourself</h3>
+                                    <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>We would love to know more about yourself</p>
+
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                        {[
+                                            { label: 'About', key: 'about' },
+                                            { label: 'What I love about my job?', key: 'loveJob' },
+                                            { label: 'My interests and hobbies', key: 'interests' }
+                                        ].map((item) => (
+                                            <div key={item.key} style={{ padding: '1.25rem', background: 'var(--bg-panel)', borderBottom: '1px solid var(--border-dark)' }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: editingResponse === item.key ? '1rem' : '0' }}>
+                                                    <div style={{ fontSize: '0.9rem', color: 'var(--text-main)' }}>{item.label}</div>
+                                                    {!editingResponse && (
+                                                        <div
+                                                            style={{ fontSize: '0.85rem', color: 'var(--primary)', cursor: 'pointer', fontWeight: '500' }}
+                                                            onClick={() => setEditingResponse(item.key)}
+                                                        >
+                                                            {welcomeResponses[item.key] ? 'Edit Response' : 'Add Response'}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                {editingResponse === item.key ? (
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                                        <textarea
+                                                            style={{ ...inputStyle, minHeight: '80px', width: '100%', padding: '0.75rem' }}
+                                                            placeholder={`Share something about ${item.label.toLowerCase()}...`}
+                                                            value={welcomeResponses[item.key]}
+                                                            onChange={(e) => setWelcomeResponses({ ...welcomeResponses, [item.key]: e.target.value })}
+                                                        />
+                                                        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                                                            <button
+                                                                className="btn btn-secondary"
+                                                                style={{ padding: '0.4rem 1rem', fontSize: '0.8rem' }}
+                                                                onClick={() => setEditingResponse(null)}
+                                                            >
+                                                                Cancel
+                                                            </button>
+                                                            <button
+                                                                className="btn btn-primary"
+                                                                style={{ padding: '0.4rem 1rem', fontSize: '0.8rem' }}
+                                                                onClick={() => handleSaveResponse(item.key)}
+                                                            >
+                                                                Save
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    welcomeResponses[item.key] && (
+                                                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
+                                                            {welcomeResponses[item.key]}
+                                                        </div>
+                                                    )
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <div style={{ marginTop: '3rem' }}>
+                                        <h3 style={{ fontSize: '1.1rem', marginBottom: '0.5rem', color: 'var(--text-main)', fontWeight: '500' }}>Explore Keka</h3>
+                                        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>Explore all things you can do on Keka.</p>
+
+                                        <div className="grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.5rem' }}>
+                                            {[
+                                                { title: 'Finance', icon: <Briefcase size={20} color="var(--primary)" />, desc: 'View your salary payslips and tax details all in one place.', nav: 'My Finances' },
+                                                { title: 'Leaves', icon: <Calendar size={20} color="var(--primary)" />, desc: 'Check your time off policy balances and apply for time off.', nav: 'Me' },
+                                                { title: 'Attendance', icon: <Clock size={20} color="var(--primary)" />, desc: 'Log your attendance, view stats and attendance policy.', nav: 'Me' },
+                                                { title: 'Inbox', icon: <Mail size={20} color="var(--primary)" />, desc: 'Take an action on tasks assigned to you.', nav: 'Inbox' },
+                                            ].map(item => (
+                                                <div key={item.title} className="panel" style={{ padding: '1.5rem', cursor: 'pointer', transition: 'transform 0.2s', borderTop: '2px solid transparent' }} onClick={() => setActiveSidebar(item.nav)}>
+                                                    <div style={{ marginBottom: '1rem' }}>{item.icon}</div>
+                                                    <div style={{ fontWeight: '500', fontSize: '0.95rem', marginBottom: '0.5rem', color: 'var(--text-main)' }}>{item.title}</div>
+                                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.4 }}>{item.desc}</div>
+                                                </div>
+                                            ))}
+
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div className="panel" style={{ background: 'var(--bg-panel)', padding: '1.5rem', borderRadius: 'var(--radius-lg)' }}>
+                                        <div style={{ fontSize: '0.85rem', fontWeight: '500', marginBottom: '1.5rem', color: 'var(--text-main)' }}>Reporting Manager</div>
+
+                                        {user?.reportingManager ? (
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                                <div className="avatar" style={{ width: '40px', height: '40px', fontSize: '0.9rem', background: 'var(--primary)', color: 'white' }}>
+                                                    {user.reportingManager.name?.substring(0, 1).toUpperCase()}
+                                                </div>
+                                                <div>
+                                                    <div style={{ fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-main)' }}>{user.reportingManager.name}</div>
+                                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>{user.reportingManager.email}</div>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', textAlign: 'center', padding: '1rem 0', fontStyle: 'italic' }}>
+                                                No reporting manager assigned
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </div>
             );
         }
@@ -636,15 +839,15 @@ export default function Dashboard({ user, onLogout }) {
                                         <div className="panel-header">Attendance Stats</div>
                                         <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>Last Week</div>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}><div className="avatar" style={{ background: '#f59e0b', width: '24px', height: '24px', fontSize: '10px' }}>Me</div><span style={{ fontSize: '0.85rem' }}>Me</span></div>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}><div className="avatar" style={{ background: 'var(--primary)', width: '24px', height: '24px', fontSize: '10px', color: 'white' }}>Me</div><span style={{ fontSize: '0.85rem' }}>Me</span></div>
                                             <div style={{ textAlign: 'right' }}><div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>AVG HRS / DAY</div><div style={{ fontWeight: 'bold' }}>9h 5m</div></div>
                                         </div>
                                     </div>
                                     <div className="panel">
                                         <div className="panel-header">Timings</div>
                                         <div style={{ fontSize: '0.85rem', marginBottom: '0.5rem' }}>Today (Flexible Timings)</div>
-                                        <div style={{ width: '100%', height: '8px', background: '#083344', borderRadius: '4px', position: 'relative' }}>
-                                            <div style={{ width: isClockedIn ? '60%' : '100%', height: '100%', background: '#06b6d4', borderRadius: '4px', transition: 'width 0.5s' }}></div>
+                                        <div style={{ width: '100%', height: '8px', background: 'var(--border-dark)', borderRadius: '4px', position: 'relative' }}>
+                                            <div style={{ width: isClockedIn ? '60%' : '100%', height: '100%', background: 'var(--primary)', borderRadius: '4px', transition: 'width 0.5s' }}></div>
                                         </div>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
                                             <span>Duration: 23h 59m</span>
@@ -712,8 +915,8 @@ export default function Dashboard({ user, onLogout }) {
                                                         <tr key={log._id}>
                                                             <td style={{ fontWeight: 'bold' }}>{new Date(log.date).toDateString()}</td>
                                                             <td>
-                                                                <div style={{ width: '80%', height: '8px', background: '#083344', borderRadius: '4px' }}>
-                                                                    <div style={{ width: log.clockOutTime ? '100%' : '50%', height: '100%', background: '#06b6d4', borderRadius: '4px' }}></div>
+                                                                <div style={{ width: '80%', height: '8px', background: 'var(--border-dark)', borderRadius: '4px' }}>
+                                                                    <div style={{ width: log.clockOutTime ? '100%' : '50%', height: '100%', background: 'var(--primary)', borderRadius: '4px' }}></div>
                                                                 </div>
                                                             </td>
                                                             <td>{log.totalHours ? `${log.totalHours} hrs` : (log.clockInTime ? 'Ongoing' : '0 hrs')}</td>
@@ -752,10 +955,10 @@ export default function Dashboard({ user, onLogout }) {
                             <div className="grid" style={{ gridTemplateColumns: '1fr', gap: '1.5rem' }}>
                                 <div className="panel">
                                     <div className="panel-header">Active Objectives (OKRs)</div>
-                                    <div style={{ border: '1px solid var(--border-dark)', borderRadius: 'var(--radius-md)', padding: '1.5rem', background: 'rgba(0,0,0,0.2)' }}>
+                                    <div style={{ border: '1px solid var(--border-dark)', borderRadius: 'var(--radius-md)', padding: '1.5rem', background: 'rgba(var(--primary-rgb, 155, 89, 182), 0.05)' }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
                                             <div style={{ fontWeight: '500', fontSize: '1rem' }}>Improve Backend Response Time by 30%</div>
-                                            <span style={{ background: 'rgba(16, 185, 129, 0.2)', color: '#10b981', padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.75rem' }}>On Track - 65%</span>
+                                            <span style={{ border: '1px solid #10b981', color: '#10b981', padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.75rem' }}>On Track - 65%</span>
                                         </div>
                                         <div style={{ width: '100%', height: '8px', background: 'var(--border-dark)', borderRadius: '4px', marginBottom: '1rem' }}>
                                             <div style={{ width: '65%', height: '100%', background: '#10b981', borderRadius: '4px' }}></div>
@@ -837,7 +1040,7 @@ export default function Dashboard({ user, onLogout }) {
                                             <tr key={p._id}>
                                                 <td>{p.user?.name}</td>
                                                 <td>{p.month}/{p.year}</td>
-                                                <td style={{ color: '#10b981', fontWeight: '600' }}>${p.netPay}</td>
+                                                <td style={{ color: 'var(--success)', fontWeight: '600' }}>${p.netPay}</td>
                                                 <td>Paid</td>
                                             </tr>
                                         ))}
@@ -850,7 +1053,7 @@ export default function Dashboard({ user, onLogout }) {
                                     <div className="panel-header">Recent Payslips</div>
                                     <ul style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                                         {payslips.map((p, idx) => (
-                                            <li key={p._id} style={{ background: idx === 0 ? 'rgba(255,255,255,0.05)' : 'transparent', padding: '1rem', borderRadius: '4px', cursor: 'pointer', borderLeft: idx === 0 ? '3px solid var(--primary)' : 'none' }}>
+                                            <li key={p._id} style={{ background: idx === 0 ? 'rgba(var(--primary-rgb, 155, 89, 182), 0.1)' : 'transparent', padding: '1rem', borderRadius: '4px', cursor: 'pointer', borderLeft: idx === 0 ? '3px solid var(--primary)' : 'none' }}>
                                                 <div style={{ fontWeight: '500' }}>{p.month} {p.year}</div>
                                                 <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Generated on {new Date(p.createdAt).toLocaleDateString()}</div>
                                             </li>
@@ -881,9 +1084,9 @@ export default function Dashboard({ user, onLogout }) {
                                                 </div>
                                             </div>
 
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(16, 185, 129, 0.1)', padding: '1.5rem', borderRadius: 'var(--radius-md)' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(16, 185, 129, 0.05)', border: '1px solid rgba(16, 185, 129, 0.2)', padding: '1.5rem', borderRadius: 'var(--radius-md)' }}>
                                                 <span style={{ fontSize: '1.1rem', fontWeight: '500' }}>Net Payout (Take Home)</span>
-                                                <span style={{ fontSize: '1.75rem', fontWeight: 'bold', color: '#10b981' }}>
+                                                <span style={{ fontSize: '1.75rem', fontWeight: 'bold', color: 'var(--success)' }}>
                                                     ${payslips[0].netPay}
                                                 </span>
                                             </div>
@@ -1090,12 +1293,45 @@ export default function Dashboard({ user, onLogout }) {
         return null;
     };
 
+    const renderHolidayModal = () => {
+        return (
+            <div style={modalOverlay}>
+                <div style={{ ...modalContent, maxWidth: '500px' }}>
+                    <div className="panel-header" style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '1.25rem' }}>Upcoming Holidays</span>
+                        <span style={{ cursor: 'pointer', fontSize: '1.5rem' }} onClick={() => setShowHolidayModal(false)}>✕</span>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxHeight: '400px', overflowY: 'auto', paddingRight: '0.5rem' }}>
+                        {dashData.holidays.length > 0 ? dashData.holidays.map((h, i) => (
+                            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', background: 'var(--bg-main)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-dark)' }}>
+                                <div>
+                                    <div style={{ fontWeight: '600', color: 'var(--primary)', fontSize: '1rem' }}>{h.name}</div>
+                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                                        {new Date(h.date).toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                                    </div>
+                                </div>
+                                <div style={{ background: 'rgba(155, 89, 182, 0.1)', color: 'var(--primary)', padding: '0.4rem 0.8rem', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 'bold' }}>
+                                    {Math.ceil((new Date(h.date) - new Date()) / (1000 * 60 * 60 * 24))} Days left
+                                </div>
+                            </div>
+                        )) : (
+                            <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>No upcoming holidays</div>
+                        )}
+                    </div>
+                    <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
+                        <button className="btn btn-primary" style={{ width: '100%' }} onClick={() => setShowHolidayModal(false)}>Close</button>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
     return (
         <div className="dashboard-layout">
             {/* Sidebar Navigation */}
             <aside className="sidebar">
                 <div className="sidebar-brand">
-                    <span style={{ color: 'var(--primary)' }}>TP</span>Interns
+                    <span style={{ color: 'var(--primary)' }}>TP</span>&nbsp; Interns
                 </div>
                 <nav className="sidebar-nav">
                     {sidebarItems.map(item => (
@@ -1115,8 +1351,8 @@ export default function Dashboard({ user, onLogout }) {
             <main className="main-content">
                 <header className="topbar">
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-                        <div style={{ fontSize: '1.5rem', fontWeight: '500', color: '#fff' }}>{systemSettings?.companyName || 'Teaching Pariksha'}</div>
-                        <div style={{ fontSize: '0.85rem', color: 'rgba(255, 255, 255, 0.8)', borderLeft: '1px solid rgba(255, 255, 255, 0.3)', paddingLeft: '1.5rem' }}>
+                        <div style={{ fontSize: '1.5rem', fontWeight: '500', color: 'var(--text-topbar)' }}>{systemSettings?.companyName || 'Teaching Pariksha'}</div>
+                        <div style={{ fontSize: '0.85rem', color: 'var(--text-topbar)', opacity: 0.8, borderLeft: '1px solid rgba(255, 255, 255, 0.3)', paddingLeft: '1.5rem' }}>
                             {new Date().toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
                         </div>
                     </div>
@@ -1125,13 +1361,13 @@ export default function Dashboard({ user, onLogout }) {
 
                         <button
                             onClick={toggleTheme}
-                            style={{ background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                            style={{ background: 'transparent', border: 'none', color: 'var(--text-topbar)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
                             title={`Switch to ${isLightMode ? 'Dark' : 'Light'} Mode`}
                         >
                             {isLightMode ? <Moon size={20} /> : <Sun size={20} />}
                         </button>
 
-                        <Bell size={20} style={{ cursor: 'pointer', color: '#fff' }} />
+                        <Bell size={20} style={{ cursor: 'pointer', color: 'var(--text-topbar)' }} />
                         <div
                             className="avatar"
                             style={{ cursor: 'pointer', background: '#10b981' }}
@@ -1144,12 +1380,13 @@ export default function Dashboard({ user, onLogout }) {
                 <div className="dashboard-content">
                     {renderContent()}
                 </div>
+                {showHolidayModal && renderHolidayModal()}
             </main>
         </div>
     );
 }
 
-const inputStyle = { background: 'var(--bg-main)', color: 'white', border: '1px solid var(--border-dark)', padding: '0.5rem', borderRadius: '4px', outline: 'none', width: '100%', boxSizing: 'border-box' };
+const inputStyle = { background: 'var(--bg-panel)', color: 'var(--text-main)', border: '1px solid var(--border-dark)', padding: '0.5rem', borderRadius: '4px', outline: 'none', width: '100%', boxSizing: 'border-box' };
 const labelStyle = { fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.3rem', display: 'block' };
 const modalOverlay = { position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', justifyContent: 'center', alignItems: 'center' };
 const modalContent = { background: 'var(--bg-panel)', padding: '2rem', borderRadius: 'var(--radius-lg)', width: '90%', maxWidth: '700px', boxShadow: '0 20px 50px rgba(0,0,0,0.5)', border: '1px solid var(--border-dark)' };

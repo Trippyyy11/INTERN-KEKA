@@ -24,7 +24,12 @@ const userSchema = new mongoose.Schema(
             hra: { type: Number, default: 0 },
             deductions: { type: Number, default: 0 }
         },
-        isActive: { type: Boolean, default: true }
+        isActive: { type: Boolean, default: true },
+        welcomeProfile: {
+            about: { type: String, default: '' },
+            loveJob: { type: String, default: '' },
+            interests: { type: String, default: '' }
+        }
     },
     { timestamps: true }
 );

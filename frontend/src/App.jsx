@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import AuthPage from './components/AuthPage';
 import Dashboard from './components/Dashboard';
+import api from './api/axios';
 
 import './App.css';
 
@@ -13,16 +14,23 @@ function App() {
     const storedUser = localStorage.getItem('user');
     const token = localStorage.getItem('token');
 
-    if (storedUser && token) {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch (err) {
-        console.error("Failed to parse user from localStorage:", err);
-        localStorage.removeItem('user');
-        localStorage.removeItem('token');
+    const verifyUser = async () => {
+      if (token) {
+        try {
+          // Fetch fresh user data using the api utility to ensure designation/manager are synced
+          const response = await api.get('/auth/me');
+          const freshUser = response.data;
+          setUser(freshUser);
+          localStorage.setItem('user', JSON.stringify(freshUser));
+        } catch (err) {
+          console.error("Failed to fetch fresh user data:", err);
+          if (storedUser) setUser(JSON.parse(storedUser));
+        }
       }
-    }
-    setLoading(false);
+      setLoading(false);
+    };
+
+    verifyUser();
   }, []);
 
   const handleLogin = (userData) => {
