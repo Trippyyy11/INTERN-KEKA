@@ -58,6 +58,25 @@ export default function Dashboard({ user, onLogout }) {
     const [selectedUser, setSelectedUser] = useState(null);
     const [newConfig, setNewConfig] = useState({ name: '', type: 'Department', date: '', description: '' });
 
+    const [dashData, setDashData] = useState({
+        birthdays: { today: [], upcoming: [] },
+        leaves: [],
+        workingRemotely: [],
+        newJoinees: [],
+        announcements: [],
+        holidays: []
+    });
+
+    const [orgActionTab, setOrgActionTab] = useState('Post');
+    const [orgActivityTab, setOrgActivityTab] = useState('Birthdays');
+
+    const [showAnnouncementModal, setShowAnnouncementModal] = useState(false);
+    const [newAnnouncement, setNewAnnouncement] = useState({ title: '', content: '', priority: 'Low' });
+
+    const [poll, setPoll] = useState({ question: '', option1: '', option2: '' });
+    const [praise, setPraise] = useState({ user: '', message: '' });
+    const [wishedUsers, setWishedUsers] = useState([]);
+
     useEffect(() => {
         const timer = setInterval(() => setCurrentTime(new Date().toLocaleTimeString()), 1000);
         fetchStats();
@@ -176,6 +195,9 @@ export default function Dashboard({ user, onLogout }) {
 
             const payslipsRes = await api.get('/payslips');
             setPayslips(payslipsRes.data);
+
+            const dashRes = await api.get('/dashboard/stats');
+            setDashData(dashRes.data);
         } catch (error) {
             console.error('Failed to fetch stats:', error);
         }
@@ -191,6 +213,19 @@ export default function Dashboard({ user, onLogout }) {
             fetchStats();
         } catch (error) {
             alert(error.response?.data?.message || 'Error occurred while updating attendance.');
+        }
+    };
+
+    const handleCreateAnnouncement = async (e) => {
+        e.preventDefault();
+        try {
+            await api.post('/dashboard/announcements', newAnnouncement);
+            setShowAnnouncementModal(false);
+            setNewAnnouncement({ title: '', content: '', priority: 'Low' });
+            fetchStats();
+        } catch (error) {
+            console.error('Failed to create announcement:', error);
+            alert(error.response?.data?.message || 'Failed to create announcement');
         }
     };
 
@@ -288,41 +323,55 @@ export default function Dashboard({ user, onLogout }) {
                             <div>
                                 <h3 style={{ marginBottom: '1rem', color: 'var(--text-main)', fontSize: '1rem', fontWeight: '500' }}>Quick Access</h3>
 
-                                {/* Holidays */}
-                                <div className="panel holiday-card" style={{ marginBottom: '1rem' }}>
-                                    <div className="panel-header" style={{ marginBottom: '0.5rem', borderBottom: 'none' }}>
-                                        <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)' }}>Holidays</span>
-                                        <span className="view-details" style={{ color: '#f59e0b', cursor: 'pointer' }} onClick={() => { setActiveSidebar('Org'); setActiveSubTab('Holidays'); }}>View All</span>
-                                    </div>
-                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.5rem 0' }}>
-                                        <span style={{ color: 'rgba(255,255,255,0.5)', cursor: 'pointer' }}>{'<'}</span>
-                                        <div style={{ textAlign: 'center' }}>
-                                            <h3 style={{ color: '#f59e0b', fontSize: '1.5rem', marginBottom: '0.25rem', fontFamily: 'serif' }}>Idul Fitr</h3>
-                                            <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.7)' }}>Sat, 21 March, 2026</div>
+                                {dashData.holidays.length > 0 ? (
+                                    <div className="panel holiday-card" style={{ marginBottom: '1rem' }}>
+                                        <div className="panel-header" style={{ marginBottom: '0.5rem', borderBottom: 'none' }}>
+                                            <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)' }}>Holidays</span>
+                                            <span className="view-details" style={{ color: '#f59e0b', cursor: 'pointer' }} onClick={() => { setActiveSidebar('Org'); setActiveSubTab('Holidays'); }}>View All</span>
                                         </div>
-                                        <span style={{ color: 'rgba(255,255,255,0.5)', cursor: 'pointer' }}>{'>'}</span>
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.5rem 0' }}>
+                                            <div style={{ textAlign: 'center', width: '100%' }}>
+                                                <h3 style={{ color: '#f59e0b', fontSize: '1.5rem', marginBottom: '0.25rem', fontFamily: 'serif' }}>{dashData.holidays[0].name}</h3>
+                                                <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.7)' }}>{new Date(dashData.holidays[0].date).toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' })}</div>
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
+                                ) : (
+                                    <div className="panel holiday-card" style={{ marginBottom: '1rem' }}>
+                                        <div className="panel-header" style={{ marginBottom: '0.5rem', borderBottom: 'none' }}>
+                                            <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)' }}>Holidays</span>
+                                        </div>
+                                        <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)', textAlign: 'center', padding: '1rem 0' }}>No upcoming holidays</div>
+                                    </div>
+                                )}
 
                                 {/* On Leave Today */}
                                 <div className="panel" style={{ marginBottom: '1rem' }}>
                                     <div className="panel-header" style={{ marginBottom: '1rem', fontSize: '0.9rem', fontWeight: '500' }}>On Leave Today</div>
-                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                                        <div className="avatar" style={{ border: '2px solid var(--border-dark)', background: '#64748b' }}>
-                                            MN
-                                        </div>
-                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center' }}>Manees...</div>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.8rem' }}>
+                                        {dashData.leaves.length > 0 ? dashData.leaves.map(l => (
+                                            <div key={l._id} style={{ textAlign: 'center' }}>
+                                                <div className="avatar" style={{ border: '2px solid var(--border-dark)', background: '#64748b' }}>
+                                                    {l.user?.name?.substring(0, 2).toUpperCase()}
+                                                </div>
+                                                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>{l.user?.name?.split(' ')[0]}</div>
+                                            </div>
+                                        )) : <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>None today</div>}
                                     </div>
                                 </div>
 
                                 {/* Working Remotely */}
                                 <div className="panel">
                                     <div className="panel-header" style={{ marginBottom: '1rem', fontSize: '0.9rem', fontWeight: '500' }}>Working Remotely</div>
-                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                                        <div className="avatar" style={{ border: '2px solid #10b981', background: '#10b981' }}>
-                                            AS
-                                        </div>
-                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center' }}>Abha...</div>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.8rem' }}>
+                                        {dashData.workingRemotely.length > 0 ? dashData.workingRemotely.map(w => (
+                                            <div key={w._id} style={{ textAlign: 'center' }}>
+                                                <div className="avatar" style={{ border: '2px solid #10b981', background: '#10b981' }}>
+                                                    {w.user?.name?.substring(0, 2).toUpperCase()}
+                                                </div>
+                                                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>{w.user?.name?.split(' ')[0]}</div>
+                                            </div>
+                                        )) : <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>None today</div>}
                                     </div>
                                 </div>
                             </div>
@@ -353,75 +402,186 @@ export default function Dashboard({ user, onLogout }) {
                                 <>
                                     <div className="panel" style={{ marginBottom: '1rem' }}>
                                         <div style={{ display: 'flex', gap: '1rem', borderBottom: '1px solid var(--border-dark)', paddingBottom: '1rem', marginBottom: '1rem', fontSize: '0.85rem' }}>
-                                            <span style={{ color: '#f59e0b', borderBottom: '2px solid #f59e0b', paddingBottom: '1rem', marginBottom: '-1rem', display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}>✎ Post</span>
-                                            <span style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}>📊 Poll</span>
-                                            <span style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}>🏆 Praise</span>
+                                            <span
+                                                style={{ color: orgActionTab === 'Post' ? '#f59e0b' : 'var(--text-muted)', borderBottom: orgActionTab === 'Post' ? '2px solid #f59e0b' : 'none', paddingBottom: '1rem', marginBottom: '-1rem', display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}
+                                                onClick={() => setOrgActionTab('Post')}
+                                            >✎ Post</span>
+                                            <span
+                                                style={{ color: orgActionTab === 'Poll' ? '#f59e0b' : 'var(--text-muted)', borderBottom: orgActionTab === 'Poll' ? '2px solid #f59e0b' : 'none', paddingBottom: '1rem', marginBottom: '-1rem', display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}
+                                                onClick={() => setOrgActionTab('Poll')}
+                                            >📊 Poll</span>
+                                            <span
+                                                style={{ color: orgActionTab === 'Praise' ? '#f59e0b' : 'var(--text-muted)', borderBottom: orgActionTab === 'Praise' ? '2px solid #f59e0b' : 'none', paddingBottom: '1rem', marginBottom: '-1rem', display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}
+                                                onClick={() => setOrgActionTab('Praise')}
+                                            >🏆 Praise</span>
                                         </div>
-                                        <textarea
-                                            value={postText}
-                                            onChange={(e) => setPostText(e.target.value)}
-                                            placeholder="Write your post here and mention your peers"
-                                            style={{ width: '100%', background: 'transparent', border: 'none', color: 'var(--text-main)', resize: 'none', height: '60px', outline: 'none', padding: '0.5rem 0' }}
-                                        />
-                                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
-                                            <button className="btn btn-primary" onClick={() => { if (postText) { alert(`Posted: ${postText}`); setPostText(''); } }} disabled={!postText}>Post</button>
-                                        </div>
+                                        {orgActionTab === 'Post' && (
+                                            <>
+                                                <textarea
+                                                    value={postText}
+                                                    onChange={(e) => setPostText(e.target.value)}
+                                                    placeholder="Write your post here and mention your peers"
+                                                    style={{ width: '100%', background: 'transparent', border: 'none', color: 'var(--text-main)', resize: 'none', height: '60px', outline: 'none', padding: '0.5rem 0' }}
+                                                />
+                                                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
+                                                    <button className="btn btn-primary" onClick={() => { if (postText) { alert(`Posted: ${postText}`); setPostText(''); } }} disabled={!postText}>Post</button>
+                                                </div>
+                                            </>
+                                        )}
+                                        {orgActionTab === 'Poll' && (
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+                                                <input
+                                                    type="text"
+                                                    value={poll.question}
+                                                    onChange={(e) => setPoll({ ...poll, question: e.target.value })}
+                                                    placeholder="Ask something..."
+                                                    style={{ ...inputStyle, padding: '0.4rem' }}
+                                                />
+                                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                    <input
+                                                        type="text"
+                                                        value={poll.option1}
+                                                        onChange={(e) => setPoll({ ...poll, option1: e.target.value })}
+                                                        placeholder="Option 1"
+                                                        style={{ ...inputStyle, padding: '0.4rem', fontSize: '0.75rem' }}
+                                                    />
+                                                    <input
+                                                        type="text"
+                                                        value={poll.option2}
+                                                        onChange={(e) => setPoll({ ...poll, option2: e.target.value })}
+                                                        placeholder="Option 2"
+                                                        style={{ ...inputStyle, padding: '0.4rem', fontSize: '0.75rem' }}
+                                                    />
+                                                </div>
+                                                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                                                    <button className="btn btn-primary" style={{ fontSize: '0.75rem', padding: '0.3rem 1rem' }} onClick={() => { alert('Poll Created!'); setPoll({ question: '', option1: '', option2: '' }); }}>Create Poll</button>
+                                                </div>
+                                            </div>
+                                        )}
+                                        {orgActionTab === 'Praise' && (
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+                                                <select
+                                                    value={praise.user}
+                                                    onChange={(e) => setPraise({ ...praise, user: e.target.value })}
+                                                    style={{ ...inputStyle, padding: '0.4rem', fontSize: '0.75rem' }}
+                                                >
+                                                    <option value="">Select a peer to recognize</option>
+                                                    {allUsers.map(u => <option key={u._id} value={u.name}>{u.name}</option>)}
+                                                </select>
+                                                <textarea
+                                                    value={praise.message}
+                                                    onChange={(e) => setPraise({ ...praise, message: e.target.value })}
+                                                    placeholder="What did they do great?"
+                                                    style={{ width: '100%', background: 'transparent', border: '1px solid var(--border-dark)', color: 'var(--text-main)', resize: 'none', height: '40px', outline: 'none', padding: '0.5rem', fontSize: '0.75rem', borderRadius: '4px' }}
+                                                />
+                                                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                                                    <button className="btn btn-primary" style={{ padding: '0.3rem 1rem', fontSize: '0.75rem' }} onClick={() => { if (praise.user && praise.message) { alert(`Praise sent to ${praise.user}!`); setPraise({ user: '', message: '' }); } }}>Send Praise</button>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
 
-                                    <div className="panel" style={{ marginBottom: '1rem', padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>No announcements</div>
-                                        <button className="btn" style={{ background: '#f59e0b', color: 'white', padding: '0.2rem 0.6rem', borderRadius: '4px', fontWeight: 'bold' }} onClick={() => alert('Add Announcement (Coming Soon)')}>+</button>
+                                    <div className="panel" style={{ marginBottom: '1rem', padding: '1.5rem' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: dashData.announcements.length > 0 ? '1rem' : 0 }}>
+                                            <div style={{ fontSize: '0.9rem', fontWeight: '500' }}>Announcements</div>
+                                            <button className="btn" style={{ background: '#f59e0b', color: 'white', padding: '0.2rem 0.6rem', borderRadius: '4px', fontWeight: 'bold' }} onClick={() => setShowAnnouncementModal(true)}>+</button>
+                                        </div>
+                                        {dashData.announcements.length > 0 ? dashData.announcements.map(a => (
+                                            <div key={a._id} style={{ marginBottom: '0.5rem', padding: '0.5rem', background: 'rgba(255,255,255,0.03)', borderRadius: '4px' }}>
+                                                <div style={{ fontWeight: '500', fontSize: '0.85rem', color: 'var(--text-main)' }}>{a.title}</div>
+                                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{a.content}</div>
+                                            </div>
+                                        )) : (
+                                            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>No announcements</div>
+                                        )}
                                     </div>
 
                                     <div className="panel">
                                         <div style={{ display: 'flex', gap: '2rem', borderBottom: '1px solid var(--border-dark)', paddingBottom: '0.5rem', marginBottom: '1.5rem', fontSize: '0.85rem' }}>
-                                            <span style={{ color: 'var(--text-main)', borderBottom: '2px solid var(--text-main)', paddingBottom: '0.5rem', marginBottom: '-0.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>🎂 1 Birthday</span>
-                                            <span style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>🎉 0 Work Anniversaries</span>
-                                            <span style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>👥 0 New joinees</span>
+                                            <span
+                                                style={{ color: orgActivityTab === 'Birthdays' ? 'var(--text-main)' : 'var(--text-muted)', borderBottom: orgActivityTab === 'Birthdays' ? '2px solid var(--text-main)' : 'none', paddingBottom: '0.5rem', marginBottom: '-0.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}
+                                                onClick={() => setOrgActivityTab('Birthdays')}
+                                            >🎂 {dashData.birthdays.today.length} Birthday{dashData.birthdays.today.length !== 1 ? 's' : ''}</span>
+                                            <span
+                                                style={{ color: orgActivityTab === 'Anniversaries' ? 'var(--text-main)' : 'var(--text-muted)', borderBottom: orgActivityTab === 'Anniversaries' ? '2px solid var(--text-main)' : 'none', paddingBottom: '0.5rem', marginBottom: '-0.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}
+                                                onClick={() => setOrgActivityTab('Anniversaries')}
+                                            >🎉 0 Work Anniversaries</span>
+                                            <span
+                                                style={{ color: orgActivityTab === 'NewJoinees' ? 'var(--text-main)' : 'var(--text-muted)', borderBottom: orgActivityTab === 'NewJoinees' ? '2px solid var(--text-main)' : 'none', paddingBottom: '0.5rem', marginBottom: '-0.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}
+                                                onClick={() => setOrgActivityTab('NewJoinees')}
+                                            >👥 {dashData.newJoinees.length} New joinee{dashData.newJoinees.length !== 1 ? 's' : ''}</span>
                                         </div>
 
-                                        <div style={{ marginBottom: '2rem' }}>
-                                            <div style={{ fontSize: '0.85rem', color: 'var(--text-main)', marginBottom: '1rem' }}>Birthdays today</div>
-                                            {birthdays.filter(b => {
-                                                const dob = new Date(b.dob);
-                                                const today = new Date();
-                                                return dob.getDate() === today.getDate() && dob.getMonth() === today.getMonth();
-                                            }).length > 0 ? (
-                                                <div style={{ display: 'flex', gap: '1rem' }}>
-                                                    {birthdays.map(b => (
-                                                        <div key={b._id} style={{ textAlign: 'center' }}>
-                                                            <div className="avatar" style={{ background: '#10b981', width: '48px', height: '48px', fontSize: '1rem', margin: '0 auto 0.5rem' }}>{b.name?.substring(0, 2).toUpperCase()}</div>
-                                                            <div style={{ fontSize: '0.75rem', fontWeight: '500' }}>{b.name.substring(0, 8)}...</div>
-                                                            <div style={{ fontSize: '0.65rem', color: '#f59e0b', cursor: 'pointer' }}>Wish</div>
+                                        {orgActivityTab === 'Birthdays' && (
+                                            <>
+                                                <div style={{ marginBottom: '2rem' }}>
+                                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-main)', marginBottom: '1rem' }}>Birthdays today</div>
+                                                    {dashData.birthdays.today.length > 0 ? (
+                                                        <div style={{ display: 'flex', gap: '1rem' }}>
+                                                            {dashData.birthdays.today.map(b => (
+                                                                <div key={b._id} style={{ textAlign: 'center' }}>
+                                                                    <div className="avatar" style={{ background: '#10b981', width: '48px', height: '48px', fontSize: '1rem', margin: '0 auto 0.5rem' }}>
+                                                                        {b.name?.substring(0, 2).toUpperCase()}
+                                                                    </div>
+                                                                    <div style={{ fontSize: '0.75rem', fontWeight: '500' }}>{b.name?.split(' ')[0]}</div>
+                                                                    <div
+                                                                        style={{ fontSize: '0.65rem', color: wishedUsers.includes(b._id) ? 'var(--text-muted)' : '#f59e0b', cursor: wishedUsers.includes(b._id) ? 'default' : 'pointer' }}
+                                                                        onClick={() => { if (!wishedUsers.includes(b._id)) setWishedUsers([...wishedUsers, b._id]); }}
+                                                                    >
+                                                                        {wishedUsers.includes(b._id) ? 'Wished!' : 'Wish'}
+                                                                    </div>
+                                                                </div>
+                                                            ))}
                                                         </div>
-                                                    ))}
+                                                    ) : (
+                                                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', padding: '0.5rem 0' }}>None today</div>
+                                                    )}
                                                 </div>
-                                            ) : (
-                                                <div style={{ display: 'flex', gap: '1rem' }}>
-                                                    <div style={{ textAlign: 'center' }}>
-                                                        <div className="avatar" style={{ background: '#10b981', width: '48px', height: '48px', fontSize: '1rem', margin: '0 auto 0.5rem' }}>AM</div>
-                                                        <div style={{ fontSize: '0.75rem', fontWeight: '500' }}>Aditya...</div>
-                                                        <div style={{ fontSize: '0.65rem', color: '#f59e0b', cursor: 'pointer' }}>Wish</div>
+
+                                                <div>
+                                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-main)', marginBottom: '1rem' }}>Upcoming Birthdays</div>
+                                                    <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
+                                                        {dashData.birthdays.upcoming.length > 0 ? dashData.birthdays.upcoming.map(b => (
+                                                            <div key={b._id} style={{ textAlign: 'center' }}>
+                                                                <div className="avatar" style={{ background: '#f59e0b', width: '40px', height: '40px', fontSize: '0.9rem', margin: '0 auto 0.5rem' }}>
+                                                                    {b.name?.substring(0, 2).toUpperCase()}
+                                                                </div>
+                                                                <div style={{ fontSize: '0.75rem', fontWeight: '500' }}>{b.name?.split(' ')[0]}</div>
+                                                                <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
+                                                                    {new Date(b.dob).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}
+                                                                </div>
+                                                            </div>
+                                                        )) : (
+                                                            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', padding: '0.5rem 0' }}>None in next 30 days</div>
+                                                        )}
                                                     </div>
                                                 </div>
-                                            )}
-                                        </div>
+                                            </>
+                                        )}
 
-                                        <div>
-                                            <div style={{ fontSize: '0.85rem', color: 'var(--text-main)', marginBottom: '1rem' }}>Upcoming Birthdays</div>
-                                            <div style={{ display: 'flex', gap: '1.5rem' }}>
-                                                <div style={{ textAlign: 'center' }}>
-                                                    <div className="avatar" style={{ background: '#f59e0b', width: '40px', height: '40px', fontSize: '0.9rem', margin: '0 auto 0.5rem' }}>KB</div>
-                                                    <div style={{ fontSize: '0.75rem', fontWeight: '500' }}>Kajal Babloo...</div>
-                                                    <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>Tomorrow</div>
-                                                </div>
-                                                <div style={{ textAlign: 'center' }}>
-                                                    <div className="avatar" style={{ background: '#06b6d4', width: '40px', height: '40px', fontSize: '0.9rem', margin: '0 auto 0.5rem' }}>AH</div>
-                                                    <div style={{ fontSize: '0.75rem', fontWeight: '500' }}>Aatif Hussain</div>
-                                                    <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>12 March</div>
-                                                </div>
+                                        {orgActivityTab === 'Anniversaries' && (
+                                            <div style={{ padding: '1rem 0', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                                                No work anniversaries today.
                                             </div>
-                                        </div>
+                                        )}
+
+                                        {orgActivityTab === 'NewJoinees' && (
+                                            <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
+                                                {dashData.newJoinees.length > 0 ? dashData.newJoinees.map(j => (
+                                                    <div key={j._id} style={{ textAlign: 'center' }}>
+                                                        <div className="avatar" style={{ border: '2px solid #06b6d4', background: '#06b6d4', width: '40px', height: '40px', fontSize: '0.9rem', margin: '0 auto 0.5rem' }}>
+                                                            {j.name?.substring(0, 2).toUpperCase()}
+                                                        </div>
+                                                        <div style={{ fontSize: '0.75rem', fontWeight: '500' }}>{j.name?.split(' ')[0]}</div>
+                                                        <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
+                                                            Joined {new Date(j.joiningDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}
+                                                        </div>
+                                                    </div>
+                                                )) : (
+                                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', padding: '1rem 0' }}>No new joinees in the last 30 days.</div>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
                                 </>
                             ) : (
@@ -873,6 +1033,30 @@ export default function Dashboard({ user, onLogout }) {
                                             <div><label style={labelStyle}>HRA</label><input type="number" value={selectedUser.salary?.hra || 0} onChange={e => setSelectedUser({ ...selectedUser, salary: { ...selectedUser.salary, hra: Number(e.target.value) } })} style={inputStyle} /></div>
                                             <div><label style={labelStyle}>Deductions</label><input type="number" value={selectedUser.salary?.deductions || 0} onChange={e => setSelectedUser({ ...selectedUser, salary: { ...selectedUser.salary, deductions: Number(e.target.value) } })} style={inputStyle} /></div>
                                             <div style={{ gridColumn: 'span 2', marginTop: '1rem' }}><button className="btn btn-primary" type="submit">Update User Details</button></div>
+                                        </form>
+                                    </div>
+                                </div>
+                            )}
+
+                            {showAnnouncementModal && (
+                                <div style={modalOverlay}>
+                                    <div style={modalContent}>
+                                        <div className="panel-header" style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between' }}>
+                                            <span>Add New Announcement</span>
+                                            <span style={{ cursor: 'pointer' }} onClick={() => setShowAnnouncementModal(false)}>✕</span>
+                                        </div>
+                                        <form onSubmit={handleCreateAnnouncement} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                                            <div><label style={labelStyle}>Title</label><input type="text" value={newAnnouncement.title} onChange={e => setNewAnnouncement({ ...newAnnouncement, title: e.target.value })} style={inputStyle} placeholder="Important Update" required /></div>
+                                            <div><label style={labelStyle}>Content</label><textarea value={newAnnouncement.content} onChange={e => setNewAnnouncement({ ...newAnnouncement, content: e.target.value })} style={{ ...inputStyle, height: '100px', resize: 'vertical' }} placeholder="Detail your announcement here..." required /></div>
+                                            <div>
+                                                <label style={labelStyle}>Priority</label>
+                                                <select value={newAnnouncement.priority} onChange={e => setNewAnnouncement({ ...newAnnouncement, priority: e.target.value })} style={inputStyle}>
+                                                    <option value="Low">Low</option>
+                                                    <option value="Medium">Medium</option>
+                                                    <option value="High">High</option>
+                                                </select>
+                                            </div>
+                                            <div style={{ marginTop: '1rem' }}><button className="btn btn-primary" type="submit" style={{ width: '100%' }}>Create Announcement</button></div>
                                         </form>
                                     </div>
                                 </div>

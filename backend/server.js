@@ -23,6 +23,7 @@ import adminRoutes from './routes/adminRoutes.js';
 import attendanceRoutes from './routes/attendanceRoutes.js';
 import leaveRoutes from './routes/leaveRoutes.js';
 import payslipRoutes from './routes/payslipRoutes.js';
+import dashboardRoutes from './routes/dashboardRoutes.js';
 
 // Testing Route
 app.get('/', (req, res) => {
@@ -35,6 +36,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/leaves', leaveRoutes);
 app.use('/api/payslips', payslipRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 // Default Error handling middleware
 app.use((err, req, res, next) => {
