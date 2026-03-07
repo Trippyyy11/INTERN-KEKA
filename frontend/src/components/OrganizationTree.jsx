@@ -87,7 +87,7 @@ export default function OrganizationTree() {
 
         allUsers.forEach((user) => {
             const isManager = admins.some(a => a._id === user._id);
-            const bgColor = isManager ? '#f59e0b' : '#3b82f6';
+            const bgColor = isManager ? '#ffab00' : '#00ffa2';
 
             // If they have no reporting manager and aren't an admin, put in unassigned list
             if (!user.reportingManager && !isManager) {
@@ -135,7 +135,7 @@ export default function OrganizationTree() {
                     id: admin._id,
                     data: { label: `${admin.name}\n(${admin.designation || admin.role})` },
                     style: {
-                        background: '#f59e0b',
+                        background: '#ffab00',
                         color: 'white',
                         border: '1px solid #1f2937',
                         borderRadius: '8px',
@@ -216,7 +216,7 @@ export default function OrganizationTree() {
                 },
                 data: { label: `${droppedUser.name}\n(${droppedUser.designation || droppedUser.role})` },
                 style: {
-                    background: '#3b82f6',
+                    background: '#00ffa2',
                     color: 'white',
                     border: '1px solid #1f2937',
                     borderRadius: '8px',
@@ -292,12 +292,12 @@ export default function OrganizationTree() {
                     <Controls />
                     <MiniMap
                         nodeStrokeColor={(n) => {
-                            if (n.style?.background === '#f59e0b') return '#f59e0b';
-                            return '#3b82f6';
+                            if (n.style?.background === '#ffab00') return '#ffab00';
+                            return '#00ffa2';
                         }}
                         nodeColor={(n) => {
-                            if (n.style?.background === '#f59e0b') return '#f59e0b';
-                            return '#3b82f6';
+                            if (n.style?.background === '#ffab00') return '#ffab00';
+                            return '#00ffa2';
                         }}
                         nodeBorderRadius={2}
                     />

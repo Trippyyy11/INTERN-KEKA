@@ -603,12 +603,12 @@ export default function Dashboard({ user, onLogout, setUser }) {
                 {days.map(d => {
                     let bg = 'var(--bg-panel)';
                     let color = 'var(--text-main)';
-                    if (d === 4) bg = '#84cc16'; // Holiday
-                    if (d === 5) bg = '#06b6d4'; // Leave
+                    if (d === 4) bg = '#ccff00'; // Holiday (Lime)
+                    if (d === 5) bg = '#00ffa2'; // Leave (Aquamarine)
                     if (d === 7 || d === 8 || d === 14 || d === 15 || d === 21 || d === 22 || d === 28 || d === 29) {
-                        bg = '#fcd34d'; color = 'black'; // Weekend
+                        bg = '#ffab00'; color = '#0a0e17'; // Weekend (Amber)
                     }
-                    if (d === 6) bg = '#3b82f6'; // Today
+                    if (d === 6) bg = '#00ff88'; // Today (Green)
 
                     return (
                         <div key={d} style={{ background: bg, color: color, padding: '0.5rem', borderRadius: '4px', textAlign: 'center', fontSize: '0.8rem' }}>
@@ -694,12 +694,12 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                                     <span style={{ fontSize: '0.85rem' }}>Me</span>
                                                 </div>
                                                 <div style={{ textAlign: 'right' }}>
-                                                    <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', letterSpacing: '0.5px' }}>AVG HRS / DAY</div>
-                                                    <div style={{ fontSize: '0.9rem', fontWeight: '600' }}>{meStats.avgHours}</div>
+                                                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', letterSpacing: '0.3px' }}>Avg Hrs / Day</div>
+                                                    <div style={{ fontSize: '0.9rem', fontWeight: '500' }}>{meStats.avgHours}</div>
                                                 </div>
                                                 <div style={{ textAlign: 'right' }}>
-                                                    <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', letterSpacing: '0.5px' }}>ON TIME ARRIVAL</div>
-                                                    <div style={{ fontSize: '0.9rem', fontWeight: '600' }}>{meStats.onTime}</div>
+                                                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', letterSpacing: '0.3px' }}>On Time Arrival</div>
+                                                    <div style={{ fontSize: '0.9rem', fontWeight: '500' }}>{meStats.onTime}</div>
                                                 </div>
                                             </div>
                                             {teammateIndividualStats.length > 0 && teammateIndividualStats.map(ts => (
@@ -711,12 +711,12 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                                         <span style={{ fontSize: '0.85rem' }}>{ts.name}</span>
                                                     </div>
                                                     <div style={{ textAlign: 'right' }}>
-                                                        <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', letterSpacing: '0.5px' }}>AVG HRS / DAY</div>
-                                                        <div style={{ fontSize: '0.9rem', fontWeight: '600' }}>{Math.floor(ts.avgHours)}h {Math.round((ts.avgHours % 1) * 60)}m</div>
+                                                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', letterSpacing: '0.3px' }}>Avg Hrs / Day</div>
+                                                        <div style={{ fontSize: '0.9rem', fontWeight: '500' }}>{Math.floor(ts.avgHours)}h {Math.round((ts.avgHours % 1) * 60)}m</div>
                                                     </div>
                                                     <div style={{ textAlign: 'right' }}>
-                                                        <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', letterSpacing: '0.5px' }}>ON TIME ARRIVAL</div>
-                                                        <div style={{ fontSize: '0.9rem', fontWeight: '600' }}>{ts.onTimePercentage}%</div>
+                                                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', letterSpacing: '0.3px' }}>On Time Arrival</div>
+                                                        <div style={{ fontSize: '0.9rem', fontWeight: '500' }}>{ts.onTimePercentage}%</div>
                                                     </div>
                                                 </div>
                                             ))}
@@ -728,8 +728,8 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                         <div className="panel-header" style={{ marginBottom: '1rem' }}>Work Schedule</div>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                                             <div style={{ background: 'rgba(var(--primary-rgb), 0.05)', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-dark)' }}>
-                                                <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '0.5rem' }}>Daily Shift Requirement</div>
-                                                <div style={{ fontSize: '0.95rem', fontWeight: '600', color: 'var(--text-main)' }}>{user?.workingSchedule?.shiftStart || '11:00'} - {user?.workingSchedule?.shiftEnd || '07:00 PM'}</div>
+                                                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'capitalize', letterSpacing: '0.3px', marginBottom: '0.5rem' }}>Daily Shift Requirement</div>
+                                                <div style={{ fontSize: '0.95rem', fontWeight: '500', color: 'var(--text-main)' }}>{user?.workingSchedule?.shiftStart || '11:00'} - {user?.workingSchedule?.shiftEnd || '07:00 PM'}</div>
                                                 <div style={{ fontSize: '0.75rem', color: 'var(--primary)', marginTop: '0.25rem', fontWeight: '500' }}>Target: {user?.workingSchedule?.minHours || 7.0} Effective Hours</div>
                                             </div>
 
@@ -751,15 +751,15 @@ export default function Dashboard({ user, onLogout, setUser }) {
 
 
                                     {/* Actions Panel */}
-                                    <div className="panel" style={{ padding: '1.25rem' }}>
+                                    <div className="panel panel-actions" style={{ padding: '1.25rem' }}>
                                         <div className="panel-header" style={{ marginBottom: '0.75rem' }}>Actions</div>
                                         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                             <div>
                                                 <div style={{ fontSize: '1.25rem', fontWeight: '400', marginBottom: '0.25rem' }}>{currentTime}</div>
                                                 <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>{new Date().toDateString()}</div>
-                                                <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.25rem' }}>TOTAL HOURS <HelpCircle size={10} /></div>
+                                                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'capitalize', letterSpacing: '0.3px', marginBottom: '0.25rem' }}>Total Hours <HelpCircle size={10} /></div>
                                                 <div style={{ fontSize: '0.85rem' }}>
-                                                    Effective: <span style={{ fontWeight: '600' }}>{isClockedIn ? calculateElapsedTime(activeLog?.clockInTime).text : '0h 0m'}</span>
+                                                    Effective: <span style={{ fontWeight: '500' }}>{isClockedIn ? calculateElapsedTime(activeLog?.clockInTime).text : '0h 0m'}</span>
                                                 </div>
                                                 <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
                                                     Gross: {isClockedIn ? calculateElapsedTime(activeLog?.clockInTime).text : '0h 0m'}
@@ -767,7 +767,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                             </div>
                                             <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem' }}>
                                                 {isAttendanceFinished && !isClockedIn ? (
-                                                    <div style={{ textAlign: 'right', color: '#27ae60', fontSize: '0.85rem', fontWeight: '500', maxWidth: '180px', lineHeight: '1.4' }}>
+                                                    <div style={{ textAlign: 'right', color: '#00ff88', fontSize: '0.85rem', fontWeight: '500', maxWidth: '180px', lineHeight: '1.4' }}>
                                                         Your attendance for today is completed. See you tomorrow!
                                                     </div>
                                                 ) : (
@@ -797,17 +797,18 @@ export default function Dashboard({ user, onLogout, setUser }) {
 
                                 <div className="panel" style={{ padding: 0 }}>
                                     <div style={{ padding: '0 1.25rem', borderBottom: '1px solid var(--border-dark)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <div style={{ display: 'flex', gap: '2rem', fontSize: '0.85rem' }}>
+                                        <div style={{ display: 'flex', gap: '0.5rem', fontSize: '0.9rem', padding: '0.75rem 0' }}>
                                             {['Attendance Log', 'Calendar', 'Attendance Requests', 'Overtime Requests'].map(tab => (
                                                 <span
                                                     key={tab}
                                                     onClick={() => setAttendanceTab(tab)}
                                                     style={{
-                                                        padding: '1.25rem 0',
+                                                        padding: '0.4rem 1rem',
                                                         cursor: 'pointer',
-                                                        color: attendanceTab === tab ? 'var(--primary)' : 'var(--text-muted)',
-                                                        borderBottom: attendanceTab === tab ? '2px solid var(--primary)' : '2px solid transparent',
-                                                        marginBottom: '-1px',
+                                                        color: attendanceTab === tab ? '#ffffff' : 'var(--text-muted)',
+                                                        backgroundColor: attendanceTab === tab ? '#11005E' : 'transparent',
+                                                        borderRadius: '6px',
+                                                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                                                         fontWeight: '500'
                                                     }}
                                                 >
@@ -886,11 +887,11 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                                                         const shiftStartMins = shiftH * 60 + shiftM;
 
                                                                         if (totalMins < shiftStartMins) {
-                                                                            return <span style={{ color: '#10b981', fontWeight: '500' }}>Early</span>;
+                                                                            return <span style={{ color: '#00ff88', fontWeight: '500' }}>Early</span>;
                                                                         } else if (totalMins <= shiftStartMins + 60) {
                                                                             return <span style={{ color: 'var(--primary)', fontWeight: '500' }}>On Time</span>;
                                                                         } else {
-                                                                            return <span style={{ color: '#ef4444', fontWeight: '500' }}>Late</span>;
+                                                                            return <span style={{ color: '#ff4757', fontWeight: '500' }}>Late</span>;
                                                                         }
                                                                     })()}
                                                                 </td>
@@ -928,10 +929,10 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                         <div style={{ border: '1px solid var(--border-dark)', borderRadius: 'var(--radius-md)', padding: '1.5rem', background: 'rgba(var(--primary-rgb, 155, 89, 182), 0.05)' }}>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
                                                 <div style={{ fontWeight: '500', fontSize: '1rem' }}>Improve Backend Response Time by 30%</div>
-                                                <span style={{ border: '1px solid #10b981', color: '#10b981', padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.75rem' }}>On Track - 65%</span>
+                                                <span style={{ border: '1px solid #00ff88', color: '#00ff88', padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.75rem' }}>On Track - 65%</span>
                                             </div>
                                             <div style={{ width: '100%', height: '8px', background: 'var(--border-dark)', borderRadius: '4px', marginBottom: '1rem' }}>
-                                                <div style={{ width: '65%', height: '100%', background: '#10b981', borderRadius: '4px' }}></div>
+                                                <div style={{ width: '65%', height: '100%', background: '#00ff88', borderRadius: '4px' }}></div>
                                             </div>
                                         </div>
                                     </div>
@@ -994,7 +995,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                                     {Object.entries(leaveStats.balances || {}).map(([type, data], i, arr) => {
                                                         const totalConsumed = arr.reduce((acc, [_, d]) => acc + d.consumed, 0);
                                                         if (totalConsumed === 0) return null;
-                                                        const colors = ['#a855f7', '#10b981', '#f59e0b', '#3b82f6'];
+                                                        const colors = ['#ff00cc', '#ccff00', '#ffab00', '#00ffa2'];
                                                         let offset = 0;
                                                         for (let j = 0; j < i; j++) offset += (arr[j][1].consumed / totalConsumed) * 100;
                                                         const dash = (data.consumed / totalConsumed) * 100;
@@ -1039,10 +1040,10 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                     <div style={{ fontSize: '0.9rem', fontWeight: '500', marginBottom: '1rem', color: 'var(--text-main)' }}>Leave Balances</div>
                                     <div className="grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.5rem' }}>
                                         {[
-                                            { type: 'Casual Leave', key: 'Casual', color: '#a855f7' },
-                                            { type: 'Paid Leave', key: 'Paid', color: '#f87171' },
-                                            { type: 'Sick Leave', key: 'Sick', color: '#06b6d4' },
-                                            { type: 'Comp Off', key: 'Comp Off', color: '#d1d5db' }
+                                            { type: 'Casual Leave', key: 'Casual', color: '#ff00cc' },
+                                            { type: 'Paid Leave', key: 'Paid', color: '#ffab00' },
+                                            { type: 'Sick Leave', key: 'Sick', color: '#ccff00' },
+                                            { type: 'Comp Off', key: 'Comp Off', color: '#00ffa2' }
                                         ].map(item => {
                                             const data = leaveStats.balances?.[item.key] || { total: 0, consumed: 0 };
                                             const available = Math.max(0, data.total - data.consumed);
@@ -1126,8 +1127,8 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                                                 borderRadius: '4px',
                                                                 fontSize: '0.7rem',
                                                                 fontWeight: '500',
-                                                                background: h.status === 'Approved' ? '#10b98120' : h.status === 'Rejected' ? '#ef444420' : '#8b5cf620',
-                                                                color: h.status === 'Approved' ? '#10b981' : h.status === 'Rejected' ? '#ef4444' : '#8b5cf6'
+                                                                background: h.status === 'Approved' ? '#00ff8820' : h.status === 'Rejected' ? '#ffab0020' : '#ccff0020',
+                                                                color: h.status === 'Approved' ? '#00ff88' : h.status === 'Rejected' ? '#ffab00' : '#ccff00'
                                                             }}>
                                                                 {h.status}
                                                             </span>
@@ -1395,9 +1396,9 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                                             fontWeight: '700',
                                                             padding: '0.25rem 0.75rem',
                                                             borderRadius: '20px',
-                                                            background: req.status === 'Approved' ? 'rgba(52, 211, 153, 0.1)' : req.status === 'Rejected' ? 'rgba(248, 113, 113, 0.1)' : 'rgba(251, 191, 36, 0.1)',
-                                                            color: req.status === 'Approved' ? '#34d399' : req.status === 'Rejected' ? '#f87171' : '#fbbf24',
-                                                            border: `1px solid ${req.status === 'Approved' ? '#34d39930' : req.status === 'Rejected' ? '#f8717130' : '#fbbf2430'}`,
+                                                            background: req.status === 'Approved' ? 'rgba(0, 255, 136, 0.1)' : req.status === 'Rejected' ? 'rgba(255, 171, 0, 0.1)' : 'rgba(204, 255, 0, 0.1)',
+                                                            color: req.status === 'Approved' ? '#00ff88' : req.status === 'Rejected' ? '#ffab00' : '#ccff00',
+                                                            border: `1px solid ${req.status === 'Approved' ? '#00ff8830' : req.status === 'Rejected' ? '#ffab0030' : '#ccff0030'}`,
                                                             textTransform: 'uppercase',
                                                             letterSpacing: '0.5px'
                                                         }}>{req.status}</span>
@@ -1564,7 +1565,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                         </div>
                                         <div>
                                             <label style={labelStyle}>Salary Type</label>
-                                            <div style={{ fontSize: '0.95rem', fontWeight: '600', color: '#10b981' }}>{user?.salaryDetails?.type || 'Fixed'}</div>
+                                            <div style={{ fontSize: '0.95rem', fontWeight: '600', color: '#00ff88' }}>{user?.salaryDetails?.type || 'Fixed'}</div>
                                         </div>
                                     </div>
                                 </div>
@@ -2039,11 +2040,11 @@ export default function Dashboard({ user, onLogout, setUser }) {
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                             <div style={{ padding: '1rem', background: 'var(--bg-main)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-dark)' }}>
                                 <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Clock In</div>
-                                <div style={{ fontWeight: '600', color: '#27ae60' }}>{formatTime(showLogInfo.clockInTime)}</div>
+                                <div style={{ fontWeight: '600', color: '#00ff88' }}>{formatTime(showLogInfo.clockInTime)}</div>
                             </div>
                             <div style={{ padding: '1rem', background: 'var(--bg-main)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-dark)' }}>
                                 <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Clock Out</div>
-                                <div style={{ fontWeight: '600', color: '#e74c3c' }}>{showLogInfo.clockOutTime ? formatTime(showLogInfo.clockOutTime) : 'Session Active'}</div>
+                                <div style={{ fontWeight: '600', color: '#ff4757' }}>{showLogInfo.clockOutTime ? formatTime(showLogInfo.clockOutTime) : 'Session Active'}</div>
                             </div>
                         </div>
                         <div style={{ padding: '1rem', background: 'var(--bg-main)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-dark)' }}>
@@ -2103,7 +2104,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
                 if (log.workingMode === 'Remote') {
                     status = 'wfh';
                     label = 'HOME';
-                    color = '#60a5fa';
+                    color = '#00ffa2'; // Aquamarine for Remote
                     bgColor = 'rgba(96, 165, 250, 0.15)';
                 } else {
                     status = 'present';
@@ -2196,10 +2197,10 @@ export default function Dashboard({ user, onLogout, setUser }) {
 
                     <div style={{ display: 'flex', gap: '1.25rem', padding: '0.75rem 0', borderTop: '1px solid var(--border-dark)' }}>
                         {[
-                            { color: '#34d399', label: 'Office' },
-                            { color: '#60a5fa', label: 'Remote' },
-                            { color: '#fbbf24', label: 'Leave' },
-                            { color: '#f87171', label: 'Holiday' }
+                            { color: '#00ff88', label: 'Office' },
+                            { color: '#00ffa2', label: 'Remote' },
+                            { color: '#ffab00', label: 'Leave' },
+                            { color: '#ccff00', label: 'Holiday' }
                         ].map(legend => (
                             <div key={legend.label} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: '600' }}>
                                 <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: legend.color, boxShadow: `0 0 10px ${legend.color}40` }}></div>
@@ -2466,7 +2467,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
                         <Bell size={20} style={{ cursor: 'pointer', color: 'var(--text-topbar)' }} />
                         <div
                             className="avatar"
-                            style={{ cursor: 'pointer', background: '#10b981' }}
+                            style={{ cursor: 'pointer', background: '#00ff88', color: '#0a0e17' }}
                             onClick={() => setShowProfileMenu(!showProfileMenu)}
                         >
                             {user?.name?.substring(0, 2).toUpperCase() || 'ME'}
@@ -2498,7 +2499,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                 </div>
                                 <div
                                     className="dropdown-item danger"
-                                    style={{ color: '#ef4444' }}
+                                    style={{ color: '#ffab00' }}
                                     onClick={handleLogout}
                                 >
                                     Log Out
@@ -2518,48 +2519,50 @@ export default function Dashboard({ user, onLogout, setUser }) {
             {renderAnnouncementModal()}
             {renderAnnouncementModal()}
 
-            {showClockInModal && (
-                <div style={modalOverlay}>
-                    <div style={{ ...modalContent, maxWidth: '400px' }}>
-                        <div className="panel-header" style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between' }}>
-                            <span>Clock In - Select Mode</span>
-                            <span style={{ cursor: 'pointer' }} onClick={() => setShowClockInModal(false)}>✕</span>
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                            <div
-                                onClick={() => setSelectedWorkingMode('On-site')}
-                                style={{
-                                    padding: '1rem',
-                                    border: `1px solid ${selectedWorkingMode === 'On-site' ? 'var(--primary)' : 'var(--border-dark)'}`,
-                                    borderRadius: 'var(--radius-md)',
-                                    cursor: 'pointer',
-                                    background: selectedWorkingMode === 'On-site' ? 'rgba(var(--primary-rgb), 0.1)' : 'transparent'
-                                }}
-                            >
-                                <div style={{ fontWeight: '500' }}>Working On-Site</div>
-                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Working from the office location.</div>
+            {
+                showClockInModal && (
+                    <div style={modalOverlay}>
+                        <div style={{ ...modalContent, maxWidth: '400px' }}>
+                            <div className="panel-header" style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between' }}>
+                                <span>Clock In - Select Mode</span>
+                                <span style={{ cursor: 'pointer' }} onClick={() => setShowClockInModal(false)}>✕</span>
                             </div>
-                            <div
-                                onClick={() => setSelectedWorkingMode('Remote')}
-                                style={{
-                                    padding: '1rem',
-                                    border: `1px solid ${selectedWorkingMode === 'Remote' ? 'var(--primary)' : 'var(--border-dark)'}`,
-                                    borderRadius: 'var(--radius-md)',
-                                    cursor: 'pointer',
-                                    background: selectedWorkingMode === 'Remote' ? 'rgba(var(--primary-rgb), 0.1)' : 'transparent'
-                                }}
-                            >
-                                <div style={{ fontWeight: '500' }}>Working Remotely</div>
-                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Working from home or another location.</div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                <div
+                                    onClick={() => setSelectedWorkingMode('On-site')}
+                                    style={{
+                                        padding: '1rem',
+                                        border: `1px solid ${selectedWorkingMode === 'On-site' ? 'var(--primary)' : 'var(--border-dark)'}`,
+                                        borderRadius: 'var(--radius-md)',
+                                        cursor: 'pointer',
+                                        background: selectedWorkingMode === 'On-site' ? 'rgba(var(--primary-rgb), 0.1)' : 'transparent'
+                                    }}
+                                >
+                                    <div style={{ fontWeight: '500' }}>Working On-Site</div>
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Working from the office location.</div>
+                                </div>
+                                <div
+                                    onClick={() => setSelectedWorkingMode('Remote')}
+                                    style={{
+                                        padding: '1rem',
+                                        border: `1px solid ${selectedWorkingMode === 'Remote' ? 'var(--primary)' : 'var(--border-dark)'}`,
+                                        borderRadius: 'var(--radius-md)',
+                                        cursor: 'pointer',
+                                        background: selectedWorkingMode === 'Remote' ? 'rgba(var(--primary-rgb), 0.1)' : 'transparent'
+                                    }}
+                                >
+                                    <div style={{ fontWeight: '500' }}>Working Remotely</div>
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Working from home or another location.</div>
+                                </div>
+                                <button className="btn btn-primary" style={{ marginTop: '1rem' }} onClick={confirmClockIn}>
+                                    Confirm Clock In
+                                </button>
                             </div>
-                            <button className="btn btn-primary" style={{ marginTop: '1rem' }} onClick={confirmClockIn}>
-                                Confirm Clock In
-                            </button>
                         </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     );
 }
 

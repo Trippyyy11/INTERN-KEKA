@@ -211,4 +211,4 @@ const inputStyle = { width: '100%', padding: '0.75rem 0.85rem', borderRadius: 'v
 const labelStyle = { display: 'block', marginBottom: '0.4rem', fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '500' };
 const btnStyle = { background: 'var(--primary)', color: 'white', padding: '0.75rem', borderRadius: 'var(--radius-md)', fontWeight: '600', fontSize: '0.9rem', cursor: 'pointer', border: 'none', width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem', transition: 'all 0.2s' };
 const errorBanner = { background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', padding: '0.75rem', borderRadius: '4px', marginBottom: '1rem', fontSize: '0.8rem', textAlign: 'center' };
-const successBanner = { background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '0.75rem', borderRadius: '4px', marginBottom: '1rem', fontSize: '0.8rem', textAlign: 'center' };
+const successBanner = { background: 'rgba(0, 255, 136, 0.1)', color: '#00ff88', padding: '0.75rem', borderRadius: '4px', marginBottom: '1rem', fontSize: '0.8rem', textAlign: 'center' };

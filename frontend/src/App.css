@@ -9,13 +9,18 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1.5rem 0;
+  padding: 1rem 2rem;
+  background: var(--bg-gradient-topbar);
+  border-radius: var(--radius-lg);
+  margin-top: 1rem;
+  box-shadow: 0 4px 12px rgba(17, 0, 94, 0.1);
+  color: var(--text-topbar);
 }
 
 .nav-brand {
   font-size: 1.75rem;
   font-weight: 800;
-  color: var(--primary);
+  color: var(--neon-green);
   letter-spacing: -0.05em;
   display: flex;
   align-items: center;
@@ -27,7 +32,7 @@
   align-items: center;
   gap: 2rem;
   font-weight: 500;
-  color: var(--text-main);
+  color: var(--text-topbar);
 }
 
 .nav-links a {
@@ -47,7 +52,7 @@
 .hero-section {
   padding: 6rem 0;
   text-align: center;
-  background: linear-gradient(180deg, rgba(248, 250, 252, 1) 0%, rgba(226, 232, 240, 0.5) 100%);
+  background: var(--bg-gradient-welcome);
   position: relative;
   overflow: hidden;
 }
@@ -56,7 +61,7 @@
   font-size: 4rem;
   font-weight: 800;
   line-height: 1.1;
-  color: var(--dark);
+  color: var(--text-main);
   margin-bottom: 1.5rem;
   letter-spacing: -0.025em;
 }
@@ -76,7 +81,7 @@
 
 .features-section {
   padding: 5rem 0;
-  background-color: white;
+  background-color: var(--bg-main);
 }
 
 .section-title {
@@ -84,7 +89,7 @@
   font-size: 2.5rem;
   font-weight: 700;
   margin-bottom: 3rem;
-  color: var(--dark);
+  color: var(--text-main);
 }
 
 .features-grid {
@@ -96,22 +101,22 @@
 .feature-card {
   padding: 2rem;
   border-radius: var(--radius-lg);
-  border: 1px solid var(--border);
-  background: white;
+  border: 1px solid var(--border-neon);
+  background: var(--bg-panel);
   transition: var(--transition);
 }
 
 .feature-card:hover {
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--glow-green);
   transform: translateY(-5px);
-  border-color: #cbd5e1;
+  border-color: var(--neon-green);
 }
 
 .feature-icon {
   width: 48px;
   height: 48px;
-  background: #eff6ff;
-  color: var(--primary);
+  background: rgba(0, 255, 136, 0.1);
+  color: var(--neon-green);
   border-radius: var(--radius-md);
   display: flex;
   align-items: center;
@@ -123,7 +128,7 @@
   font-size: 1.25rem;
   font-weight: 600;
   margin-bottom: 0.75rem;
-  color: var(--dark);
+  color: var(--text-main);
 }
 
 .feature-desc {
@@ -134,11 +139,12 @@
 /* Dashboard UI Components */
 .stat-card {
   padding: 1.5rem;
-  background: white;
+  background: var(--bg-panel);
   border-radius: var(--radius-md);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-neon);
   display: flex;
   flex-direction: column;
+  box-shadow: var(--glow-panel);
 }
 
 .stat-label {
@@ -151,7 +157,7 @@
 .stat-value {
   font-size: 2rem;
   font-weight: 700;
-  color: var(--dark);
+  color: var(--text-main);
 }
 
 .dashboard-header {
@@ -164,7 +170,7 @@
 .dashboard-title {
   font-size: 1.5rem;
   font-weight: 700;
-  color: var(--dark);
+  color: var(--text-main);
 }
 
 .tab-nav {
