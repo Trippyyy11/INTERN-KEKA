@@ -52,7 +52,7 @@ function App() {
       {!user ? (
         <AuthPage onLogin={handleLogin} />
       ) : (
-        <Dashboard user={user} onLogout={handleLogout} />
+        <Dashboard user={user} onLogout={handleLogout} setUser={setUser} />
       )}
     </div>
   );
