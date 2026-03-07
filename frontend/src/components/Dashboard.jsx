@@ -634,18 +634,18 @@ export default function Dashboard({ user, onLogout, setUser }) {
 
                                     {homeTab === 'Organization' ? (
                                         <>
-                                            <div className="panel" style={{ marginBottom: '1rem' }}>
-                                                <div style={{ display: 'flex', gap: '1rem', borderBottom: '1px solid var(--border-dark)', paddingBottom: '1rem', marginBottom: '1rem', fontSize: '0.85rem' }}>
+                                            <div className="panel" style={{ marginBottom: '1.5rem', padding: '1.5rem', borderRadius: '8px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)' }}>
+                                                <div style={{ display: 'flex', gap: '1.5rem', borderBottom: '1px solid var(--border-dark)', paddingBottom: '0.8rem', marginBottom: '1.5rem', fontSize: '0.85rem' }}>
                                                     <span
-                                                        style={{ color: orgActionTab === 'Post' ? '#f59e0b' : 'var(--text-muted)', borderBottom: orgActionTab === 'Post' ? '2px solid #f59e0b' : 'none', paddingBottom: '1rem', marginBottom: '-1rem', display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}
+                                                        style={{ color: orgActionTab === 'Post' ? '#f59e0b' : 'var(--text-muted)', borderBottom: orgActionTab === 'Post' ? '2px solid #f59e0b' : 'none', paddingBottom: '0.8rem', marginBottom: '-0.8rem', display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', fontWeight: orgActionTab === 'Post' ? '600' : 'normal' }}
                                                         onClick={() => setOrgActionTab('Post')}
                                                     >✎ Post</span>
                                                     <span
-                                                        style={{ color: orgActionTab === 'Poll' ? '#f59e0b' : 'var(--text-muted)', borderBottom: orgActionTab === 'Poll' ? '2px solid #f59e0b' : 'none', paddingBottom: '1rem', marginBottom: '-1rem', display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}
+                                                        style={{ color: orgActionTab === 'Poll' ? '#f59e0b' : 'var(--text-muted)', borderBottom: orgActionTab === 'Poll' ? '2px solid #f59e0b' : 'none', paddingBottom: '0.8rem', marginBottom: '-0.8rem', display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', fontWeight: orgActionTab === 'Poll' ? '600' : 'normal' }}
                                                         onClick={() => setOrgActionTab('Poll')}
                                                     >📊 Poll</span>
                                                     <span
-                                                        style={{ color: orgActionTab === 'Praise' ? '#f59e0b' : 'var(--text-muted)', borderBottom: orgActionTab === 'Praise' ? '2px solid #f59e0b' : 'none', paddingBottom: '1rem', marginBottom: '-1rem', display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}
+                                                        style={{ color: orgActionTab === 'Praise' ? '#f59e0b' : 'var(--text-muted)', borderBottom: orgActionTab === 'Praise' ? '2px solid #f59e0b' : 'none', paddingBottom: '0.8rem', marginBottom: '-0.8rem', display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', fontWeight: orgActionTab === 'Praise' ? '600' : 'normal' }}
                                                         onClick={() => setOrgActionTab('Praise')}
                                                     >🏆 Praise</span>
                                                 </div>
@@ -655,11 +655,11 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                                             value={postText}
                                                             onChange={(e) => setPostText(e.target.value)}
                                                             placeholder="Write your post here and mention your peers"
-                                                            style={{ width: '100%', background: 'transparent', border: 'none', color: 'var(--text-main)', resize: 'none', height: '60px', outline: 'none', padding: '0.5rem 0' }}
+                                                            style={{ width: '100%', background: 'transparent', border: 'none', color: 'var(--text-main)', resize: 'none', height: '80px', outline: 'none', padding: '0.5rem 0', fontSize: '0.9rem' }}
                                                         />
-                                                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
+                                                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
                                                             <button
-                                                                className="btn btn-primary"
+                                                                style={{ background: '#9333ea', color: 'white', border: 'none', borderRadius: '4px', padding: '0.5rem 1.5rem', fontSize: '0.85rem', cursor: 'pointer', opacity: postText ? 1 : 0.6 }}
                                                                 onClick={async () => {
                                                                     if (postText) {
                                                                         try {
@@ -704,10 +704,9 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                                                 style={{ ...inputStyle, padding: '0.4rem', fontSize: '0.75rem' }}
                                                             />
                                                         </div>
-                                                        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                                                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
                                                             <button
-                                                                className="btn btn-primary"
-                                                                style={{ fontSize: '0.75rem', padding: '0.3rem 1rem' }}
+                                                                style={{ background: '#9333ea', color: 'white', border: 'none', borderRadius: '4px', padding: '0.5rem 1.5rem', fontSize: '0.85rem', cursor: 'pointer' }}
                                                                 onClick={async () => {
                                                                     if (poll.question && poll.option1 && poll.option2) {
                                                                         try {
@@ -750,10 +749,9 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                                             placeholder="What did they do great?"
                                                             style={{ width: '100%', background: 'transparent', border: '1px solid var(--border-dark)', color: 'var(--text-main)', resize: 'none', height: '40px', outline: 'none', padding: '0.5rem', fontSize: '0.75rem', borderRadius: '4px' }}
                                                         />
-                                                        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                                                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
                                                             <button
-                                                                className="btn btn-primary"
-                                                                style={{ padding: '0.3rem 1rem', fontSize: '0.75rem' }}
+                                                                style={{ background: '#9333ea', color: 'white', border: 'none', borderRadius: '4px', padding: '0.5rem 1.5rem', fontSize: '0.85rem', cursor: 'pointer' }}
                                                                 onClick={async () => {
                                                                     if (praise.user && praise.message) {
                                                                         try {
@@ -778,13 +776,13 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                                 )}
                                             </div>
 
-                                            <div className="panel" style={{ marginBottom: '1rem', padding: '1.5rem' }}>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: dashData.announcements.length > 0 ? '1rem' : 0 }}>
-                                                    <div style={{ fontSize: '0.9rem', fontWeight: '500' }}>Announcements</div>
+                                            <div className="panel" style={{ marginBottom: '1.5rem', padding: '1.5rem', borderRadius: '8px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)' }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: dashData.announcements.length > 0 ? '1.5rem' : 0 }}>
+                                                    <div style={{ fontSize: '1rem', fontWeight: 'bold', color: 'var(--text-main)' }}>Announcements</div>
                                                     {(user?.role === 'Admin' || user?.role === 'Super Admin') && (
                                                         <button
                                                             className="btn"
-                                                            style={{ background: '#f59e0b', color: 'white', padding: '0.2rem 0.6rem', borderRadius: '4px', fontWeight: 'bold' }}
+                                                            style={{ background: '#f59e0b', color: 'white', padding: '0.15rem 0.6rem', borderRadius: '6px', fontWeight: 'bold', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                                                             onClick={() => setShowAnnouncementModal(true)}
                                                         >
                                                             +
@@ -792,9 +790,9 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                                     )}
                                                 </div>
                                                 {dashData.announcements.length > 0 ? dashData.announcements.map(a => (
-                                                    <div key={a._id} style={{ marginBottom: '0.5rem', padding: '0.5rem', background: 'var(--border-dark)', borderRadius: '4px', opacity: 0.8 }}>
-                                                        <div style={{ fontWeight: '500', fontSize: '0.85rem', color: 'var(--text-main)' }}>{a.title}</div>
-                                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{a.content}</div>
+                                                    <div key={a._id} style={{ marginBottom: '0.8rem', padding: '1rem', background: isLightMode ? '#f3f4f6' : 'rgba(255,255,255,0.05)', borderRadius: '6px' }}>
+                                                        <div style={{ fontWeight: '600', fontSize: '0.85rem', color: 'var(--text-main)', marginBottom: '0.2rem' }}>{a.title}</div>
+                                                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{a.content}</div>
                                                     </div>
                                                 )) : (
                                                     <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>No announcements</div>
@@ -802,8 +800,8 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                             </div>
 
                                             {/* Social Activity Feed */}
-                                            <div className="panel" style={{ padding: '1.5rem' }}>
-                                                <div style={{ fontSize: '1rem', fontWeight: 'bold', marginBottom: '1rem', color: 'var(--text-main)', borderBottom: '1px solid var(--border-dark)', paddingBottom: '0.5rem' }}>Team Activity</div>
+                                            <div className="panel" style={{ padding: '1.5rem', borderRadius: '8px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)' }}>
+                                                <div style={{ fontSize: '1.1rem', fontWeight: 'bold', marginBottom: '1.5rem', color: 'var(--text-main)', borderBottom: '1px solid var(--border-dark)', paddingBottom: '1rem' }}>Team Activity</div>
                                                 {socialFeed.length > 0 ? socialFeed.map(activity => {
                                                     const canDelete = user?._id === activity.author?._id || user?.role === 'Admin' || user?.role === 'Super Admin';
                                                     return (
@@ -873,12 +871,13 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                                                                     key={opt._id}
                                                                                     style={{
                                                                                         position: 'relative',
-                                                                                        background: 'var(--bg-dark)',
-                                                                                        border: `1px solid ${hasVoted ? 'var(--primary)' : 'var(--border-dark)'}`,
-                                                                                        borderRadius: '4px',
-                                                                                        padding: '0.6rem 1rem',
+                                                                                        background: isLightMode ? '#f9fafb' : 'rgba(255,255,255,0.02)',
+                                                                                        border: hasVoted ? '1px solid #a855f7' : '1px solid var(--border-dark)',
+                                                                                        borderRadius: '6px',
+                                                                                        padding: '0.8rem 1rem',
                                                                                         cursor: 'pointer',
-                                                                                        overflow: 'hidden'
+                                                                                        overflow: 'hidden',
+                                                                                        boxSizing: 'border-box'
                                                                                     }}
                                                                                     onClick={async () => {
                                                                                         try {
@@ -889,10 +888,10 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                                                                         }
                                                                                     }}
                                                                                 >
-                                                                                    <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: `${percent}%`, background: hasVoted ? 'rgba(59, 130, 246, 0.2)' : 'rgba(255, 255, 255, 0.05)', zIndex: 0, transition: 'width 0.3s ease' }}></div>
+                                                                                    <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: `${percent}%`, background: hasVoted ? 'rgba(168, 85, 247, 0.2)' : 'rgba(168, 85, 247, 0.05)', zIndex: 0, transition: 'width 0.4s ease-out' }}></div>
                                                                                     <div style={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem', color: 'var(--text-main)' }}>
-                                                                                        <span>{opt.text}</span>
-                                                                                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{percent}% ({opt.votes.length})</span>
+                                                                                        <span style={{ fontWeight: hasVoted ? '600' : 'normal' }}>{opt.text}</span>
+                                                                                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '600' }}>{percent}% ({opt.votes.length})</span>
                                                                                     </div>
                                                                                 </div>
                                                                             );
