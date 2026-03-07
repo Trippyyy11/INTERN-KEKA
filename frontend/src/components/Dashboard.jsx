@@ -20,8 +20,12 @@ import {
     Sun,
     Moon,
     HelpCircle,
-    Info
+    Info,
+    Network,
+    Trash2
 } from 'lucide-react';
+
+import OrganizationTree from './OrganizationTree';
 
 export default function Dashboard({ user, onLogout, setUser }) {
     const [activeSidebar, setActiveSidebar] = useState('Home');
@@ -99,6 +103,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
     const [statsPeriod, setStatsPeriod] = useState('Last Week');
     const [showPublicProfile, setShowPublicProfile] = useState(null); // stores user object
     const [leaveStats, setLeaveStats] = useState({ balances: {}, history: [], monthlyStats: [], weeklyPattern: [] });
+    const [socialFeed, setSocialFeed] = useState([]);
 
     useEffect(() => {
         const timer = setInterval(() => setCurrentTime(new Date().toLocaleTimeString()), 1000);
@@ -177,8 +182,10 @@ export default function Dashboard({ user, onLogout, setUser }) {
         try {
             const statusRes = await api.get('/attendance/status/today');
             const birthdaysRes = await api.get('/attendance/birthdays');
+            const socialRes = await api.get('/social');
             setTodayStatus(statusRes.data);
             setBirthdays(birthdaysRes.data);
+            setSocialFeed(socialRes.data);
             fetchTeammates();
             fetchTeamStats();
         } catch (err) {
@@ -458,6 +465,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
         { name: 'Me', icon: <User size={20} /> },
         { name: 'Inbox', icon: <Mail size={20} /> },
         { name: 'My Team', icon: <Users size={20} /> },
+        { name: 'Organization Tree', icon: <Network size={20} /> },
         { name: 'My Finances', icon: <Briefcase size={20} /> },
         { name: 'Org', icon: <Building2 size={20} /> },
         { name: 'Engage', icon: <Award size={20} /> },
@@ -650,7 +658,24 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                                             style={{ width: '100%', background: 'transparent', border: 'none', color: 'var(--text-main)', resize: 'none', height: '60px', outline: 'none', padding: '0.5rem 0' }}
                                                         />
                                                         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
-                                                            <button className="btn btn-primary" onClick={() => { if (postText) { showAlert(`Posted: ${postText}`, 'info'); setPostText(''); } }} disabled={!postText}>Post</button>
+                                                            <button
+                                                                className="btn btn-primary"
+                                                                onClick={async () => {
+                                                                    if (postText) {
+                                                                        try {
+                                                                            await api.post('/social', { type: 'Post', content: postText });
+                                                                            showAlert('Posted successfully!', 'info');
+                                                                            setPostText('');
+                                                                            fetchPublicData();
+                                                                        } catch (err) {
+                                                                            showAlert('Failed to post', 'error');
+                                                                        }
+                                                                    }
+                                                                }}
+                                                                disabled={!postText}
+                                                            >
+                                                                Post
+                                                            </button>
                                                         </div>
                                                     </>
                                                 )}
@@ -680,7 +705,32 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                                             />
                                                         </div>
                                                         <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                                                            <button className="btn btn-primary" style={{ fontSize: '0.75rem', padding: '0.3rem 1rem' }} onClick={() => { showAlert('Poll Created!', 'info'); setPoll({ question: '', option1: '', option2: '' }); }}>Create Poll</button>
+                                                            <button
+                                                                className="btn btn-primary"
+                                                                style={{ fontSize: '0.75rem', padding: '0.3rem 1rem' }}
+                                                                onClick={async () => {
+                                                                    if (poll.question && poll.option1 && poll.option2) {
+                                                                        try {
+                                                                            await api.post('/social', {
+                                                                                type: 'Poll',
+                                                                                pollData: {
+                                                                                    question: poll.question,
+                                                                                    options: [{ text: poll.option1 }, { text: poll.option2 }]
+                                                                                }
+                                                                            });
+                                                                            showAlert('Poll Created!', 'info');
+                                                                            setPoll({ question: '', option1: '', option2: '' });
+                                                                            fetchPublicData();
+                                                                        } catch (err) {
+                                                                            showAlert('Failed to create poll', 'error');
+                                                                        }
+                                                                    } else {
+                                                                        showAlert('Please fill all poll fields', 'info');
+                                                                    }
+                                                                }}
+                                                            >
+                                                                Create Poll
+                                                            </button>
                                                         </div>
                                                     </div>
                                                 )}
@@ -692,7 +742,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                                             style={{ ...inputStyle, padding: '0.4rem', fontSize: '0.75rem' }}
                                                         >
                                                             <option value="">Select a peer to recognize</option>
-                                                            {allUsers.map(u => <option key={u._id} value={u.name}>{u.name}</option>)}
+                                                            {allUsers.map(u => <option key={u._id} value={u._id}>{u.name}</option>)}
                                                         </select>
                                                         <textarea
                                                             value={praise.message}
@@ -701,7 +751,28 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                                             style={{ width: '100%', background: 'transparent', border: '1px solid var(--border-dark)', color: 'var(--text-main)', resize: 'none', height: '40px', outline: 'none', padding: '0.5rem', fontSize: '0.75rem', borderRadius: '4px' }}
                                                         />
                                                         <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                                                            <button className="btn btn-primary" style={{ padding: '0.3rem 1rem', fontSize: '0.75rem' }} onClick={() => { if (praise.user && praise.message) { showAlert(`Praise sent to ${praise.user}!`, 'info'); setPraise({ user: '', message: '' }); } }}>Send Praise</button>
+                                                            <button
+                                                                className="btn btn-primary"
+                                                                style={{ padding: '0.3rem 1rem', fontSize: '0.75rem' }}
+                                                                onClick={async () => {
+                                                                    if (praise.user && praise.message) {
+                                                                        try {
+                                                                            await api.post('/social', {
+                                                                                type: 'Praise',
+                                                                                content: praise.message,
+                                                                                praiseData: { recipient: praise.user }
+                                                                            });
+                                                                            showAlert(`Praise sent successfully!`, 'info');
+                                                                            setPraise({ user: '', message: '' });
+                                                                            fetchPublicData();
+                                                                        } catch (err) {
+                                                                            showAlert('Failed to send praise', 'error');
+                                                                        }
+                                                                    }
+                                                                }}
+                                                            >
+                                                                Send Praise
+                                                            </button>
                                                         </div>
                                                     </div>
                                                 )}
@@ -710,7 +781,15 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                             <div className="panel" style={{ marginBottom: '1rem', padding: '1.5rem' }}>
                                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: dashData.announcements.length > 0 ? '1rem' : 0 }}>
                                                     <div style={{ fontSize: '0.9rem', fontWeight: '500' }}>Announcements</div>
-                                                    <button className="btn" style={{ background: '#f59e0b', color: 'white', padding: '0.2rem 0.6rem', borderRadius: '4px', fontWeight: 'bold' }} onClick={() => setShowAnnouncementModal(true)}>+</button>
+                                                    {(user?.role === 'Admin' || user?.role === 'Super Admin') && (
+                                                        <button
+                                                            className="btn"
+                                                            style={{ background: '#f59e0b', color: 'white', padding: '0.2rem 0.6rem', borderRadius: '4px', fontWeight: 'bold' }}
+                                                            onClick={() => setShowAnnouncementModal(true)}
+                                                        >
+                                                            +
+                                                        </button>
+                                                    )}
                                                 </div>
                                                 {dashData.announcements.length > 0 ? dashData.announcements.map(a => (
                                                     <div key={a._id} style={{ marginBottom: '0.5rem', padding: '0.5rem', background: 'var(--border-dark)', borderRadius: '4px', opacity: 0.8 }}>
@@ -719,6 +798,112 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                                     </div>
                                                 )) : (
                                                     <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>No announcements</div>
+                                                )}
+                                            </div>
+
+                                            {/* Social Activity Feed */}
+                                            <div className="panel" style={{ padding: '1.5rem' }}>
+                                                <div style={{ fontSize: '1rem', fontWeight: 'bold', marginBottom: '1rem', color: 'var(--text-main)', borderBottom: '1px solid var(--border-dark)', paddingBottom: '0.5rem' }}>Team Activity</div>
+                                                {socialFeed.length > 0 ? socialFeed.map(activity => {
+                                                    const canDelete = user?._id === activity.author?._id || user?.role === 'Admin' || user?.role === 'Super Admin';
+                                                    return (
+                                                        <div key={activity._id} style={{ marginBottom: '1.5rem', paddingBottom: '1.5rem', borderBottom: '1px solid var(--border-dark)', position: 'relative' }}>
+                                                            {canDelete && (
+                                                                <button
+                                                                    onClick={() => {
+                                                                        setCustomAlert({
+                                                                            type: 'confirm',
+                                                                            message: 'Are you sure you want to delete this activity?',
+                                                                            onConfirm: async () => {
+                                                                                try {
+                                                                                    await api.delete(`/social/${activity._id}`);
+                                                                                    showAlert('Activity deleted successfully.', 'info');
+                                                                                    fetchPublicData();
+                                                                                } catch (err) {
+                                                                                    showAlert('Failed to delete activity.', 'error');
+                                                                                }
+                                                                            }
+                                                                        });
+                                                                    }}
+                                                                    style={{ position: 'absolute', top: 0, right: 0, background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '0.5rem' }}
+                                                                    title="Delete Activity"
+                                                                >
+                                                                    <Trash2 size={16} />
+                                                                </button>
+                                                            )}
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', marginBottom: '0.8rem' }}>
+                                                                <div className="avatar" style={{ width: '36px', height: '36px', background: activity.type === 'Praise' ? '#f59e0b' : '#3b82f6', fontSize: '0.8rem' }}>
+                                                                    {activity.author?.avatar ? <img src={activity.author.avatar} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : activity.author?.name?.substring(0, 2).toUpperCase()}
+                                                                </div>
+                                                                <div>
+                                                                    <div style={{ fontWeight: '500', fontSize: '0.9rem', color: 'var(--text-main)' }}>{activity.author?.name}</div>
+                                                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{new Date(activity.createdAt).toLocaleString()}</div>
+                                                                </div>
+                                                            </div>
+
+                                                            {activity.type === 'Post' && (
+                                                                <div style={{ fontSize: '0.9rem', color: 'var(--text-main)', paddingLeft: '3.2rem', whiteSpace: 'pre-wrap' }}>
+                                                                    {activity.content}
+                                                                </div>
+                                                            )}
+
+                                                            {activity.type === 'Praise' && (
+                                                                <div style={{ paddingLeft: '3.2rem' }}>
+                                                                    <div style={{ background: 'rgba(245, 158, 11, 0.1)', border: '1px solid #f59e0b', borderRadius: '8px', padding: '1rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                                                        <div style={{ fontSize: '2rem' }}>🏆</div>
+                                                                        <div>
+                                                                            <div style={{ fontSize: '0.85rem', color: 'var(--text-main)' }}>Recognized <span style={{ fontWeight: 'bold' }}>{activity.praiseData?.recipient?.name}</span></div>
+                                                                            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.3rem', fontStyle: 'italic' }}>"{activity.content}"</div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            )}
+
+                                                            {activity.type === 'Poll' && (
+                                                                <div style={{ paddingLeft: '3.2rem' }}>
+                                                                    <div style={{ fontSize: '0.9rem', fontWeight: '500', color: 'var(--text-main)', marginBottom: '0.8rem' }}>{activity.pollData?.question}</div>
+                                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                                                        {activity.pollData?.options?.map(opt => {
+                                                                            const totalVotes = activity.pollData.options.reduce((sum, o) => sum + o.votes.length, 0);
+                                                                            const percent = totalVotes === 0 ? 0 : Math.round((opt.votes.length / totalVotes) * 100);
+                                                                            const hasVoted = opt.votes.includes(user?._id);
+
+                                                                            return (
+                                                                                <div
+                                                                                    key={opt._id}
+                                                                                    style={{
+                                                                                        position: 'relative',
+                                                                                        background: 'var(--bg-dark)',
+                                                                                        border: `1px solid ${hasVoted ? 'var(--primary)' : 'var(--border-dark)'}`,
+                                                                                        borderRadius: '4px',
+                                                                                        padding: '0.6rem 1rem',
+                                                                                        cursor: 'pointer',
+                                                                                        overflow: 'hidden'
+                                                                                    }}
+                                                                                    onClick={async () => {
+                                                                                        try {
+                                                                                            await api.post(`/social/${activity._id}/vote`, { optionId: opt._id });
+                                                                                            fetchPublicData();
+                                                                                        } catch (err) {
+                                                                                            showAlert('Failed to vote', 'error');
+                                                                                        }
+                                                                                    }}
+                                                                                >
+                                                                                    <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: `${percent}%`, background: hasVoted ? 'rgba(59, 130, 246, 0.2)' : 'rgba(255, 255, 255, 0.05)', zIndex: 0, transition: 'width 0.3s ease' }}></div>
+                                                                                    <div style={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem', color: 'var(--text-main)' }}>
+                                                                                        <span>{opt.text}</span>
+                                                                                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{percent}% ({opt.votes.length})</span>
+                                                                                    </div>
+                                                                                </div>
+                                                                            );
+                                                                        })}
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )
+                                                }) : (
+                                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', textAlign: 'center', padding: '2rem 0' }}>No activity yet. Be the first to post!</div>
                                                 )}
                                             </div>
 
@@ -1691,6 +1876,30 @@ export default function Dashboard({ user, onLogout, setUser }) {
             );
         }
 
+        if (activeSidebar === 'Organization Tree') {
+            if (user?.role === 'Admin' || user?.role === 'Super Admin') {
+                return (
+                    <div className="page-content" style={{ height: 'calc(100vh - 64px)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem', alignItems: 'center' }}>
+                            <h2 style={{ color: 'var(--text-main)', margin: 0 }}>Organization Hierarchy</h2>
+                        </div>
+                        <div style={{ flex: 1, height: 'calc(100% - 3rem)' }}>
+                            <OrganizationTree />
+                        </div>
+                    </div>
+                );
+            } else {
+                return (
+                    <div className="page-content">
+                        <div className="panel" style={{ textAlign: 'center', padding: '3rem' }}>
+                            <h3 style={{ color: 'var(--text-main)' }}>Access Denied</h3>
+                            <p style={{ color: 'var(--text-muted)' }}>You do not have permission to view the organization tree.</p>
+                        </div>
+                    </div>
+                );
+            }
+        }
+
         if (activeSidebar === 'My Finances') {
             const isSuper = user?.role === 'Super Admin';
             return (
@@ -2156,6 +2365,76 @@ export default function Dashboard({ user, onLogout, setUser }) {
         );
     };
 
+    const renderAnnouncementModal = () => {
+        if (!showAnnouncementModal) return null;
+        return (
+            <div style={modalOverlay}>
+                <div style={modalContent}>
+                    <div className="panel-header" style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between' }}>
+                        <span>Create Announcement</span>
+                        <span style={{ cursor: 'pointer' }} onClick={() => setShowAnnouncementModal(false)}>✕</span>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        <div>
+                            <label style={labelStyle}>Title</label>
+                            <input
+                                type="text"
+                                value={newAnnouncement.title}
+                                onChange={(e) => setNewAnnouncement({ ...newAnnouncement, title: e.target.value })}
+                                style={inputStyle}
+                                placeholder="E.g., Company Townhall"
+                            />
+                        </div>
+                        <div>
+                            <label style={labelStyle}>Content</label>
+                            <textarea
+                                value={newAnnouncement.content}
+                                onChange={(e) => setNewAnnouncement({ ...newAnnouncement, content: e.target.value })}
+                                style={{ ...inputStyle, minHeight: '100px', resize: 'vertical' }}
+                                placeholder="Details of the announcement..."
+                            />
+                        </div>
+                        <div>
+                            <label style={labelStyle}>Priority</label>
+                            <select
+                                value={newAnnouncement.priority}
+                                onChange={(e) => setNewAnnouncement({ ...newAnnouncement, priority: e.target.value })}
+                                style={inputStyle}
+                            >
+                                <option value="Low">Low</option>
+                                <option value="Medium">Medium</option>
+                                <option value="High">High</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div style={{ marginTop: '2rem', display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+                        <button className="btn btn-secondary" onClick={() => setShowAnnouncementModal(false)}>Cancel</button>
+                        <button
+                            className="btn btn-primary"
+                            onClick={async () => {
+                                if (!newAnnouncement.title || !newAnnouncement.content) {
+                                    showAlert('Please fill all required fields.', 'error');
+                                    return;
+                                }
+                                try {
+                                    await api.post('/dashboard/announcements', newAnnouncement);
+                                    showAlert('Announcement posted!', 'info');
+                                    setShowAnnouncementModal(false);
+                                    setNewAnnouncement({ title: '', content: '', priority: 'Low' });
+                                    fetchPublicData();
+                                } catch (err) {
+                                    showAlert('Failed to post announcement.', 'error');
+                                }
+                            }}
+                        >
+                            Post Announcement
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
     return (
         <div className="dashboard-layout">
             <aside className="sidebar">
@@ -2244,53 +2523,55 @@ export default function Dashboard({ user, onLogout, setUser }) {
                 <div className="dashboard-content">
                     {renderContent()}
                 </div>
-                {showHolidayModal && renderHolidayModal()}
-                {showLogInfo && renderLogInfoModal()}
-                {renderAlertModal()}
-                {renderPublicProfileModal()}
+            </main>
+            {showHolidayModal && renderHolidayModal()}
+            {showLogInfo && renderLogInfoModal()}
+            {renderAlertModal()}
+            {renderPublicProfileModal()}
+            {renderAnnouncementModal()}
+            {renderAnnouncementModal()}
 
-                {showClockInModal && (
-                    <div style={modalOverlay}>
-                        <div style={{ ...modalContent, maxWidth: '400px' }}>
-                            <div className="panel-header" style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between' }}>
-                                <span>Clock In - Select Mode</span>
-                                <span style={{ cursor: 'pointer' }} onClick={() => setShowClockInModal(false)}>✕</span>
+            {showClockInModal && (
+                <div style={modalOverlay}>
+                    <div style={{ ...modalContent, maxWidth: '400px' }}>
+                        <div className="panel-header" style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between' }}>
+                            <span>Clock In - Select Mode</span>
+                            <span style={{ cursor: 'pointer' }} onClick={() => setShowClockInModal(false)}>✕</span>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                            <div
+                                onClick={() => setSelectedWorkingMode('On-site')}
+                                style={{
+                                    padding: '1rem',
+                                    border: `1px solid ${selectedWorkingMode === 'On-site' ? 'var(--primary)' : 'var(--border-dark)'}`,
+                                    borderRadius: 'var(--radius-md)',
+                                    cursor: 'pointer',
+                                    background: selectedWorkingMode === 'On-site' ? 'rgba(var(--primary-rgb), 0.1)' : 'transparent'
+                                }}
+                            >
+                                <div style={{ fontWeight: '500' }}>Working On-Site</div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Working from the office location.</div>
                             </div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                                <div
-                                    onClick={() => setSelectedWorkingMode('On-site')}
-                                    style={{
-                                        padding: '1rem',
-                                        border: `1px solid ${selectedWorkingMode === 'On-site' ? 'var(--primary)' : 'var(--border-dark)'}`,
-                                        borderRadius: 'var(--radius-md)',
-                                        cursor: 'pointer',
-                                        background: selectedWorkingMode === 'On-site' ? 'rgba(var(--primary-rgb), 0.1)' : 'transparent'
-                                    }}
-                                >
-                                    <div style={{ fontWeight: '500' }}>Working On-Site</div>
-                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Working from the office location.</div>
-                                </div>
-                                <div
-                                    onClick={() => setSelectedWorkingMode('Remote')}
-                                    style={{
-                                        padding: '1rem',
-                                        border: `1px solid ${selectedWorkingMode === 'Remote' ? 'var(--primary)' : 'var(--border-dark)'}`,
-                                        borderRadius: 'var(--radius-md)',
-                                        cursor: 'pointer',
-                                        background: selectedWorkingMode === 'Remote' ? 'rgba(var(--primary-rgb), 0.1)' : 'transparent'
-                                    }}
-                                >
-                                    <div style={{ fontWeight: '500' }}>Working Remotely</div>
-                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Working from home or another location.</div>
-                                </div>
-                                <button className="btn btn-primary" style={{ marginTop: '1rem' }} onClick={confirmClockIn}>
-                                    Confirm Clock In
-                                </button>
+                            <div
+                                onClick={() => setSelectedWorkingMode('Remote')}
+                                style={{
+                                    padding: '1rem',
+                                    border: `1px solid ${selectedWorkingMode === 'Remote' ? 'var(--primary)' : 'var(--border-dark)'}`,
+                                    borderRadius: 'var(--radius-md)',
+                                    cursor: 'pointer',
+                                    background: selectedWorkingMode === 'Remote' ? 'rgba(var(--primary-rgb), 0.1)' : 'transparent'
+                                }}
+                            >
+                                <div style={{ fontWeight: '500' }}>Working Remotely</div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Working from home or another location.</div>
                             </div>
+                            <button className="btn btn-primary" style={{ marginTop: '1rem' }} onClick={confirmClockIn}>
+                                Confirm Clock In
+                            </button>
                         </div>
                     </div>
-                )}
-            </main>
+                </div>
+            )}
         </div>
     );
 }
@@ -2299,4 +2580,3 @@ const inputStyle = { background: 'var(--bg-panel)', color: 'var(--text-main)', b
 const labelStyle = { fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.3rem', display: 'block' };
 const modalOverlay = { position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', justifyContent: 'center', alignItems: 'center' };
 const modalContent = { background: 'var(--bg-panel)', padding: '2rem', borderRadius: 'var(--radius-lg)', width: '90%', maxWidth: '700px', boxShadow: '0 20px 50px rgba(0,0,0,0.5)', border: '1px solid var(--border-dark)' };
-
