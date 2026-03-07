@@ -98,6 +98,7 @@ export default function Dashboard({ user, onLogout }) {
     const [teammateIndividualStats, setTeammateIndividualStats] = useState([]);
     const [statsPeriod, setStatsPeriod] = useState('Last Week');
     const [showPublicProfile, setShowPublicProfile] = useState(null); // stores user object
+    const [leaveStats, setLeaveStats] = useState({ balances: {}, history: [], monthlyStats: [], weeklyPattern: [] });
 
     useEffect(() => {
         const timer = setInterval(() => setCurrentTime(new Date().toLocaleTimeString()), 1000);
@@ -124,6 +125,19 @@ export default function Dashboard({ user, onLogout }) {
             localStorage.setItem('theme', 'dark');
         }
     }, [isLightMode]);
+
+    const fetchLeaveStats = async () => {
+        try {
+            const res = await api.get('/leaves/stats');
+            setLeaveStats(res.data);
+        } catch (err) { console.error('Failed to fetch leave stats'); }
+    };
+
+    useEffect(() => {
+        if (activeSidebar === 'Me' && activeSubTab === 'Leave') {
+            fetchLeaveStats();
+        }
+    }, [activeSidebar, activeSubTab]);
 
     const toggleTheme = () => {
         setIsLightMode(!isLightMode);
@@ -1245,22 +1259,191 @@ export default function Dashboard({ user, onLogout }) {
                         }
 
                         {activeSubTab === 'Leave' && (
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem' }}>
-                                {[
-                                    { label: 'SICK LEAVE', value: user?.leaveQuotas?.sick || 6, color: 'var(--primary)' },
-                                    { label: 'CASUAL LEAVE', value: user?.leaveQuotas?.casual || 6, color: '#10b981' },
-                                    { label: 'PAID LEAVE', value: user?.leaveQuotas?.paid || 12, color: '#f59e0b' }
-                                ].map(l => (
-                                    <div key={l.label} className="panel" style={{ padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <div>
-                                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: '600', marginBottom: '0.5rem' }}>{l.label}</div>
-                                            <div style={{ fontSize: '1.75rem', fontWeight: 'bold' }}>{l.value}</div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                                {/* My Leave Stats */}
+                                <div>
+                                    <div style={{ fontSize: '0.9rem', fontWeight: '500', marginBottom: '1rem', color: 'var(--text-main)' }}>My Leave Stats</div>
+                                    <div className="grid" style={{ gridTemplateColumns: '1fr 1fr 1fr', gap: '1.5rem' }}>
+                                        {/* Weekly Pattern */}
+                                        <div className="panel" style={{ padding: '1.25rem' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+                                                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Weekly Pattern</span>
+                                                <Info size={14} color="var(--text-muted)" />
+                                            </div>
+                                            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', height: '100px', padding: '0 0.5rem' }}>
+                                                {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, i) => (
+                                                    <div key={day} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', flex: 1 }}>
+                                                        <div style={{ width: '12px', height: `${(leaveStats.weeklyPattern?.[i] || 0) * 20 + 2}px`, minHeight: '4px', background: 'var(--primary)', borderRadius: '2px', opacity: 0.8 }}></div>
+                                                        <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>{day[0]}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
                                         </div>
-                                        <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: `${l.color}20`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                            <Calendar size={20} color={l.color} />
+                                        {/* Consumed Leave Types */}
+                                        <div className="panel" style={{ padding: '1.25rem', textAlign: 'center' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                                                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Consumed Leave Types</span>
+                                                <Info size={14} color="var(--text-muted)" />
+                                            </div>
+                                            <div style={{ position: 'relative', width: '80px', height: '80px', margin: '0 auto' }}>
+                                                <svg viewBox="0 0 36 36" style={{ transform: 'rotate(-90deg)' }}>
+                                                    <circle cx="18" cy="18" r="15.915" fill="transparent" stroke="var(--border-dark)" strokeWidth="4"></circle>
+                                                    {Object.entries(leaveStats.balances || {}).map(([type, data], i, arr) => {
+                                                        const totalConsumed = arr.reduce((acc, [_, d]) => acc + d.consumed, 0);
+                                                        if (totalConsumed === 0) return null;
+                                                        const colors = ['#a855f7', '#10b981', '#f59e0b', '#3b82f6'];
+                                                        let offset = 0;
+                                                        for (let j = 0; j < i; j++) offset += (arr[j][1].consumed / totalConsumed) * 100;
+                                                        const dash = (data.consumed / totalConsumed) * 100;
+                                                        return (
+                                                            <circle
+                                                                key={type}
+                                                                cx="18" cy="18" r="15.915"
+                                                                fill="transparent"
+                                                                stroke={colors[i % colors.length]}
+                                                                strokeWidth="4"
+                                                                strokeDasharray={`${dash} ${100 - dash}`}
+                                                                strokeDashoffset={100 - offset + 25}
+                                                            ></circle>
+                                                        );
+                                                    })}
+                                                </svg>
+                                                <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', fontSize: '0.65rem', fontWeight: '600' }}>
+                                                    Leave<br />Types
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {/* Monthly Stats */}
+                                        <div className="panel" style={{ padding: '1.25rem' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+                                                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Monthly Stats</span>
+                                                <Info size={14} color="var(--text-muted)" />
+                                            </div>
+                                            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', height: '100px', padding: '0 0.5rem', gap: '2px' }}>
+                                                {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((m, i) => (
+                                                    <div key={m} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', flex: 1 }}>
+                                                        <div style={{ width: '100%', height: `${(leaveStats.monthlyStats?.[i] || 0) * 10 + 2}px`, minHeight: '2px', background: 'var(--primary)', borderRadius: '1px', opacity: i < new Date().getMonth() + 1 ? 0.8 : 0.2 }}></div>
+                                                        <span style={{ fontSize: '0.55rem', color: 'var(--text-muted)' }}>{m[0]}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
                                         </div>
                                     </div>
-                                ))}
+                                </div>
+
+                                {/* Leave Balances */}
+                                <div>
+                                    <div style={{ fontSize: '0.9rem', fontWeight: '500', marginBottom: '1rem', color: 'var(--text-main)' }}>Leave Balances</div>
+                                    <div className="grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.5rem' }}>
+                                        {[
+                                            { type: 'Casual Leave', key: 'Casual', color: '#a855f7' },
+                                            { type: 'Paid Leave', key: 'Paid', color: '#f87171' },
+                                            { type: 'Sick Leave', key: 'Sick', color: '#06b6d4' },
+                                            { type: 'Comp Off', key: 'Comp Off', color: '#d1d5db' }
+                                        ].map(item => {
+                                            const data = leaveStats.balances?.[item.key] || { total: 0, consumed: 0 };
+                                            const available = Math.max(0, data.total - data.consumed);
+                                            const percentage = data.total > 0 ? (available / data.total) * 100 : 0;
+                                            return (
+                                                <div key={item.key} className="panel" style={{ padding: '1.5rem' }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+                                                        <span style={{ fontSize: '0.85rem', fontWeight: '500' }}>{item.type}</span>
+                                                        <span style={{ fontSize: '0.7rem', color: 'var(--primary)', cursor: 'pointer' }}>View details</span>
+                                                    </div>
+                                                    <div style={{ position: 'relative', width: '100px', height: '100px', margin: '0 auto 1.5rem' }}>
+                                                        <svg viewBox="0 0 36 36" style={{ transform: 'rotate(-90deg)', width: '100%', height: '100%' }}>
+                                                            <circle cx="18" cy="18" r="15.915" fill="transparent" stroke={`${item.color}20`} strokeWidth="3"></circle>
+                                                            <circle
+                                                                cx="18" cy="18" r="15.915"
+                                                                fill="transparent"
+                                                                stroke={item.color}
+                                                                strokeWidth="3"
+                                                                strokeDasharray={`${percentage} ${100 - percentage}`}
+                                                                strokeDashoffset="25"
+                                                            ></circle>
+                                                        </svg>
+                                                        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center' }}>
+                                                            <div style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>{available === Infinity ? '∞' : available} Days</div>
+                                                            <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>Available</div>
+                                                        </div>
+                                                    </div>
+                                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', borderTop: '1px solid var(--border-dark)', paddingTop: '1rem', marginTop: 'auto' }}>
+                                                        <div>
+                                                            <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Available</div>
+                                                            <div style={{ fontSize: '0.8rem', fontWeight: '500' }}>{available === Infinity ? '∞' : `${available} days`}</div>
+                                                        </div>
+                                                        <div style={{ textAlign: 'right' }}>
+                                                            <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Consumed</div>
+                                                            <div style={{ fontSize: '0.8rem', fontWeight: '500' }}>{data.consumed} days</div>
+                                                        </div>
+                                                        <div style={{ marginTop: '0.5rem' }}>
+                                                            <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Annual Quota</div>
+                                                            <div style={{ fontSize: '0.8rem', fontWeight: '500' }}>{data.total === Infinity ? '∞' : `${data.total} days`}</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
+                                {/* Leave History */}
+                                <div>
+                                    <div style={{ fontSize: '0.9rem', fontWeight: '500', marginBottom: '1rem', color: 'var(--text-main)' }}>Leave History</div>
+                                    <div className="panel" style={{ padding: 0 }}>
+                                        <table className="data-table">
+                                            <thead>
+                                                <tr style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                                                    <th>Leave Dates</th>
+                                                    <th>Leave Type</th>
+                                                    <th>Status</th>
+                                                    <th>Requested By</th>
+                                                    <th>Action Taken On</th>
+                                                    <th>Leave Note</th>
+                                                    <th>Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {leaveStats.history?.length > 0 ? leaveStats.history.map(h => (
+                                                    <tr key={h._id}>
+                                                        <td style={{ fontSize: '0.8rem' }}>
+                                                            {new Date(h.startDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                                            {h.startDate !== h.endDate && ` - ${new Date(h.endDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}`}
+                                                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                                                                {Math.ceil((new Date(h.endDate) - new Date(h.startDate)) / (1000 * 60 * 60 * 24)) + 1} day(s)
+                                                            </div>
+                                                        </td>
+                                                        <td style={{ fontSize: '0.85rem' }}>
+                                                            {h.type}
+                                                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Requested on {new Date(h.createdAt).toLocaleDateString()}</div>
+                                                        </td>
+                                                        <td>
+                                                            <span style={{
+                                                                padding: '0.2rem 0.5rem',
+                                                                borderRadius: '4px',
+                                                                fontSize: '0.7rem',
+                                                                fontWeight: '500',
+                                                                background: h.status === 'Approved' ? '#10b98120' : h.status === 'Rejected' ? '#ef444420' : '#8b5cf620',
+                                                                color: h.status === 'Approved' ? '#10b981' : h.status === 'Rejected' ? '#ef4444' : '#8b5cf6'
+                                                            }}>
+                                                                {h.status}
+                                                            </span>
+                                                            {h.status === 'Approved' && h.approvedBy && (
+                                                                <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '4px' }}>by {h.approvedBy.name}</div>
+                                                            )}
+                                                        </td>
+                                                        <td style={{ fontSize: '0.8rem' }}>{user.name}</td>
+                                                        <td style={{ fontSize: '0.8rem' }}>{h.status !== 'Pending' ? new Date(h.updatedAt).toLocaleDateString() : '-'}</td>
+                                                        <td style={{ fontSize: '0.75rem', color: 'var(--text-muted)', maxWidth: '150px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{h.reason || '-'}</td>
+                                                        <td><Info size={14} color="var(--primary)" style={{ cursor: 'pointer' }} /></td>
+                                                    </tr>
+                                                )) : (
+                                                    <tr><td colSpan="7" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>No leave history found.</td></tr>
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
                             </div>
                         )}
 
@@ -1503,9 +1686,30 @@ export default function Dashboard({ user, onLogout }) {
                                             <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Working Hours / Day</label>
                                             <input type="number" value={systemSettings.workingHoursPerDay || ''} onChange={e => setSystemSettings({ ...systemSettings, workingHoursPerDay: e.target.value })} style={{ ...inputStyle, width: '100px' }} />
                                         </div>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                            <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Default Leave Quota</label>
-                                            <input type="number" value={systemSettings.defaultLeaveQuota || ''} onChange={e => setSystemSettings({ ...systemSettings, defaultLeaveQuota: e.target.value })} style={{ ...inputStyle, width: '100px' }} />
+
+                                        <div style={{ borderTop: '1px solid var(--border-dark)', marginTop: '0.5rem', paddingTop: '1rem' }}>
+                                            <div style={{ fontSize: '0.85rem', fontWeight: '500', marginBottom: '1rem' }}>Default Leave Quotas (Apply to All Users)</div>
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                                {[
+                                                    { label: 'Paid Leave', key: 'paid' },
+                                                    { label: 'Sick Leave', key: 'sick' },
+                                                    { label: 'Casual Leave', key: 'casual' },
+                                                    { label: 'Comp Off', key: 'compOff' }
+                                                ].map(q => (
+                                                    <div key={q.key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                        <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{q.label}</label>
+                                                        <input
+                                                            type="number"
+                                                            value={systemSettings.defaultLeaveQuotas?.[q.key] ?? 0}
+                                                            onChange={e => setSystemSettings({
+                                                                ...systemSettings,
+                                                                defaultLeaveQuotas: { ...systemSettings.defaultLeaveQuotas, [q.key]: parseInt(e.target.value) || 0 }
+                                                            })}
+                                                            style={{ ...inputStyle, width: '60px' }}
+                                                        />
+                                                    </div>
+                                                ))}
+                                            </div>
                                         </div>
                                         <button className="btn btn-primary" onClick={handleSaveSettings} style={{ marginTop: '1rem' }}>Save Settings</button>
                                     </div>
@@ -1615,7 +1819,8 @@ export default function Dashboard({ user, onLogout }) {
                                             </div>
                                             <div><label style={labelStyle}>Paid Leaves</label><input type="number" value={selectedUser.leaveQuotas?.paid || 12} onChange={e => setSelectedUser({ ...selectedUser, leaveQuotas: { ...selectedUser.leaveQuotas, paid: Number(e.target.value) } })} style={inputStyle} /></div>
                                             <div><label style={labelStyle}>Sick Leaves</label><input type="number" value={selectedUser.leaveQuotas?.sick || 6} onChange={e => setSelectedUser({ ...selectedUser, leaveQuotas: { ...selectedUser.leaveQuotas, sick: Number(e.target.value) } })} style={inputStyle} /></div>
-                                            <div><label style={labelStyle}>Casual Leaves</label><input type="number" value={selectedUser.leaveQuotas?.casual || 6} onChange={e => setSelectedUser({ ...selectedUser, leaveQuotas: { ...selectedUser.leaveQuotas, casual: Number(e.target.value) } })} style={inputStyle} /></div>
+                                            <div><label style={labelStyle}>Casual Leaves</label><input type="number" value={selectedUser.leaveQuotas?.casual || 0} onChange={e => setSelectedUser({ ...selectedUser, leaveQuotas: { ...selectedUser.leaveQuotas, casual: Number(e.target.value) } })} style={inputStyle} /></div>
+                                            <div><label style={labelStyle}>Comp Offs</label><input type="number" value={selectedUser.leaveQuotas?.compOff || 0} onChange={e => setSelectedUser({ ...selectedUser, leaveQuotas: { ...selectedUser.leaveQuotas, compOff: Number(e.target.value) } })} style={inputStyle} /></div>
 
                                             <div style={{ gridColumn: 'span 2' }}>
                                                 <h4 style={{ color: 'var(--primary)', borderBottom: '1px solid var(--border-dark)', paddingBottom: '0.5rem', marginTop: '0.5rem', fontSize: '0.9rem' }}>Finances & Salary</h4>
