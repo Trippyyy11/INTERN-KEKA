@@ -58,3 +58,54 @@ export const updateLeaveStatus = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+// @desc    Get Detailed Leave Stats
+// @route   GET /api/leaves/stats
+// @access  Private
+export const getLeaveStats = async (req, res) => {
+    try {
+        const user = req.user;
+        const leaves = await Leave.find({ user: user._id }).sort({ startDate: -1 }).populate('approvedBy', 'name');
+
+        const quotas = user.leaveQuotas || { paid: 12, sick: 6, casual: 6, compOff: 0 };
+
+        const summary = {
+            'Paid': { total: quotas.paid, consumed: 0 },
+            'Sick': { total: quotas.sick, consumed: 0 },
+            'Casual': { total: quotas.casual, consumed: 0 },
+            'Comp Off': { total: quotas.compOff, consumed: 0 },
+            'Unpaid': { total: Infinity, consumed: 0 }
+        };
+
+        const monthlyStats = Array(12).fill(0);
+        const weeklyPattern = Array(7).fill(0); // Mon-Sun
+
+        leaves.forEach(leave => {
+            if (leave.status === 'Approved') {
+                const start = new Date(leave.startDate);
+                const end = new Date(leave.endDate);
+                const days = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+
+                if (summary[leave.type]) {
+                    summary[leave.type].consumed += days;
+                }
+
+                // Monthly distribution
+                monthlyStats[start.getMonth()] += days;
+
+                // Weekly distribution (simplified: use start date)
+                let day = start.getDay(); // 0 is Sun
+                let kekaDayIndex = day === 0 ? 6 : day - 1; // Mon=0, Sun=6
+                weeklyPattern[kekaDayIndex] += days;
+            }
+        });
+
+        res.status(200).json({
+            balances: summary,
+            history: leaves,
+            monthlyStats,
+            weeklyPattern
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};

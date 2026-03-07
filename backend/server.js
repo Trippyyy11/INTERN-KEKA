@@ -7,6 +7,7 @@ import connectDB from './config/db.js';
 dotenv.config();
 
 connectDB();
+console.log('JWT_SECRET loaded:', !!process.env.JWT_SECRET, 'Length:', process.env.JWT_SECRET?.length);
 
 const app = express();
 

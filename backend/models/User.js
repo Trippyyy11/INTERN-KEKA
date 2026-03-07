@@ -14,6 +14,8 @@ const userSchema = new mongoose.Schema(
         dob: { type: Date },
         place: { type: String },
         phoneNumber: { type: String },
+        bloodGroup: { type: String },
+        gender: { type: String },
         isVerified: { type: Boolean, default: false },
         isApproved: { type: Boolean, default: false },
         otp: { type: String },
@@ -37,7 +39,8 @@ const userSchema = new mongoose.Schema(
         leaveQuotas: {
             paid: { type: Number, default: 12 },
             sick: { type: Number, default: 6 },
-            casual: { type: Number, default: 6 }
+            casual: { type: Number, default: 6 },
+            compOff: { type: Number, default: 0 }
         },
         isActive: { type: Boolean, default: true },
         welcomeProfile: {

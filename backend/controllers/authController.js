@@ -4,6 +4,8 @@ import OrgConfig from '../models/OrgConfig.js';
 import sendEmail from '../utils/sendEmail.js';
 import crypto from 'crypto';
 
+import Settings from '../models/Settings.js';
+
 const generateToken = (id) => {
     return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '30d' });
 };
@@ -98,7 +100,7 @@ export const resendOTP = async (req, res) => {
 // @route   POST /api/auth/complete-registration
 export const completeRegistration = async (req, res) => {
     try {
-        const { email, password, designation, department, joiningDate, dob, place, phoneNumber } = req.body;
+        const { email, password, designation, department, joiningDate, dob, place, phoneNumber, bloodGroup, gender } = req.body;
         const user = await User.findOne({ email });
 
         if (!user || !user.isVerified) return res.status(400).json({ message: 'Please verify email first.' });
@@ -114,8 +116,16 @@ export const completeRegistration = async (req, res) => {
         user.dob = dob;
         user.place = place;
         user.phoneNumber = phoneNumber;
+        user.bloodGroup = bloodGroup;
+        user.gender = gender;
         user.isApproved = isFirstUser;
         user.role = isFirstUser ? 'Super Admin' : 'Employee';
+
+        // Fetch system settings for default leave quotas
+        const settings = await Settings.findOne();
+        if (settings && settings.defaultLeaveQuotas) {
+            user.leaveQuotas = { ...settings.defaultLeaveQuotas };
+        }
 
         await user.save();
 
@@ -135,6 +145,39 @@ export const completeRegistration = async (req, res) => {
             requiresApproval: true
         });
     } catch (error) { res.status(500).json({ message: error.message }); }
+};
+
+// @desc    Update own profile
+// @route   PUT /api/auth/profile
+export const updateProfile = async (req, res) => {
+    try {
+        const { name, dob, joiningDate, phoneNumber, bloodGroup, gender, place, department, designation } = req.body;
+
+        const updateData = {};
+        if (name) updateData.name = name;
+        if (dob) updateData.dob = dob;
+        if (joiningDate) updateData.joiningDate = joiningDate;
+        if (phoneNumber) updateData.phoneNumber = phoneNumber;
+        if (bloodGroup) updateData.bloodGroup = bloodGroup;
+        if (gender) updateData.gender = gender;
+        if (place) updateData.place = place;
+        if (department) updateData.department = department;
+        if (designation) updateData.designation = designation;
+
+        const updatedUser = await User.findByIdAndUpdate(
+            req.user._id,
+            { $set: updateData },
+            { new: true, runValidators: true }
+        ).select('-password');
+
+        if (updatedUser) {
+            res.json(updatedUser);
+        } else {
+            res.status(404).json({ message: 'User not found' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
 };
 
 // @desc    Login

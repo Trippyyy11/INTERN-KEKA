@@ -4,7 +4,12 @@ const settingsSchema = new mongoose.Schema(
     {
         // Define settings the admin can change dynamically
         workingHoursPerDay: { type: Number, default: 8 },
-        defaultLeaveQuota: { type: Number, default: 12 },
+        defaultLeaveQuotas: {
+            paid: { type: Number, default: 12 },
+            sick: { type: Number, default: 6 },
+            casual: { type: Number, default: 6 },
+            compOff: { type: Number, default: 0 }
+        },
         companyName: { type: String, default: 'Teaching Pariksha' }
     },
     { timestamps: true }

@@ -25,7 +25,7 @@ export const approveUser = async (req, res) => {
 // @desc    Update user specific data (Salary, Designation etc by Admin)
 export const updateUserDetails = async (req, res) => {
     try {
-        const { salary, role, department, designation, isActive, workingSchedule, leaveQuotas, salaryDetails } = req.body;
+        const { salary, role, department, designation, isActive, workingSchedule, leaveQuotas, salaryDetails, dob, joiningDate, phoneNumber, bloodGroup, gender, place } = req.body;
         const user = await User.findById(req.params.id);
         if (user) {
             if (salary) user.salary = { ...user.salary, ...salary };
@@ -36,6 +36,13 @@ export const updateUserDetails = async (req, res) => {
             if (department) user.department = department;
             if (designation) user.designation = designation;
             if (typeof isActive !== 'undefined') user.isActive = isActive;
+
+            if (dob) user.dob = dob;
+            if (joiningDate) user.joiningDate = joiningDate;
+            if (phoneNumber) user.phoneNumber = phoneNumber;
+            if (bloodGroup) user.bloodGroup = bloodGroup;
+            if (gender) user.gender = gender;
+            if (place) user.place = place;
 
             await user.save();
             res.json(user);
@@ -85,9 +92,29 @@ export const getSettings = async (req, res) => {
 
 export const updateSettings = async (req, res) => {
     try {
-        let settings = await Settings.findOne() || await Settings.create(req.body);
-        Object.assign(settings, req.body);
-        await settings.save();
+        let settings = await Settings.findOne();
+        const oldQuotas = settings?.defaultLeaveQuotas;
+
+        if (!settings) {
+            settings = await Settings.create(req.body);
+        } else {
+            Object.assign(settings, req.body);
+            await settings.save();
+        }
+
+        // If leave quotas were updated, propagate to all users
+        if (req.body.defaultLeaveQuotas) {
+            const newQuotas = req.body.defaultLeaveQuotas;
+
+            // Logic: Update all users to the new defaults.
+            // If we wanted to be smarter, we'd only update those who match the old defaults.
+            // But usually 'generalized' means everyone follows the new policy unless specifically changed.
+            await User.updateMany(
+                {}, // Update all users
+                { $set: { leaveQuotas: newQuotas } }
+            );
+        }
+
         res.json(settings);
     } catch (error) { res.status(500).json({ message: error.message }); }
 };
