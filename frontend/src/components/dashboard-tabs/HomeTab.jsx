@@ -38,25 +38,27 @@ export default function HomeTab({
 
     return (
         <div className="page-content">
-            <div style={{ display: 'flex', gap: '1rem', borderBottom: '1px solid var(--border-dark)', paddingBottom: '0.5rem', marginBottom: '1.5rem', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 'bold' }}>
+            <div style={{ display: 'flex', gap: '0.75rem', borderBottom: '1px solid var(--border-dark)', paddingBottom: '0.75rem', marginBottom: '1.5rem', alignItems: 'center' }}>
                 <span
-                    style={{ color: homeSubTab === 'Dashboard' ? 'var(--text-main)' : 'var(--text-muted)', borderBottom: homeSubTab === 'Dashboard' ? '2px solid var(--primary)' : 'none', paddingBottom: '0.5rem', cursor: 'pointer', marginBottom: '-0.5rem' }}
+                    className={`tab-pill primary ${homeSubTab === 'Dashboard' ? 'active' : ''}`}
+                    style={{ fontSize: '0.85rem', fontWeight: '800', letterSpacing: '0.5px' }}
                     onClick={() => setHomeSubTab('Dashboard')}
                 >
                     DASHBOARD
                 </span>
                 <span
-                    style={{ color: homeSubTab === 'Welcome' ? 'var(--text-main)' : 'var(--text-muted)', borderBottom: homeSubTab === 'Welcome' ? '2px solid var(--primary)' : 'none', paddingBottom: '0.5rem', cursor: 'pointer', marginBottom: '-0.5rem' }}
+                    className={`tab-pill primary ${homeSubTab === 'Welcome' ? 'active' : ''}`}
+                    style={{ fontSize: '0.85rem', fontWeight: '800', letterSpacing: '0.5px' }}
                     onClick={() => setHomeSubTab('Welcome')}
                 >
-                    WELCOME <span style={{ color: 'var(--danger)' }}>1</span>
+                    WELCOME <span style={{ color: homeSubTab === 'Welcome' ? 'white' : 'var(--danger)', background: homeSubTab === 'Welcome' ? 'var(--danger)' : 'transparent', padding: '0 6px', borderRadius: '10px', marginLeft: '4px' }}></span>
                 </span>
             </div>
 
             {homeSubTab === 'Dashboard' && (
                 <>
                     <div className="welcome-banner">
-                        <h1>Welcome {user?.name || 'Tuba Zainab'}!</h1>
+                        <h1>Welcome {user?.name}!</h1>
                     </div>
 
                     <div className="grid" style={{ gridTemplateColumns: 'minmax(300px, 350px) 1fr', gap: '2rem', minHeight: '600px', backgroundImage: 'url("data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'400\' height=\'600\' viewBox=\'0 0 400 600\'><path d=\'M350,600 C350,500 320,400 400,300 C380,300 360,320 340,350 C340,250 300,150 400,50 C380,100 350,150 340,200 C320,150 300,100 250,50 C280,100 300,150 310,220 C280,200 250,180 200,150 C240,180 280,220 310,260 C250,250 200,240 150,250 C200,270 250,290 320,300 C280,320 250,340 200,400 C300,350 310,400 350,600 Z\' fill=\'rgba(255,255,255,0.03)\'/></svg>")', backgroundPosition: 'right bottom', backgroundRepeat: 'no-repeat' }}>
@@ -69,11 +71,11 @@ export default function HomeTab({
                                     <div className="panel holiday-card" style={{ marginBottom: '1rem' }}>
                                         <div className="panel-header" style={{ marginBottom: '0.5rem', borderBottom: 'none' }}>
                                             <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)' }}>Holidays</span>
-                                            <span className="view-details" style={{ color: '#f59e0b', cursor: 'pointer' }} onClick={() => setShowHolidayModal(true)}>View All</span>
+                                            <span className="view-details" style={{ color: '#ffab00', cursor: 'pointer' }} onClick={() => setShowHolidayModal(true)}>View All</span>
                                         </div>
                                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.5rem 0' }}>
                                             <div style={{ textAlign: 'center', width: '100%' }}>
-                                                <h3 style={{ color: '#f59e0b', fontSize: '1.5rem', marginBottom: '0.25rem', fontFamily: 'serif' }}>{dashData.holidays[0].name}</h3>
+                                                <h3 style={{ color: '#ffab00', fontSize: '1.5rem', marginBottom: '0.25rem', fontFamily: 'serif' }}>{dashData.holidays[0].name}</h3>
                                                 <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.7)' }}>{new Date(dashData.holidays[0].date).toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' })}</div>
                                             </div>
                                         </div>
@@ -93,7 +95,7 @@ export default function HomeTab({
                                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.8rem' }}>
                                         {dashData.leaves.length > 0 ? dashData.leaves.map(l => (
                                             <div key={l._id} style={{ textAlign: 'center' }}>
-                                                <div className="avatar" style={{ border: '2px solid #64748b', background: '#64748b', overflow: 'hidden' }}>
+                                                <div className="avatar" style={{ border: '2px solid #4a5568', background: '#4a5568', overflow: 'hidden' }}>
                                                     {l.user?.avatar ? <img src={l.user.avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : l.user?.name?.substring(0, 2).toUpperCase()}
                                                 </div>
                                                 <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>{l.user?.name?.split(' ')[0]}</div>
@@ -108,7 +110,7 @@ export default function HomeTab({
                                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.8rem' }}>
                                         {dashData.workingRemotely.length > 0 ? dashData.workingRemotely.map(w => (
                                             <div key={w._id} style={{ textAlign: 'center' }}>
-                                                <div className="avatar" style={{ border: '2px solid #10b981', background: '#10b981', overflow: 'hidden' }}>
+                                                <div className="avatar" style={{ border: '2px solid #00ff88', background: '#00ff88', overflow: 'hidden' }}>
                                                     {w.user?.avatar ? <img src={w.user.avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : w.user?.name?.substring(0, 2).toUpperCase()}
                                                 </div>
                                                 <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>{w.user?.name?.split(' ')[0]}</div>
@@ -121,53 +123,78 @@ export default function HomeTab({
 
                         {/* Main Organization Column */}
                         <div style={{ zIndex: 1 }}>
-                            <div style={{ display: 'flex', marginBottom: '1rem' }}>
+                            <div style={{ display: 'flex', marginBottom: '1rem', borderBottom: '1px solid var(--border-dark)', paddingBottom: '0.75rem', gap: '1rem' }}>
                                 <button
-                                    className="btn"
+                                    className={`tab-pill primary ${homeTab === 'Organization' ? 'active' : ''}`}
                                     style={{
-                                        background: 'var(--bg-panel)',
-                                        color: 'var(--primary)',
-                                        border: '1px solid var(--border-dark)',
-                                        borderBottom: 'none',
-                                        borderRadius: '4px 4px 0 0',
-                                        fontWeight: '500',
-                                        padding: '0.5rem 1rem'
+                                        border: 'none',
+                                        background: homeTab === 'Organization' ? 'rgba(0, 255, 136, 0.1)' : 'transparent',
+                                        color: homeTab === 'Organization' ? 'var(--primary)' : 'var(--text-muted)',
+                                        fontSize: '0.9rem',
+                                        padding: '0.5rem 1rem',
+                                        borderRadius: '6px',
+                                        cursor: 'pointer'
                                     }}
                                     onClick={() => setHomeTab('Organization')}
                                 >
                                     Organization
                                 </button>
-                                <div style={{ flex: 1, borderBottom: '1px solid var(--border-dark)' }}></div>
+                                <button
+                                    className={`tab-pill primary ${homeTab === 'Activities' ? 'active' : ''}`}
+                                    style={{
+                                        border: 'none',
+                                        background: homeTab === 'Activities' ? 'rgba(0, 255, 136, 0.1)' : 'transparent',
+                                        color: homeTab === 'Activities' ? 'var(--primary)' : 'var(--text-muted)',
+                                        fontSize: '0.9rem',
+                                        padding: '0.5rem 1rem',
+                                        borderRadius: '6px',
+                                        cursor: 'pointer'
+                                    }}
+                                    onClick={() => setHomeTab('Activities')}
+                                >
+                                    Activities
+                                </button>
                             </div>
 
                             {homeTab === 'Organization' ? (
                                 <>
-                                    <div className="panel" style={{ marginBottom: '1.5rem', padding: '1.5rem', borderRadius: '8px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)' }}>
-                                        <div style={{ display: 'flex', gap: '1.5rem', borderBottom: '1px solid var(--border-dark)', paddingBottom: '0.8rem', marginBottom: '1.5rem', fontSize: '0.85rem' }}>
+                                    <div className="panel" style={{ marginBottom: '1.5rem', padding: '1.5rem' }}>
+                                        <div style={{ display: 'flex', gap: '0.75rem', borderBottom: '1px solid var(--border-dark)', paddingBottom: '1rem', marginBottom: '1.5rem' }}>
                                             <span
-                                                style={{ color: orgActionTab === 'Post' ? '#f59e0b' : 'var(--text-muted)', borderBottom: orgActionTab === 'Post' ? '2px solid #f59e0b' : 'none', paddingBottom: '0.8rem', marginBottom: '-0.8rem', display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', fontWeight: orgActionTab === 'Post' ? '600' : 'normal' }}
+                                                className={`tab-pill amber ${orgActionTab === 'Post' ? 'active' : ''}`}
                                                 onClick={() => setOrgActionTab('Post')}
                                             >✎ Post</span>
                                             <span
-                                                style={{ color: orgActionTab === 'Poll' ? '#f59e0b' : 'var(--text-muted)', borderBottom: orgActionTab === 'Poll' ? '2px solid #f59e0b' : 'none', paddingBottom: '0.8rem', marginBottom: '-0.8rem', display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', fontWeight: orgActionTab === 'Poll' ? '600' : 'normal' }}
+                                                className={`tab-pill cyan ${orgActionTab === 'Poll' ? 'active' : ''}`}
                                                 onClick={() => setOrgActionTab('Poll')}
                                             >📊 Poll</span>
                                             <span
-                                                style={{ color: orgActionTab === 'Praise' ? '#f59e0b' : 'var(--text-muted)', borderBottom: orgActionTab === 'Praise' ? '2px solid #f59e0b' : 'none', paddingBottom: '0.8rem', marginBottom: '-0.8rem', display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', fontWeight: orgActionTab === 'Praise' ? '600' : 'normal' }}
+                                                className={`tab-pill purple ${orgActionTab === 'Praise' ? 'active' : ''}`}
                                                 onClick={() => setOrgActionTab('Praise')}
                                             >🏆 Praise</span>
                                         </div>
+
                                         {orgActionTab === 'Post' && (
-                                            <>
+                                            <div style={{ padding: '0.5rem 0' }}>
                                                 <textarea
                                                     value={postText}
                                                     onChange={(e) => setPostText(e.target.value)}
                                                     placeholder="Write your post here and mention your peers"
-                                                    style={{ width: '100%', background: 'transparent', border: 'none', color: 'var(--text-main)', resize: 'none', height: '80px', outline: 'none', padding: '0.5rem 0', fontSize: '0.9rem' }}
+                                                    style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-dark)', color: 'var(--text-main)', resize: 'none', height: '100px', outline: 'none', padding: '1rem', fontSize: '0.9rem', borderRadius: '8px', transition: 'all 0.3s ease' }}
                                                 />
                                                 <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
                                                     <button
-                                                        style={{ background: '#9333ea', color: 'white', border: 'none', borderRadius: '4px', padding: '0.5rem 1.5rem', fontSize: '0.85rem', cursor: 'pointer', opacity: postText ? 1 : 0.6 }}
+                                                        style={{
+                                                            background: postText ? 'linear-gradient(135deg, #ffab00 0%, #f59e0b 100%)' : 'rgba(255,171,0,0.1)',
+                                                            color: postText ? '#0a0e17' : 'rgba(255,171,0,0.5)',
+                                                            border: postText ? 'none' : '1px solid rgba(255,171,0,0.2)',
+                                                            borderRadius: '6px',
+                                                            padding: '0.6rem 2rem',
+                                                            fontSize: '0.85rem',
+                                                            cursor: postText ? 'pointer' : 'default',
+                                                            fontWeight: 'bold',
+                                                            boxShadow: postText ? '0 4px 12px rgba(245, 158, 11, 0.3)' : 'none'
+                                                        }}
                                                         onClick={async () => {
                                                             if (postText) {
                                                                 try {
@@ -185,36 +212,46 @@ export default function HomeTab({
                                                         Post
                                                     </button>
                                                 </div>
-                                            </>
+                                            </div>
                                         )}
                                         {orgActionTab === 'Poll' && (
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', padding: '0.5rem 0' }}>
                                                 <input
                                                     type="text"
                                                     value={poll.question}
                                                     onChange={(e) => setPoll({ ...poll, question: e.target.value })}
                                                     placeholder="Ask something..."
-                                                    style={{ ...inputStyle, padding: '0.4rem' }}
+                                                    style={{ ...inputStyle, padding: '0.8rem', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-dark)', borderRadius: '8px' }}
                                                 />
-                                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                <div style={{ display: 'flex', gap: '1rem' }}>
                                                     <input
                                                         type="text"
                                                         value={poll.option1}
                                                         onChange={(e) => setPoll({ ...poll, option1: e.target.value })}
                                                         placeholder="Option 1"
-                                                        style={{ ...inputStyle, padding: '0.4rem', fontSize: '0.75rem' }}
+                                                        style={{ ...inputStyle, padding: '0.8rem', flex: 1, background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-dark)', borderRadius: '8px' }}
                                                     />
                                                     <input
                                                         type="text"
                                                         value={poll.option2}
                                                         onChange={(e) => setPoll({ ...poll, option2: e.target.value })}
                                                         placeholder="Option 2"
-                                                        style={{ ...inputStyle, padding: '0.4rem', fontSize: '0.75rem' }}
+                                                        style={{ ...inputStyle, padding: '0.8rem', flex: 1, background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-dark)', borderRadius: '8px' }}
                                                     />
                                                 </div>
-                                                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
+                                                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
                                                     <button
-                                                        style={{ background: '#9333ea', color: 'white', border: 'none', borderRadius: '4px', padding: '0.5rem 1.5rem', fontSize: '0.85rem', cursor: 'pointer' }}
+                                                        style={{
+                                                            background: 'linear-gradient(135deg, #00d4ff 0%, #0099ff 100%)',
+                                                            color: '#0a0e17',
+                                                            border: 'none',
+                                                            borderRadius: '6px',
+                                                            padding: '0.6rem 2rem',
+                                                            fontSize: '0.85rem',
+                                                            cursor: 'pointer',
+                                                            fontWeight: 'bold',
+                                                            boxShadow: '0 4px 12px rgba(0, 212, 255, 0.3)'
+                                                        }}
                                                         onClick={async () => {
                                                             if (poll.question && poll.option1 && poll.option2) {
                                                                 try {
@@ -242,11 +279,11 @@ export default function HomeTab({
                                             </div>
                                         )}
                                         {orgActionTab === 'Praise' && (
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', padding: '0.5rem 0' }}>
                                                 <select
                                                     value={praise.user}
                                                     onChange={(e) => setPraise({ ...praise, user: e.target.value })}
-                                                    style={{ ...inputStyle, padding: '0.4rem', fontSize: '0.75rem' }}
+                                                    style={{ ...inputStyle, padding: '0.8rem', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-dark)', borderRadius: '8px' }}
                                                 >
                                                     <option value="">Select a peer to recognize</option>
                                                     {allUsers.map(u => <option key={u._id} value={u._id}>{u.name}</option>)}
@@ -255,11 +292,21 @@ export default function HomeTab({
                                                     value={praise.message}
                                                     onChange={(e) => setPraise({ ...praise, message: e.target.value })}
                                                     placeholder="What did they do great?"
-                                                    style={{ width: '100%', background: 'transparent', border: '1px solid var(--border-dark)', color: 'var(--text-main)', resize: 'none', height: '40px', outline: 'none', padding: '0.5rem', fontSize: '0.75rem', borderRadius: '4px' }}
+                                                    style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-dark)', color: 'var(--text-main)', resize: 'none', height: '60px', outline: 'none', padding: '0.8rem', fontSize: '0.85rem', borderRadius: '8px' }}
                                                 />
-                                                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
+                                                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
                                                     <button
-                                                        style={{ background: '#9333ea', color: 'white', border: 'none', borderRadius: '4px', padding: '0.5rem 1.5rem', fontSize: '0.85rem', cursor: 'pointer' }}
+                                                        style={{
+                                                            background: 'linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)',
+                                                            color: 'white',
+                                                            border: 'none',
+                                                            borderRadius: '6px',
+                                                            padding: '0.6rem 2rem',
+                                                            fontSize: '0.85rem',
+                                                            cursor: 'pointer',
+                                                            fontWeight: 'bold',
+                                                            boxShadow: '0 4px 12px rgba(168, 85, 247, 0.3)'
+                                                        }}
                                                         onClick={async () => {
                                                             if (praise.user && praise.message) {
                                                                 try {
@@ -284,13 +331,14 @@ export default function HomeTab({
                                         )}
                                     </div>
 
+
                                     <div className="panel" style={{ marginBottom: '1.5rem', padding: '1.5rem', borderRadius: '8px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)' }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: dashData.announcements.length > 0 ? '1.5rem' : 0 }}>
                                             <div style={{ fontSize: '1rem', fontWeight: 'bold', color: 'var(--text-main)' }}>Announcements</div>
                                             {(user?.role === 'Admin' || user?.role === 'Super Admin') && (
                                                 <button
                                                     className="btn"
-                                                    style={{ background: '#f59e0b', color: 'white', padding: '0.15rem 0.6rem', borderRadius: '6px', fontWeight: 'bold', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                                    style={{ background: '#ffab00', color: '#0a0e17', padding: '0.15rem 0.6rem', borderRadius: '6px', fontWeight: 'bold', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                                                     onClick={() => setShowAnnouncementModal(true)}
                                                 >
                                                     +
@@ -334,7 +382,7 @@ export default function HomeTab({
                                                         </button>
                                                     )}
                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', marginBottom: '0.8rem' }}>
-                                                        <div className="avatar" style={{ width: '36px', height: '36px', background: activity.type === 'Praise' ? '#f59e0b' : '#3b82f6', fontSize: '0.8rem' }}>
+                                                        <div className="avatar" style={{ width: '36px', height: '36px', background: activity.type === 'Praise' ? '#ffab00' : '#00ffa2', fontSize: '0.8rem' }}>
                                                             {activity.author?.avatar ? <img src={activity.author.avatar} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : activity.author?.name?.substring(0, 2).toUpperCase()}
                                                         </div>
                                                         <div>
@@ -376,7 +424,7 @@ export default function HomeTab({
                                                                             style={{
                                                                                 position: 'relative',
                                                                                 background: isLightMode ? '#f9fafb' : 'rgba(255,255,255,0.02)',
-                                                                                border: hasVoted ? '1px solid #a855f7' : '1px solid var(--border-dark)',
+                                                                                border: hasVoted ? '1px solid #ff00cc' : '1px solid var(--border-dark)',
                                                                                 borderRadius: '6px',
                                                                                 padding: '0.8rem 1rem',
                                                                                 cursor: 'pointer',
@@ -392,7 +440,7 @@ export default function HomeTab({
                                                                                 }
                                                                             }}
                                                                         >
-                                                                            <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: `${percent}%`, background: hasVoted ? 'rgba(168, 85, 247, 0.2)' : 'rgba(168, 85, 247, 0.05)', zIndex: 0, transition: 'width 0.4s ease-out' }}></div>
+                                                                            <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: `${percent}%`, background: hasVoted ? 'rgba(255, 0, 204, 0.2)' : 'rgba(255, 0, 204, 0.05)', zIndex: 0, transition: 'width 0.4s ease-out' }}></div>
                                                                             <div style={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem', color: 'var(--text-main)' }}>
                                                                                 <span style={{ fontWeight: hasVoted ? '600' : 'normal' }}>{opt.text}</span>
                                                                                 <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '600' }}>{percent}% ({opt.votes.length})</span>
@@ -409,19 +457,21 @@ export default function HomeTab({
                                             <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', textAlign: 'center', padding: '2rem 0' }}>No activity yet. Be the first to post!</div>
                                         )}
                                     </div>
-
-                                    <div className="panel">
+                                </>
+                            ) : (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                                    <div className="panel" style={{ padding: '1.5rem' }}>
                                         <div style={{ display: 'flex', gap: '2rem', borderBottom: '1px solid var(--border-dark)', paddingBottom: '0.5rem', marginBottom: '1.5rem', fontSize: '0.85rem' }}>
                                             <span
-                                                style={{ color: orgActivityTab === 'Birthdays' ? 'var(--text-main)' : 'var(--text-muted)', borderBottom: orgActivityTab === 'Birthdays' ? '2px solid var(--text-main)' : 'none', paddingBottom: '0.5rem', marginBottom: '-0.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}
+                                                style={{ color: orgActivityTab === 'Birthdays' ? 'var(--primary)' : 'var(--text-muted)', borderBottom: orgActivityTab === 'Birthdays' ? '2px solid var(--primary)' : 'none', paddingBottom: '0.5rem', marginBottom: '-0.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', fontWeight: '500' }}
                                                 onClick={() => setOrgActivityTab('Birthdays')}
                                             >🎂 {dashData.birthdays.today.length} Birthday{dashData.birthdays.today.length !== 1 ? 's' : ''}</span>
                                             <span
-                                                style={{ color: orgActivityTab === 'Anniversaries' ? 'var(--text-main)' : 'var(--text-muted)', borderBottom: orgActivityTab === 'Anniversaries' ? '2px solid var(--text-main)' : 'none', paddingBottom: '0.5rem', marginBottom: '-0.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}
+                                                style={{ color: orgActivityTab === 'Anniversaries' ? 'var(--primary)' : 'var(--text-muted)', borderBottom: orgActivityTab === 'Anniversaries' ? '2px solid var(--primary)' : 'none', paddingBottom: '0.5rem', marginBottom: '-0.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', fontWeight: '500' }}
                                                 onClick={() => setOrgActivityTab('Anniversaries')}
                                             >🎉 0 Work Anniversaries</span>
                                             <span
-                                                style={{ color: orgActivityTab === 'NewJoinees' ? 'var(--text-main)' : 'var(--text-muted)', borderBottom: orgActivityTab === 'NewJoinees' ? '2px solid var(--text-main)' : 'none', paddingBottom: '0.5rem', marginBottom: '-0.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}
+                                                style={{ color: orgActivityTab === 'NewJoinees' ? 'var(--primary)' : 'var(--text-muted)', borderBottom: orgActivityTab === 'NewJoinees' ? '2px solid var(--primary)' : 'none', paddingBottom: '0.5rem', marginBottom: '-0.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', fontWeight: '500' }}
                                                 onClick={() => setOrgActivityTab('NewJoinees')}
                                             >👥 {dashData.newJoinees.length} New joinee{dashData.newJoinees.length !== 1 ? 's' : ''}</span>
                                         </div>
@@ -431,15 +481,15 @@ export default function HomeTab({
                                                 <div style={{ marginBottom: '2rem' }}>
                                                     <div style={{ fontSize: '0.85rem', color: 'var(--text-main)', marginBottom: '1rem' }}>Birthdays today</div>
                                                     {dashData.birthdays.today.length > 0 ? (
-                                                        <div style={{ display: 'flex', gap: '1rem' }}>
+                                                        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
                                                             {dashData.birthdays.today.map(b => (
                                                                 <div key={b._id} style={{ textAlign: 'center' }}>
-                                                                    <div className="avatar" style={{ background: '#10b981', width: '48px', height: '48px', fontSize: '1rem', margin: '0 auto 0.5rem' }}>
+                                                                    <div className="avatar" style={{ background: '#00ff88', width: '48px', height: '48px', fontSize: '1rem', margin: '0 auto 0.5rem', color: '#0a0e17' }}>
                                                                         {b.name?.substring(0, 2).toUpperCase()}
                                                                     </div>
                                                                     <div style={{ fontSize: '0.75rem', fontWeight: '500' }}>{b.name?.split(' ')[0]}</div>
                                                                     <div
-                                                                        style={{ fontSize: '0.65rem', color: wishedUsers.includes(b._id) ? 'var(--text-muted)' : '#f59e0b', cursor: wishedUsers.includes(b._id) ? 'default' : 'pointer' }}
+                                                                        style={{ fontSize: '0.65rem', color: wishedUsers.includes(b._id) ? 'var(--text-muted)' : '#ffab00', cursor: wishedUsers.includes(b._id) ? 'default' : 'pointer' }}
                                                                         onClick={() => { if (!wishedUsers.includes(b._id)) setWishedUsers([...wishedUsers, b._id]); }}
                                                                     >
                                                                         {wishedUsers.includes(b._id) ? 'Wished!' : 'Wish'}
@@ -457,7 +507,7 @@ export default function HomeTab({
                                                     <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
                                                         {dashData.birthdays.upcoming.length > 0 ? dashData.birthdays.upcoming.map(b => (
                                                             <div key={b._id} style={{ textAlign: 'center' }}>
-                                                                <div className="avatar" style={{ background: '#f59e0b', width: '40px', height: '40px', fontSize: '0.9rem', margin: '0 auto 0.5rem' }}>
+                                                                <div className="avatar" style={{ background: '#ffab00', width: '40px', height: '40px', fontSize: '0.9rem', margin: '0 auto 0.5rem', color: '#0a0e17' }}>
                                                                     {b.name?.substring(0, 2).toUpperCase()}
                                                                 </div>
                                                                 <div style={{ fontSize: '0.75rem', fontWeight: '500' }}>{b.name?.split(' ')[0]}</div>
@@ -483,7 +533,7 @@ export default function HomeTab({
                                             <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
                                                 {dashData.newJoinees.length > 0 ? dashData.newJoinees.map(j => (
                                                     <div key={j._id} style={{ textAlign: 'center' }}>
-                                                        <div className="avatar" style={{ border: '2px solid #06b6d4', background: '#06b6d4', width: '40px', height: '40px', fontSize: '0.9rem', margin: '0 auto 0.5rem' }}>
+                                                        <div className="avatar" style={{ border: '2px solid #00ffa2', background: '#00ffa2', width: '40px', height: '40px', fontSize: '0.9rem', margin: '0 auto 0.5rem', color: '#0a0e17' }}>
                                                             {j.name?.substring(0, 2).toUpperCase()}
                                                         </div>
                                                         <div style={{ fontSize: '0.75rem', fontWeight: '500' }}>{j.name?.split(' ')[0]}</div>
@@ -497,23 +547,23 @@ export default function HomeTab({
                                             </div>
                                         )}
                                     </div>
-                                </>
-                            ) : (
-                                <div className="panel" style={{ marginBottom: '1rem' }}>
-                                    <div className="panel-header" style={{ marginBottom: '1rem' }}>Knowledge Base & Content</div>
-                                    <div className="grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                                        <div style={{ padding: '1rem', border: '1px solid var(--border-dark)', borderRadius: 'var(--radius-md)', display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                                            <FileText size={24} color="var(--primary)" />
-                                            <div>
-                                                <div style={{ fontWeight: '500' }}>Company Handbook 2026</div>
-                                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Updated 2 days ago</div>
+
+                                    <div className="panel" style={{ marginBottom: '1rem' }}>
+                                        <div className="panel-header" style={{ marginBottom: '1rem' }}>Knowledge Base & Content</div>
+                                        <div className="grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                            <div style={{ padding: '1rem', border: '1px solid var(--border-dark)', borderRadius: 'var(--radius-md)', display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                                                <FileText size={24} color="var(--primary)" />
+                                                <div>
+                                                    <div style={{ fontWeight: '500' }}>Company Handbook 2026</div>
+                                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Updated 2 days ago</div>
+                                                </div>
                                             </div>
-                                        </div>
-                                        <div style={{ padding: '1rem', border: '1px solid var(--border-dark)', borderRadius: 'var(--radius-md)', display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                                            <FileText size={24} color="#f59e0b" />
-                                            <div>
-                                                <div style={{ fontWeight: '500' }}>Travel & Expenses Policy</div>
-                                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Updated 1 month ago</div>
+                                            <div style={{ padding: '1rem', border: '1px solid var(--border-dark)', borderRadius: 'var(--radius-md)', display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                                                <FileText size={24} color="#f59e0b" />
+                                                <div>
+                                                    <div style={{ fontWeight: '500' }}>Travel & Expenses Policy</div>
+                                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Updated 1 month ago</div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -542,7 +592,7 @@ export default function HomeTab({
                         <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', zIndex: 1 }}>
                             <div
                                 className="avatar"
-                                style={{ width: '80px', height: '80px', fontSize: '2rem', background: '#34d399', color: '#064e3b', border: '4px solid rgba(255,255,255,0.2)', cursor: 'pointer' }}
+                                style={{ width: '80px', height: '80px', fontSize: '2rem', background: '#00ff88', color: '#0a0e17', border: '4px solid rgba(0, 255, 136, 0.2)', cursor: 'pointer' }}
                                 onClick={() => { setActiveSidebar('Me'); setActiveSubTab('Profile'); }}
                             >
                                 {user?.name?.substring(0, 2).toUpperCase() || 'SM'}
@@ -670,6 +720,6 @@ export default function HomeTab({
                     </div>
                 </div>
             )}
-        </div>
+        </div >
     );
 }
