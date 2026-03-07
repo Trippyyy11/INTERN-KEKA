@@ -1,0 +1,1 @@
+const fs = require('fs'); let c = fs.readFileSync('src/components/Dashboard.jsx', 'utf8'); c = c.replace('\\n    const handleUpdateUser', '    const handleUpdateUser'); fs.writeFileSync('src/components/Dashboard.jsx', c);
