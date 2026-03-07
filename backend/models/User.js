@@ -24,6 +24,21 @@ const userSchema = new mongoose.Schema(
             hra: { type: Number, default: 0 },
             deductions: { type: Number, default: 0 }
         },
+        salaryDetails: {
+            type: { type: String, enum: ['Fixed', 'Variable'], default: 'Fixed' },
+            monthlyAmount: { type: Number, default: 0 }
+        },
+        workingSchedule: {
+            shiftStart: { type: String, default: '11:00' }, // HH:mm
+            shiftEnd: { type: String, default: '18:00' },   // HH:mm
+            minHours: { type: Number, default: 7 },         // Daily requirement
+            weekOffs: [{ type: String, default: 'Sunday' }]
+        },
+        leaveQuotas: {
+            paid: { type: Number, default: 12 },
+            sick: { type: Number, default: 6 },
+            casual: { type: Number, default: 6 }
+        },
         isActive: { type: Boolean, default: true },
         welcomeProfile: {
             about: { type: String, default: '' },

@@ -1,10 +1,12 @@
 import Attendance from '../models/Attendance.js';
+import User from '../models/User.js';
 
 // @desc    Clock In
 // @route   POST /api/attendance/clock-in
 // @access  Private
 export const clockIn = async (req, res) => {
     try {
+        const { workingMode } = req.body;
         const today = new Date();
         today.setHours(0, 0, 0, 0); // Normalize to start of day
 
@@ -19,10 +21,13 @@ export const clockIn = async (req, res) => {
                 user: req.user._id,
                 date: today,
                 clockInTime: new Date(),
-                status: 'Present',
+                status: workingMode === 'Remote' ? 'WFH' : 'Present',
+                workingMode: workingMode || 'On-site'
             });
         } else {
             record.clockInTime = new Date();
+            record.workingMode = workingMode || 'On-site';
+            record.status = workingMode === 'Remote' ? 'WFH' : 'Present';
             await record.save();
         }
 
@@ -37,13 +42,22 @@ export const clockIn = async (req, res) => {
 // @access  Private
 export const clockOut = async (req, res) => {
     try {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        // Find the latest active session (clocked in but not clocked out)
+        let record = await Attendance.findOne({
+            user: req.user._id,
+            clockOutTime: { $exists: false }
+        }).sort({ clockInTime: -1 });
 
-        let record = await Attendance.findOne({ user: req.user._id, date: today });
+        if (!record) {
+            // Fallback for null check
+            record = await Attendance.findOne({
+                user: req.user._id,
+                clockOutTime: null
+            }).sort({ clockInTime: -1 });
+        }
 
-        if (!record || !record.clockInTime) {
-            return res.status(400).json({ message: 'Cannot clock out without clocking in first.' });
+        if (!record) {
+            return res.status(400).json({ message: 'No active session found. Please clock in first.' });
         }
 
         const clockOutTime = new Date();
@@ -84,6 +98,135 @@ export const getTodayStatus = async (req, res) => {
 
         const attendance = await Attendance.find({ date: today }).populate('user', 'name avatar department');
         res.status(200).json(attendance);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Get Team aggregate stats
+// @route   GET /api/attendance/team-stats
+// @access  Private
+export const getTeamStats = async (req, res) => {
+    try {
+        const { period } = req.query; // 'week' or 'month'
+        const days = period === 'month' ? 30 : 7;
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - days);
+        startDate.setHours(0, 0, 0, 0);
+
+        const myDept = req.user.department;
+        if (!myDept) return res.status(200).json({ avgHours: 0, onTimePercentage: 0 });
+
+        // Find all users in same department
+        const teammateIds = (await User.find({ department: myDept }).select('_id')).map(u => u._id);
+
+        const logs = await Attendance.find({
+            user: { $in: teammateIds },
+            date: { $gte: startDate }
+        }).populate('user', 'workingSchedule');
+
+        if (logs.length === 0) {
+            return res.status(200).json({ avgHours: 0, onTimePercentage: 0 });
+        }
+
+        let totalHours = 0;
+        let onTimeCount = 0;
+
+        logs.forEach(log => {
+            totalHours += Number(log.totalHours || 0);
+
+            if (log.clockInTime) {
+                const clockIn = new Date(log.clockInTime);
+                const hours = clockIn.getHours();
+                const mins = clockIn.getMinutes();
+                const totalMins = hours * 60 + mins;
+
+                const [shiftH, shiftM] = (log.user?.workingSchedule?.shiftStart || '11:00').split(':').map(Number);
+                const shiftStartMins = shiftH * 60 + shiftM;
+
+                if (totalMins <= shiftStartMins + 60) {
+                    onTimeCount++;
+                }
+            }
+        });
+
+        res.status(200).json({
+            avgHours: (totalHours / logs.length).toFixed(2),
+            onTimePercentage: Math.round((onTimeCount / logs.length) * 100)
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Get individual stats for each teammate
+// @route   GET /api/attendance/teammates-stats
+// @access  Private
+export const getTeammateIndividualStats = async (req, res) => {
+    try {
+        const { period } = req.query; // 'week' or 'month'
+        const days = period === 'month' ? 30 : 7;
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - days);
+        startDate.setHours(0, 0, 0, 0);
+
+        const myDept = req.user.department;
+        if (!myDept) return res.status(200).json([]);
+
+        // Find all teammates (excluding me)
+        const teammates = await User.find({
+            department: myDept,
+            _id: { $ne: req.user._id },
+            isActive: true
+        }).select('name avatar workingSchedule');
+
+        const teammateIds = teammates.map(u => u._id);
+
+        const logs = await Attendance.find({
+            user: { $in: teammateIds },
+            date: { $gte: startDate }
+        });
+
+        const stats = teammates.map(t => {
+            const userLogs = logs.filter(l => l.user.toString() === t._id.toString());
+
+            if (userLogs.length === 0) {
+                return {
+                    _id: t._id,
+                    name: t.name,
+                    avgHours: 0,
+                    onTimePercentage: 0
+                };
+            }
+
+            let totalHours = 0;
+            let onTimeCount = 0;
+
+            userLogs.forEach(log => {
+                totalHours += Number(log.totalHours || 0);
+
+                if (log.clockInTime) {
+                    const clockIn = new Date(log.clockInTime);
+                    const totalMins = clockIn.getHours() * 60 + clockIn.getMinutes();
+
+                    const [shiftH, shiftM] = (t.workingSchedule?.shiftStart || '11:00').split(':').map(Number);
+                    const shiftStartMins = shiftH * 60 + shiftM;
+
+                    if (totalMins <= shiftStartMins + 60) {
+                        onTimeCount++;
+                    }
+                }
+            });
+
+            return {
+                _id: t._id,
+                name: t.name,
+                avgHours: (totalHours / userLogs.length).toFixed(2),
+                onTimePercentage: Math.round((onTimeCount / userLogs.length) * 100)
+            };
+        });
+
+        res.status(200).json(stats);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

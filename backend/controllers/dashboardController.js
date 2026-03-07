@@ -32,23 +32,39 @@ export const getDashboardStats = async (req, res) => {
             return dobA - dobB;
         });
 
-        // 2. On Leave Today
+        const myDept = req.user.department;
+
+        // 2. On Leave Today (Team only)
         const leavesToday = await Leave.find({
             status: 'Approved',
             startDate: { $lte: today.toDate() },
             endDate: { $gte: today.toDate() }
-        }).populate('user', 'name department');
+        }).populate({
+            path: 'user',
+            match: myDept ? { department: myDept } : {},
+            select: 'name department avatar'
+        });
 
-        // 3. Working Remotely (WFH)
+        // Filter out leaves where user didn't match the department filter
+        const teamLeavesToday = leavesToday.filter(l => l.user !== null);
+
+        // 3. Working Remotely (WFH - Team only)
         const workingRemotely = await Attendance.find({
             date: today.toDate(),
             status: 'WFH'
-        }).populate('user', 'name department');
+        }).populate({
+            path: 'user',
+            match: myDept ? { department: myDept } : {},
+            select: 'name department avatar'
+        });
+
+        // Filter out records where user didn't match the department filter
+        const teamWorkingRemotely = workingRemotely.filter(w => w.user !== null);
 
         // 4. New Joinees (Last 30 days)
         const newJoinees = await User.find({
             joiningDate: { $gte: thirtyDaysAgo.toDate() }
-        }).select('name joiningDate department');
+        }).select('name joiningDate department avatar');
 
         // 5. Announcements
         const announcements = await Announcement.find({ isActive: true })
@@ -67,8 +83,8 @@ export const getDashboardStats = async (req, res) => {
                 today: birthdaysToday,
                 upcoming: upcomingBirthdays
             },
-            leaves: leavesToday,
-            workingRemotely,
+            leaves: teamLeavesToday,
+            workingRemotely: teamWorkingRemotely,
             newJoinees,
             announcements,
             holidays

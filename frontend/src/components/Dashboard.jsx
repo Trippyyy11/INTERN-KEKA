@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import api from '../api/axios';
 import {
     Home,
@@ -18,12 +18,14 @@ import {
     MessageSquare,
     FileText,
     Sun,
-    Moon
+    Moon,
+    HelpCircle,
+    Info
 } from 'lucide-react';
 
 export default function Dashboard({ user, onLogout }) {
     const [activeSidebar, setActiveSidebar] = useState('Home');
-    const [activeSubTab, setActiveSubTab] = useState('Leave');
+    const [activeSubTab, setActiveSubTab] = useState('Attendance');
 
     // Check initial theme preference
     const getInitialTheme = () => {
@@ -32,6 +34,7 @@ export default function Dashboard({ user, onLogout }) {
         return window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
     };
     const [isLightMode, setIsLightMode] = useState(getInitialTheme());
+    const [showProfileMenu, setShowProfileMenu] = useState(false);
 
     // Home states
     const [homeTab, setHomeTab] = useState('Organization');
@@ -51,10 +54,16 @@ export default function Dashboard({ user, onLogout }) {
     const [currentTime, setCurrentTime] = useState(new Date().toLocaleTimeString());
     const [attendanceLogs, setAttendanceLogs] = useState([]);
     const [payslips, setPayslips] = useState([]);
+    const [showClockInModal, setShowClockInModal] = useState(false);
+    const [selectedWorkingMode, setSelectedWorkingMode] = useState('On-site');
+    const [activeLog, setActiveLog] = useState(null);
+    const [showLogInfo, setShowLogInfo] = useState(null);
+    const [isAttendanceFinished, setIsAttendanceFinished] = useState(false);
 
     // Admin states
     const [allUsers, setAllUsers] = useState([]);
     const [systemSettings, setSystemSettings] = useState({ workingHoursPerDay: 8, defaultLeaveQuota: 12, companyName: 'Teaching Pariksha' });
+    const [customAlert, setCustomAlert] = useState(null); // { message: '', type: 'info' | 'confirm', onConfirm: fn }
 
     // Custom states for RBAC & Org management
     const [todayStatus, setTodayStatus] = useState([]);
@@ -84,10 +93,16 @@ export default function Dashboard({ user, onLogout }) {
     const [praise, setPraise] = useState({ user: '', message: '' });
     const [wishedUsers, setWishedUsers] = useState([]);
     const [showHolidayModal, setShowHolidayModal] = useState(false);
+    const [teammates, setTeammates] = useState([]);
+    const [teamStats, setTeamStats] = useState({ avgHours: 0, onTimePercentage: 0 });
+    const [teammateIndividualStats, setTeammateIndividualStats] = useState([]);
+    const [statsPeriod, setStatsPeriod] = useState('Last Week');
+    const [showPublicProfile, setShowPublicProfile] = useState(null); // stores user object
 
     useEffect(() => {
         const timer = setInterval(() => setCurrentTime(new Date().toLocaleTimeString()), 1000);
         fetchStats();
+        fetchSystemSettings();
         if (user?.role === 'Admin' || user?.role === 'Super Admin') {
             fetchAdminData();
             fetchOrgConfigs();
@@ -129,21 +144,81 @@ export default function Dashboard({ user, onLogout }) {
             const birthdaysRes = await api.get('/attendance/birthdays');
             setTodayStatus(statusRes.data);
             setBirthdays(birthdaysRes.data);
+            fetchTeammates();
+            fetchTeamStats();
         } catch (err) {
             console.error('Failed to fetch public data:', err);
         }
     };
 
+    const fetchTeammates = async () => {
+        try {
+            const res = await api.get('/attendance/teammates');
+            setTeammates(res.data);
+        } catch (err) { console.error('Failed to fetch teammates'); }
+    }
+
+    const fetchTeamStats = async (period = statsPeriod) => {
+        try {
+            const p = period === 'Last Month' ? 'month' : 'week';
+            const res = await api.get(`/attendance/team-stats?period=${p}`);
+            setTeamStats(res.data);
+
+            const individualRes = await api.get(`/attendance/teammates-stats?period=${p}`);
+            setTeammateIndividualStats(individualRes.data);
+        } catch (err) { console.error('Failed to fetch team stats'); }
+    }
+
     const fetchAdminData = async () => {
         try {
             const usersRes = await api.get('/admin/users');
-            const settingsRes = await api.get('/admin/settings');
             setAllUsers(usersRes.data);
-            setSystemSettings(settingsRes.data);
         } catch (err) {
-            console.error('Failed to fetch admin data:', err);
+            console.error('Failed to fetch admin users data:', err);
         }
     };
+
+    const fetchSystemSettings = async () => {
+        try {
+            const settingsRes = await api.get('/admin/settings');
+            setSystemSettings(settingsRes.data);
+        } catch (error) {
+            console.error('Failed to fetch system settings:', error);
+        }
+    };
+
+    const meStats = useMemo(() => {
+        const days = statsPeriod === 'Last Month' ? 30 : 7;
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - days);
+        startDate.setHours(0, 0, 0, 0);
+
+        const periodLogs = attendanceLogs.filter(log => new Date(log.date) >= startDate);
+        if (periodLogs.length === 0) return { avgHours: '0h 0m', onTime: '0%' };
+
+        let totalH = 0;
+        let onTimeCount = 0;
+
+        periodLogs.forEach(log => {
+            totalH += Number(log.totalHours || 0);
+            if (log.clockInTime) {
+                const clockIn = new Date(log.clockInTime);
+                const totalMins = clockIn.getHours() * 60 + clockIn.getMinutes();
+                const [sh, sm] = (user?.workingSchedule?.shiftStart || '11:00').split(':').map(Number);
+                const shiftStartMins = sh * 60 + sm;
+                if (totalMins <= shiftStartMins + 60) onTimeCount++;
+            }
+        });
+
+        const avg = totalH / periodLogs.length;
+        const avgH = Math.floor(avg);
+        const avgM = Math.round((avg % 1) * 60);
+
+        return {
+            avgHours: `${avgH}h ${avgM}m`,
+            onTime: `${Math.round((onTimeCount / periodLogs.length) * 100)}%`
+        };
+    }, [attendanceLogs, statsPeriod, user]);
 
     const fetchOrgConfigs = async () => {
         try {
@@ -156,8 +231,8 @@ export default function Dashboard({ user, onLogout }) {
         try {
             await api.post('/attendance/mark', { type });
             fetchStats();
-            alert(`Attendance marked as ${type}`);
-        } catch (err) { alert('Action failed'); }
+            showAlert(`Attendance marked as ${type}`, 'info');
+        } catch (err) { showAlert('Action failed', 'info'); }
     };
 
     const handleSaveResponse = async (key) => {
@@ -167,10 +242,10 @@ export default function Dashboard({ user, onLogout }) {
             });
             // Update local state is already done via onChange
             setEditingResponse(null);
-            alert('Response saved successfully!');
+            showAlert('Response saved successfully!', 'info');
         } catch (err) {
             console.error('Failed to save response:', err);
-            alert('Failed to save response. Please try again.');
+            showAlert('Failed to save response. Please try again.', 'info');
         }
     };
 
@@ -178,8 +253,8 @@ export default function Dashboard({ user, onLogout }) {
         try {
             await api.put(`/admin/users/${id}/approve`);
             fetchAdminData();
-            alert('User approved!');
-        } catch (err) { alert('Approval failed'); }
+            showAlert('User approved!', 'info');
+        } catch (err) { showAlert('Approval failed', 'info'); }
     };
 
     const handleUpdateUser = async (e) => {
@@ -188,8 +263,8 @@ export default function Dashboard({ user, onLogout }) {
             await api.put(`/admin/users/${selectedUser._id}/details`, selectedUser);
             fetchAdminData();
             setShowEditModal(false);
-            alert('User updated!');
-        } catch (err) { alert('Update failed'); }
+            showAlert('User updated!', 'info');
+        } catch (err) { showAlert('Update failed', 'info'); }
     };
 
     const handleAddConfig = async (e) => {
@@ -198,15 +273,17 @@ export default function Dashboard({ user, onLogout }) {
             await api.post('/admin/configs', newConfig);
             fetchOrgConfigs();
             setNewConfig({ name: '', type: 'Department', date: '', description: '' });
-        } catch (err) { alert('Failed to add config'); }
+        } catch (err) { showAlert('Failed to add config', 'info'); }
     };
 
     const handleDeleteConfig = async (id) => {
-        if (!window.confirm('Delete this config?')) return;
-        try {
-            await api.delete(`/admin/configs/${id}`);
-            fetchOrgConfigs();
-        } catch (err) { alert('Delete failed'); }
+        showAlert('Are you sure you want to delete this config?', 'confirm', async () => {
+            try {
+                await api.delete(`/admin/configs/${id}`);
+                fetchOrgConfigs();
+                showAlert('Configuration deleted successfully.', 'info');
+            } catch (err) { showAlert('Delete failed', 'info'); }
+        });
     };
 
     const fetchStats = async () => {
@@ -214,13 +291,25 @@ export default function Dashboard({ user, onLogout }) {
             const logsRes = await api.get('/attendance/logs');
             setAttendanceLogs(logsRes.data);
 
-            // Check if clocked in today
-            const today = new Date().toISOString().split('T')[0];
-            const todayLog = logsRes.data.find(log => log.date.startsWith(today));
-            if (todayLog && !todayLog.clockOutTime && todayLog.clockInTime) {
+            // More robust check: find any log that has a clock-in but no clock-out
+            const activeSession = logsRes.data.find(log => log.clockInTime && !log.clockOutTime);
+
+            // Check if user has already clocked out today
+            const todayStr = new Date().toDateString();
+            const finishedToday = logsRes.data.some(log => {
+                if (!log.clockOutTime) return false;
+                const clockOutDateStr = new Date(log.clockOutTime).toDateString();
+                return clockOutDateStr === todayStr;
+            });
+            setIsAttendanceFinished(finishedToday);
+
+            if (activeSession) {
                 setIsClockedIn(true);
+                setIsWFH(activeSession.workingMode === 'Remote');
+                setActiveLog(activeSession);
             } else {
                 setIsClockedIn(false);
+                setActiveLog(null);
             }
 
             const payslipsRes = await api.get('/payslips');
@@ -233,16 +322,75 @@ export default function Dashboard({ user, onLogout }) {
         }
     };
 
+    const handleLogout = () => {
+        showAlert('Are you sure you want to log out?', 'confirm', () => {
+            onLogout();
+        });
+        setShowProfileMenu(false);
+    };
+
+    const calculateElapsedTime = (startTime) => {
+        if (!startTime) return { hrs: 0, mins: 0, text: '0h 0m' };
+        const start = new Date(startTime);
+        const now = new Date();
+        const diffMs = now - start;
+        const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
+        const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+        return { hrs: diffHrs, mins: diffMins, text: `${diffHrs}h ${diffMins}m`, totalMins: diffHrs * 60 + diffMins };
+    };
+
+    const showAlert = (message, type = 'info', onConfirm = null) => {
+        setCustomAlert({ message, type, onConfirm });
+    };
+
     const handleClockToggle = async () => {
         try {
             if (isClockedIn) {
-                await api.post('/attendance/clock-out');
+                const timeWorked = calculateElapsedTime(activeLog?.clockInTime);
+                const targetMins = (systemSettings.workingHoursPerDay || 8) * 60;
+                const completed = timeWorked.totalMins >= targetMins;
+
+                let message = `You have completed ${timeWorked.text}.`;
+                if (completed) {
+                    message += `\nGreat job! You have completed your working hours. 🌟✅🥳`;
+                    showAlert(message, 'confirm', async () => {
+                        await api.post('/attendance/clock-out');
+                        fetchStats();
+                        showAlert('Successfully clocked out! 🎉', 'info');
+                    });
+                } else {
+                    const remainingMins = targetMins - timeWorked.totalMins;
+                    const rHrs = Math.floor(remainingMins / 60);
+                    const rMins = remainingMins % 60;
+                    message += `\nRemaining time: ${rHrs}h ${rMins}m. Are you sure you want to clock out?`;
+                    showAlert(message, 'confirm', async () => {
+                        await api.post('/attendance/clock-out');
+                        fetchStats();
+                        showAlert('Successfully clocked out! See you tomorrow.', 'info');
+                    });
+                }
             } else {
-                await api.post('/attendance/clock-in');
+                setShowClockInModal(true);
             }
-            fetchStats();
         } catch (error) {
-            alert(error.response?.data?.message || 'Error occurred while updating attendance.');
+            showAlert(error.response?.data?.message || 'Error occurred while updating attendance.', 'info');
+        }
+    };
+
+    const confirmClockIn = async () => {
+        try {
+            const res = await api.post('/attendance/clock-in', { workingMode: selectedWorkingMode });
+            setShowClockInModal(false);
+
+            // Update state immediately
+            setIsClockedIn(true);
+            setIsWFH(res.data.workingMode === 'Remote');
+            setActiveLog(res.data);
+
+            fetchStats();
+            showAlert(`Successfully clocked in as ${selectedWorkingMode}! Have a productive day! 🚀`, 'info');
+        } catch (error) {
+            showAlert(error.response?.data?.message || 'Error occurred while clocking in.', 'info');
         }
     };
 
@@ -253,9 +401,10 @@ export default function Dashboard({ user, onLogout }) {
             setShowAnnouncementModal(false);
             setNewAnnouncement({ title: '', content: '', priority: 'Low' });
             fetchStats();
+            showAlert('Announcement created successfully!', 'info');
         } catch (error) {
             console.error('Failed to create announcement:', error);
-            alert(error.response?.data?.message || 'Failed to create announcement');
+            showAlert(error.response?.data?.message || 'Failed to create announcement', 'info');
         }
     };
 
@@ -263,9 +412,9 @@ export default function Dashboard({ user, onLogout }) {
     const handleSaveSettings = async () => {
         try {
             await api.put('/admin/settings', systemSettings);
-            alert('Settings updated successfully!');
+            showAlert('Settings updated successfully!', 'info');
         } catch (err) {
-            alert('Error updating settings.');
+            showAlert('Error updating settings.', 'info');
         }
     };
 
@@ -393,8 +542,8 @@ export default function Dashboard({ user, onLogout }) {
                                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.8rem' }}>
                                                 {dashData.leaves.length > 0 ? dashData.leaves.map(l => (
                                                     <div key={l._id} style={{ textAlign: 'center' }}>
-                                                        <div className="avatar" style={{ border: '2px solid var(--border-dark)', background: '#64748b' }}>
-                                                            {l.user?.name?.substring(0, 2).toUpperCase()}
+                                                        <div className="avatar" style={{ border: '2px solid #64748b', background: '#64748b', overflow: 'hidden' }}>
+                                                            {l.user?.avatar ? <img src={l.user.avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : l.user?.name?.substring(0, 2).toUpperCase()}
                                                         </div>
                                                         <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>{l.user?.name?.split(' ')[0]}</div>
                                                     </div>
@@ -408,8 +557,8 @@ export default function Dashboard({ user, onLogout }) {
                                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.8rem' }}>
                                                 {dashData.workingRemotely.length > 0 ? dashData.workingRemotely.map(w => (
                                                     <div key={w._id} style={{ textAlign: 'center' }}>
-                                                        <div className="avatar" style={{ border: '2px solid #10b981', background: '#10b981' }}>
-                                                            {w.user?.name?.substring(0, 2).toUpperCase()}
+                                                        <div className="avatar" style={{ border: '2px solid #10b981', background: '#10b981', overflow: 'hidden' }}>
+                                                            {w.user?.avatar ? <img src={w.user.avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : w.user?.name?.substring(0, 2).toUpperCase()}
                                                         </div>
                                                         <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>{w.user?.name?.split(' ')[0]}</div>
                                                     </div>
@@ -466,7 +615,7 @@ export default function Dashboard({ user, onLogout }) {
                                                             style={{ width: '100%', background: 'transparent', border: 'none', color: 'var(--text-main)', resize: 'none', height: '60px', outline: 'none', padding: '0.5rem 0' }}
                                                         />
                                                         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
-                                                            <button className="btn btn-primary" onClick={() => { if (postText) { alert(`Posted: ${postText}`); setPostText(''); } }} disabled={!postText}>Post</button>
+                                                            <button className="btn btn-primary" onClick={() => { if (postText) { showAlert(`Posted: ${postText}`, 'info'); setPostText(''); } }} disabled={!postText}>Post</button>
                                                         </div>
                                                     </>
                                                 )}
@@ -496,7 +645,7 @@ export default function Dashboard({ user, onLogout }) {
                                                             />
                                                         </div>
                                                         <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                                                            <button className="btn btn-primary" style={{ fontSize: '0.75rem', padding: '0.3rem 1rem' }} onClick={() => { alert('Poll Created!'); setPoll({ question: '', option1: '', option2: '' }); }}>Create Poll</button>
+                                                            <button className="btn btn-primary" style={{ fontSize: '0.75rem', padding: '0.3rem 1rem' }} onClick={() => { showAlert('Poll Created!', 'info'); setPoll({ question: '', option1: '', option2: '' }); }}>Create Poll</button>
                                                         </div>
                                                     </div>
                                                 )}
@@ -517,7 +666,7 @@ export default function Dashboard({ user, onLogout }) {
                                                             style={{ width: '100%', background: 'transparent', border: '1px solid var(--border-dark)', color: 'var(--text-main)', resize: 'none', height: '40px', outline: 'none', padding: '0.5rem', fontSize: '0.75rem', borderRadius: '4px' }}
                                                         />
                                                         <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                                                            <button className="btn btn-primary" style={{ padding: '0.3rem 1rem', fontSize: '0.75rem' }} onClick={() => { if (praise.user && praise.message) { alert(`Praise sent to ${praise.user}!`); setPraise({ user: '', message: '' }); } }}>Send Praise</button>
+                                                            <button className="btn btn-primary" style={{ padding: '0.3rem 1rem', fontSize: '0.75rem' }} onClick={() => { if (praise.user && praise.message) { showAlert(`Praise sent to ${praise.user}!`, 'info'); setPraise({ user: '', message: '' }); } }}>Send Praise</button>
                                                         </div>
                                                     </div>
                                                 )}
@@ -680,7 +829,7 @@ export default function Dashboard({ user, onLogout }) {
                                             {user?.name || 'Shruti Mendhe'}
                                             <span
                                                 style={{ fontSize: '1rem', color: 'var(--text-on-banner)', opacity: 0.5, cursor: 'pointer' }}
-                                                onClick={() => { navigator.clipboard.writeText(window.location.href); alert('Profile link copied!'); }}
+                                                onClick={() => { navigator.clipboard.writeText(window.location.href); showAlert('Profile link copied!', 'info'); }}
                                                 title="Copy profile link"
                                             >
                                                 🔗
@@ -688,18 +837,6 @@ export default function Dashboard({ user, onLogout }) {
                                         </h2>
                                         <div style={{ fontSize: '0.9rem', color: 'var(--text-on-banner)', opacity: 0.8, marginTop: '0.25rem' }}>
                                             {user?.designation || 'Specialist'} - {user?.place || 'Nagpur'}
-                                        </div>
-                                    </div>
-                                </div>
-                                <div style={{ zIndex: 1, display: 'flex', alignItems: 'center', gap: '0.75rem', background: 'rgba(0,0,0,0.4)', padding: '0.75rem 1.25rem', borderRadius: '40px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                                    <div style={{ width: '24px', height: '24px', borderRadius: '50%', border: '2px solid #10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10b981', fontSize: '10px', fontWeight: 'bold' }}>✓</div>
-                                    <div>
-                                        <div style={{ color: 'var(--text-on-banner)', fontSize: '0.85rem', fontWeight: '500' }}>Profile completed successfully!</div>
-                                        <div
-                                            style={{ color: 'var(--text-on-banner)', opacity: 0.7, fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.25rem', cursor: 'pointer', marginTop: '2px' }}
-                                            onClick={() => { setActiveSidebar('Me'); setActiveSubTab('Profile'); }}
-                                        >
-                                            Go to My Profile <span style={{ fontSize: '10px' }}>›</span>
                                         </div>
                                     </div>
                                 </div>
@@ -818,7 +955,7 @@ export default function Dashboard({ user, onLogout }) {
             return (
                 <>
                     <div className="sub-nav">
-                        {['Attendance', 'Leave', 'Performance', 'Expenses & Travel', 'Apps'].map(tab => (
+                        {['Attendance', 'Leave', 'Performance', 'Expenses & Travel', 'Apps', 'Profile'].map(tab => (
                             <div
                                 key={tab}
                                 className={`sub-nav-item ${activeSubTab === tab ? 'active' : ''}`}
@@ -833,51 +970,125 @@ export default function Dashboard({ user, onLogout }) {
 
                         {activeSubTab === 'Attendance' && (
                             <>
-                                <div className="grid" style={{ gridTemplateColumns: '1fr 2fr 1fr', gap: '1.5rem', marginBottom: '2rem' }}>
-                                    {/* ... Keep Attendance Stats & Timings Panels ... */}
-                                    <div className="panel">
-                                        <div className="panel-header">Attendance Stats</div>
-                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>Last Week</div>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}><div className="avatar" style={{ background: 'var(--primary)', width: '24px', height: '24px', fontSize: '10px', color: 'white' }}>Me</div><span style={{ fontSize: '0.85rem' }}>Me</span></div>
-                                            <div style={{ textAlign: 'right' }}><div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>AVG HRS / DAY</div><div style={{ fontWeight: 'bold' }}>9h 5m</div></div>
+                                <div className="grid" style={{ gridTemplateColumns: 'minmax(300px, 1fr) minmax(300px, 1fr) minmax(300px, 1fr)', gap: '1.25rem', marginBottom: '1.25rem' }}>
+                                    {/* Attendance Stats Panel */}
+                                    <div className="panel" style={{ padding: '1.25rem' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+                                            <span style={{ fontSize: '0.9rem', fontWeight: '500' }}>Attendance Stats</span>
+                                            <select
+                                                value={statsPeriod}
+                                                onChange={(e) => {
+                                                    setStatsPeriod(e.target.value);
+                                                    fetchTeamStats(e.target.value);
+                                                }}
+                                                style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: '0.75rem', outline: 'none', cursor: 'pointer' }}
+                                            >
+                                                <option value="Last Week">Last Week</option>
+                                                <option value="Last Month">Last Month</option>
+                                            </select>
                                         </div>
-                                    </div>
-                                    <div className="panel">
-                                        <div className="panel-header">Timings</div>
-                                        <div style={{ fontSize: '0.85rem', marginBottom: '0.5rem' }}>Today (Flexible Timings)</div>
-                                        <div style={{ width: '100%', height: '8px', background: 'var(--border-dark)', borderRadius: '4px', position: 'relative' }}>
-                                            <div style={{ width: isClockedIn ? '60%' : '100%', height: '100%', background: 'var(--primary)', borderRadius: '4px', transition: 'width 0.5s' }}></div>
-                                        </div>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-                                            <span>Duration: 23h 59m</span>
-                                            <span>0 min</span>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                                    <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(var(--primary-rgb), 0.2)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem' }}>ME</div>
+                                                    <span style={{ fontSize: '0.85rem' }}>Me</span>
+                                                </div>
+                                                <div style={{ textAlign: 'right' }}>
+                                                    <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', letterSpacing: '0.5px' }}>AVG HRS / DAY</div>
+                                                    <div style={{ fontSize: '0.9rem', fontWeight: '600' }}>{meStats.avgHours}</div>
+                                                </div>
+                                                <div style={{ textAlign: 'right' }}>
+                                                    <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', letterSpacing: '0.5px' }}>ON TIME ARRIVAL</div>
+                                                    <div style={{ fontSize: '0.9rem', fontWeight: '600' }}>{meStats.onTime}</div>
+                                                </div>
+                                            </div>
+                                            {teammateIndividualStats.length > 0 && teammateIndividualStats.map(ts => (
+                                                <div key={ts._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                                        <div className="avatar" style={{ width: '32px', height: '32px', fontSize: '0.7rem', background: 'rgba(var(--primary-rgb), 0.1)', color: 'var(--text-muted)' }}>
+                                                            {ts.name.substring(0, 2).toUpperCase()}
+                                                        </div>
+                                                        <span style={{ fontSize: '0.85rem' }}>{ts.name}</span>
+                                                    </div>
+                                                    <div style={{ textAlign: 'right' }}>
+                                                        <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', letterSpacing: '0.5px' }}>AVG HRS / DAY</div>
+                                                        <div style={{ fontSize: '0.9rem', fontWeight: '600' }}>{Math.floor(ts.avgHours)}h {Math.round((ts.avgHours % 1) * 60)}m</div>
+                                                    </div>
+                                                    <div style={{ textAlign: 'right' }}>
+                                                        <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', letterSpacing: '0.5px' }}>ON TIME ARRIVAL</div>
+                                                        <div style={{ fontSize: '0.9rem', fontWeight: '600' }}>{ts.onTimePercentage}%</div>
+                                                    </div>
+                                                </div>
+                                            ))}
                                         </div>
                                     </div>
 
-                                    <div className="panel">
-                                        <div className="panel-header">Actions</div>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                            <div>
-                                                <div style={{ fontSize: '1.5rem', fontWeight: '300' }}>{currentTime}</div>
-                                                <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>Fri, 06 Mar 2026</div>
-                                                <div style={{ fontSize: '0.75rem' }}>Effective: {isClockedIn ? '4h 42m' : '8h 00m'}</div>
+                                    {/* Work Schedule Panel */}
+                                    <div className="panel" style={{ padding: '1.25rem' }}>
+                                        <div className="panel-header" style={{ marginBottom: '1rem' }}>Work Schedule</div>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                                            <div style={{ background: 'rgba(var(--primary-rgb), 0.05)', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-dark)' }}>
+                                                <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '0.5rem' }}>Daily Shift Requirement</div>
+                                                <div style={{ fontSize: '0.95rem', fontWeight: '600', color: 'var(--text-main)' }}>{user?.workingSchedule?.shiftStart || '11:00'} - {user?.workingSchedule?.shiftEnd || '07:00 PM'}</div>
+                                                <div style={{ fontSize: '0.75rem', color: 'var(--primary)', marginTop: '0.25rem', fontWeight: '500' }}>Target: {user?.workingSchedule?.minHours || 7.0} Effective Hours</div>
                                             </div>
-                                            <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                                                <button
-                                                    className={`btn ${isClockedIn ? 'btn-danger' : 'btn-primary'}`}
-                                                    onClick={handleClockToggle}
-                                                    style={{ marginBottom: '0.5rem', width: '120px' }}
-                                                >
-                                                    {isClockedIn ? 'Web Clock-out' : 'Web Clock-in'}
-                                                </button>
-                                                <div style={{ fontSize: '0.65rem', color: isClockedIn ? 'var(--primary)' : 'var(--text-muted)' }}>
-                                                    {isClockedIn ? '4h:42m Since Last Login' : 'Currently offline'}
+
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', padding: '0.2rem 0' }}>
+                                                    <span style={{ color: 'var(--text-muted)' }}>Status Window:</span>
+                                                    <span style={{ color: 'var(--text-main)', fontWeight: '500' }}>{user?.workingSchedule?.shiftStart || '11:00'} to {(() => {
+                                                        const [h, m] = (user?.workingSchedule?.shiftStart || '11:00').split(':').map(Number);
+                                                        return `${(h + 1) % 12 || 12}:${m.toString().padStart(2, '0')} ${h + 1 >= 12 ? 'PM' : 'AM'}`;
+                                                    })()}</span>
                                                 </div>
-                                                <div
-                                                    onClick={() => setIsWFH(!isWFH)}
-                                                    style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', marginTop: '0.5rem', color: isWFH ? 'var(--primary)' : 'var(--text-muted)', cursor: 'pointer' }}>
-                                                    <Home size={12} /> {isWFH ? 'Work From Home' : 'Work On-Site'}
+                                                <div style={{ height: '1px', background: 'var(--border-dark)' }}></div>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                                                    <Calendar size={12} /> Next week-off: {user?.workingSchedule?.weekOffs?.[0] || 'Sunday'}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+
+                                    {/* Actions Panel */}
+                                    <div className="panel" style={{ padding: '1.25rem' }}>
+                                        <div className="panel-header" style={{ marginBottom: '0.75rem' }}>Actions</div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                            <div>
+                                                <div style={{ fontSize: '1.25rem', fontWeight: '400', marginBottom: '0.25rem' }}>{currentTime}</div>
+                                                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>{new Date().toDateString()}</div>
+                                                <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.25rem' }}>TOTAL HOURS <HelpCircle size={10} /></div>
+                                                <div style={{ fontSize: '0.85rem' }}>
+                                                    Effective: <span style={{ fontWeight: '600' }}>{isClockedIn ? calculateElapsedTime(activeLog?.clockInTime).text : '0h 0m'}</span>
+                                                </div>
+                                                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                                                    Gross: {isClockedIn ? calculateElapsedTime(activeLog?.clockInTime).text : '0h 0m'}
+                                                </div>
+                                            </div>
+                                            <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem' }}>
+                                                {isAttendanceFinished && !isClockedIn ? (
+                                                    <div style={{ textAlign: 'right', color: '#27ae60', fontSize: '0.85rem', fontWeight: '500', maxWidth: '180px', lineHeight: '1.4' }}>
+                                                        Your attendance for today is completed. See you tomorrow!
+                                                    </div>
+                                                ) : (
+                                                    <>
+                                                        <button
+                                                            className={`btn ${isClockedIn ? 'btn-danger' : 'btn-primary'}`}
+                                                            onClick={handleClockToggle}
+                                                            style={{ width: '120px', fontSize: '0.8rem', padding: '0.5rem 0' }}
+                                                        >
+                                                            {isClockedIn ? 'Web Clock-out' : 'Web Clock-in'}
+                                                        </button>
+                                                        <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>
+                                                            {isClockedIn ? `${calculateElapsedTime(activeLog?.clockInTime).text} Since Last Login` : 'Currently offline'}
+                                                        </div>
+                                                    </>
+                                                )}
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', color: 'var(--primary)', cursor: 'pointer' }}>
+                                                    <Home size={12} /> {isClockedIn ? (isWFH ? 'Work From Home' : 'Work On-Site') : (selectedWorkingMode === 'Remote' ? 'Work From Home' : 'Work On-Site')}
+                                                </div>
+                                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                                    <FileText size={12} /> Attendance Policy
                                                 </div>
                                             </div>
                                         </div>
@@ -885,115 +1096,219 @@ export default function Dashboard({ user, onLogout }) {
                                 </div>
 
                                 <div className="panel" style={{ padding: 0 }}>
-                                    <div style={{ padding: '0 1.25rem', borderBottom: '1px solid var(--border-dark)', display: 'flex', gap: '2rem', fontSize: '0.85rem' }}>
-                                        {['Attendance Log', 'Calendar', 'Attendance Requests', 'Overtime Requests'].map(tab => (
-                                            <span
-                                                key={tab}
-                                                onClick={() => setAttendanceTab(tab)}
-                                                style={{
-                                                    padding: '1rem 0',
-                                                    cursor: 'pointer',
-                                                    color: attendanceTab === tab ? 'var(--primary)' : 'var(--text-muted)',
-                                                    borderBottom: attendanceTab === tab ? '2px solid var(--primary)' : '2px solid transparent',
-                                                    marginBottom: '-1px',
-                                                    fontWeight: attendanceTab === tab ? '600' : 'normal'
-                                                }}
-                                            >
-                                                {tab}
-                                            </span>
-                                        ))}
+                                    <div style={{ padding: '0 1.25rem', borderBottom: '1px solid var(--border-dark)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <div style={{ display: 'flex', gap: '2rem', fontSize: '0.85rem' }}>
+                                            {['Attendance Log', 'Calendar', 'Attendance Requests', 'Overtime Requests'].map(tab => (
+                                                <span
+                                                    key={tab}
+                                                    onClick={() => setAttendanceTab(tab)}
+                                                    style={{
+                                                        padding: '1.25rem 0',
+                                                        cursor: 'pointer',
+                                                        color: attendanceTab === tab ? 'var(--primary)' : 'var(--text-muted)',
+                                                        borderBottom: attendanceTab === tab ? '2px solid var(--primary)' : '2px solid transparent',
+                                                        marginBottom: '-1px',
+                                                        fontWeight: '500'
+                                                    }}
+                                                >
+                                                    {tab}
+                                                </span>
+                                            ))}
+                                        </div>
                                     </div>
 
                                     <div style={{ padding: '1.25rem' }}>
                                         {attendanceTab === 'Attendance Log' && (
-                                            <table className="data-table">
-                                                <thead>
-                                                    <tr><th>DATE</th><th>ATTENDANCE VISUAL</th><th>GROSS HOURS</th><th>STATUS</th></tr>
-                                                </thead>
-                                                <tbody>
-                                                    {attendanceLogs.length > 0 ? attendanceLogs.map(log => (
-                                                        <tr key={log._id}>
-                                                            <td style={{ fontWeight: 'bold' }}>{new Date(log.date).toDateString()}</td>
-                                                            <td>
-                                                                <div style={{ width: '80%', height: '8px', background: 'var(--border-dark)', borderRadius: '4px' }}>
-                                                                    <div style={{ width: log.clockOutTime ? '100%' : '50%', height: '100%', background: 'var(--primary)', borderRadius: '4px' }}></div>
-                                                                </div>
-                                                            </td>
-                                                            <td>{log.totalHours ? `${log.totalHours} hrs` : (log.clockInTime ? 'Ongoing' : '0 hrs')}</td>
-                                                            <td>{log.status}</td>
+                                            <>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+                                                    <span style={{ fontSize: '1rem', fontWeight: '500' }}>Last 30 Days</span>
+                                                    <div style={{ display: 'flex', borderRadius: '4px', border: '1px solid var(--border-dark)', overflow: 'hidden' }}>
+                                                        {['30 DAYS', 'FEB', 'JAN', 'DEC', 'NOV', 'OCT', 'SEP'].map((m, i) => (
+                                                            <div key={m} style={{
+                                                                padding: '0.4rem 0.75rem', fontSize: '0.7rem', cursor: 'pointer',
+                                                                background: i === 0 ? 'var(--primary)' : 'transparent',
+                                                                color: i === 0 ? 'white' : 'var(--text-muted)',
+                                                                borderRight: i === 6 ? 'none' : '1px solid var(--border-dark)'
+                                                            }}>
+                                                                {m}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                                <table className="data-table">
+                                                    <thead>
+                                                        <tr style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                                                            <th>Date</th>
+                                                            <th>Attendance Visual</th>
+                                                            <th>Effective Hours</th>
+                                                            <th>Gross Hours</th>
+                                                            <th>Arrival</th>
+                                                            <th>Log</th>
                                                         </tr>
-                                                    )) : (
-                                                        <tr><td colSpan="4" style={{ textAlign: 'center', padding: '1rem', color: 'var(--text-muted)' }}>No logs found</td></tr>
-                                                    )}
-                                                </tbody>
-                                            </table>
-                                        )}
+                                                    </thead>
+                                                    <tbody>
+                                                        {attendanceLogs.length > 0 ? attendanceLogs.map(log => (
+                                                            <tr key={log._id}>
+                                                                <td style={{ fontSize: '0.8rem' }}>{new Date(log.date).toLocaleDateString('en-US', { weekday: 'short', day: '2-digit', month: 'short' })}</td>
+                                                                <td>
+                                                                    <div style={{ width: '120px', height: '6px', background: 'var(--border-dark)', borderRadius: '3px' }}>
+                                                                        <div style={{ width: log.clockOutTime ? '100%' : '50%', height: '100%', background: 'var(--primary)', borderRadius: '3px' }}></div>
+                                                                    </div>
+                                                                </td>
+                                                                <td style={{ fontSize: '0.85rem' }}>
+                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                                        <div style={{ width: '8px', height: '8px', borderRadius: '50%', border: '2px solid var(--primary)' }}></div>
+                                                                        {log.totalHours ? `${Math.floor(log.totalHours)}h ${Math.round((log.totalHours % 1) * 60)}m` : (log.clockInTime ? 'Ongoing' : '0h 0m')}
+                                                                    </div>
+                                                                </td>
+                                                                <td style={{ fontSize: '0.85rem' }}>{log.totalHours ? `${Math.floor(log.totalHours)}h ${Math.round((log.totalHours % 1) * 60)}m` : (log.clockInTime ? 'Ongoing' : '0h 0m')}</td>
+                                                                <td style={{ fontSize: '0.8rem' }}>
+                                                                    {(() => {
+                                                                        if (!log.clockInTime) return '-';
+                                                                        const clockInDate = new Date(log.clockInTime);
+                                                                        const hours = clockInDate.getHours();
+                                                                        const mins = clockInDate.getMinutes();
+                                                                        const totalMins = hours * 60 + mins;
 
-                                        {attendanceTab === 'Calendar' && (
-                                            <div style={{ padding: '1rem 0' }}>{renderCalendarGrid()}</div>
-                                        )}
+                                                                        const [shiftH, shiftM] = (user?.workingSchedule?.shiftStart || '11:00').split(':').map(Number);
+                                                                        const shiftStartMins = shiftH * 60 + shiftM;
 
-                                        {attendanceTab === 'Attendance Requests' && (
-                                            <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-                                                <FileText size={48} style={{ margin: '0 auto 1rem', opacity: 0.5 }} />
-                                                <div>No pending attendance adjustment requests.</div>
-                                            </div>
+                                                                        if (totalMins < shiftStartMins) {
+                                                                            return <span style={{ color: '#10b981', fontWeight: '500' }}>Early</span>;
+                                                                        } else if (totalMins <= shiftStartMins + 60) {
+                                                                            return <span style={{ color: 'var(--primary)', fontWeight: '500' }}>On Time</span>;
+                                                                        } else {
+                                                                            return <span style={{ color: '#ef4444', fontWeight: '500' }}>Late</span>;
+                                                                        }
+                                                                    })()}
+                                                                </td>
+                                                                <td><Info size={14} color="var(--primary)" style={{ cursor: 'pointer' }} onClick={() => setShowLogInfo(log)} /></td>
+                                                            </tr>
+                                                        )) : (
+                                                            <tr style={{ border: 'none' }}><td colSpan="6" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>No logs found for this period</td></tr>
+                                                        )}
+                                                    </tbody>
+                                                </table>
+                                            </>
                                         )}
-
-                                        {attendanceTab === 'Overtime Requests' && (
-                                            <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-                                                <Clock size={48} style={{ margin: '0 auto 1rem', opacity: 0.5 }} />
-                                                <div>No pending overtime requests for this month.</div>
+                                        {attendanceTab !== 'Attendance Log' && (
+                                            <div style={{ padding: '4rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                                                <div style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>{attendanceTab} Content</div>
+                                                <p style={{ fontSize: '0.85rem' }}>This section is currently being updated with real-time data.</p>
                                             </div>
                                         )}
                                     </div>
                                 </div>
                             </>
+                        )
+                        }
+
+                        {
+                            activeSubTab === 'Performance' && (
+                                <div className="grid" style={{ gridTemplateColumns: '1fr', gap: '1.5rem' }}>
+                                    <div className="panel">
+                                        <div className="panel-header">Active Objectives (OKRs)</div>
+                                        <div style={{ border: '1px solid var(--border-dark)', borderRadius: 'var(--radius-md)', padding: '1.5rem', background: 'rgba(var(--primary-rgb, 155, 89, 182), 0.05)' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                                                <div style={{ fontWeight: '500', fontSize: '1rem' }}>Improve Backend Response Time by 30%</div>
+                                                <span style={{ border: '1px solid #10b981', color: '#10b981', padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.75rem' }}>On Track - 65%</span>
+                                            </div>
+                                            <div style={{ width: '100%', height: '8px', background: 'var(--border-dark)', borderRadius: '4px', marginBottom: '1rem' }}>
+                                                <div style={{ width: '65%', height: '100%', background: '#10b981', borderRadius: '4px' }}></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )
+                        }
+
+                        {
+                            activeSubTab === 'Expenses & Travel' && (
+                                <div className="panel" style={{ textAlign: 'center', padding: '4rem' }}>
+                                    <Briefcase size={48} color="var(--text-muted)" style={{ margin: '0 auto 1rem' }} />
+                                    <h3 style={{ marginBottom: '0.5rem' }}>No Active Expenses</h3>
+                                    <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '1rem' }}>You haven't filed any expenses this quarter.</p>
+                                    <button className="btn btn-primary">+ Claim New Expense</button>
+                                </div>
+                            )
+                        }
+
+                        {
+                            activeSubTab === 'Apps' && (
+                                <div className="panel" style={{ textAlign: 'center', padding: '4rem' }}>
+                                    <Building2 size={48} color="var(--text-muted)" style={{ margin: '0 auto 1rem' }} />
+                                    <h3 style={{ marginBottom: '0.5rem' }}>Connected Applications</h3>
+                                    <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '1rem' }}>Manage your third-party integrations like Slack, Zoom, and Jira.</p>
+                                    <button className="btn" style={{ border: '1px solid var(--border-dark)' }}>Manage Connectors</button>
+                                </div>
+                            )
+                        }
+
+                        {activeSubTab === 'Leave' && (
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem' }}>
+                                {[
+                                    { label: 'SICK LEAVE', value: user?.leaveQuotas?.sick || 6, color: 'var(--primary)' },
+                                    { label: 'CASUAL LEAVE', value: user?.leaveQuotas?.casual || 6, color: '#10b981' },
+                                    { label: 'PAID LEAVE', value: user?.leaveQuotas?.paid || 12, color: '#f59e0b' }
+                                ].map(l => (
+                                    <div key={l.label} className="panel" style={{ padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <div>
+                                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: '600', marginBottom: '0.5rem' }}>{l.label}</div>
+                                            <div style={{ fontSize: '1.75rem', fontWeight: 'bold' }}>{l.value}</div>
+                                        </div>
+                                        <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: `${l.color}20`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                            <Calendar size={20} color={l.color} />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
                         )}
 
-                        {activeSubTab === 'Performance' && (
-                            <div className="grid" style={{ gridTemplateColumns: '1fr', gap: '1.5rem' }}>
-                                <div className="panel">
-                                    <div className="panel-header">Active Objectives (OKRs)</div>
-                                    <div style={{ border: '1px solid var(--border-dark)', borderRadius: 'var(--radius-md)', padding: '1.5rem', background: 'rgba(var(--primary-rgb, 155, 89, 182), 0.05)' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                                            <div style={{ fontWeight: '500', fontSize: '1rem' }}>Improve Backend Response Time by 30%</div>
-                                            <span style={{ border: '1px solid #10b981', color: '#10b981', padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.75rem' }}>On Track - 65%</span>
+                        {activeSubTab === 'Profile' && (
+                            <div className="grid" style={{ gridTemplateColumns: '1.5fr 1fr', gap: '1.5rem' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                                    <div className="panel" style={{ padding: '1.5rem' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', marginBottom: '2rem' }}>
+                                            <div className="avatar" style={{ width: '80px', height: '80px', fontSize: '2rem', background: 'var(--primary)', color: 'white' }}>{user.name.substring(0, 1)}</div>
+                                            <div>
+                                                <h2 style={{ fontSize: '1.5rem', fontWeight: '600' }}>{user.name}</h2>
+                                                <p style={{ color: 'var(--text-muted)' }}>{user.designation} | {user.department}</p>
+                                            </div>
                                         </div>
-                                        <div style={{ width: '100%', height: '8px', background: 'var(--border-dark)', borderRadius: '4px', marginBottom: '1rem' }}>
-                                            <div style={{ width: '65%', height: '100%', background: '#10b981', borderRadius: '4px' }}></div>
+                                        <div className="grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                                            <div><label style={labelStyle}>Email</label><div style={{ fontSize: '0.9rem' }}>{user.email}</div></div>
+                                            <div><label style={labelStyle}>Role</label><div style={{ fontSize: '0.9rem' }}>{user.role}</div></div>
+                                            <div><label style={labelStyle}>Joining Date</label><div style={{ fontSize: '0.9rem' }}>{user.joiningDate ? new Date(user.joiningDate).toLocaleDateString() : 'N/A'}</div></div>
+                                            <div><label style={labelStyle}>Employee ID</label><div style={{ fontSize: '0.9rem' }}>KEKA-{user._id.substring(user._id.length - 6).toUpperCase()}</div></div>
+                                        </div>
+                                    </div>
+                                    <div className="panel" style={{ padding: '1.5rem' }}>
+                                        <div className="panel-header" style={{ marginBottom: '1rem' }}>Personalized Work Requirements</div>
+                                        <div className="grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                                            <div><label style={labelStyle}>Shift Timings</label><div style={{ fontSize: '0.9rem', fontWeight: '500' }}>{user?.workingSchedule?.shiftStart} to {user?.workingSchedule?.shiftEnd}</div></div>
+                                            <div><label style={labelStyle}>Min. Hours/Day</label><div style={{ fontSize: '0.9rem', fontWeight: '500' }}>{user?.workingSchedule?.minHours} Hours</div></div>
+                                            <div><label style={labelStyle}>Week Offs</label><div style={{ fontSize: '0.9rem', fontWeight: '500' }}>{user?.workingSchedule?.weekOffs?.join(', ') || 'Sunday'}</div></div>
+                                            <div><label style={labelStyle}>Salary Type</label><div style={{ fontSize: '0.9rem', fontWeight: '500', color: 'var(--primary)' }}>{user?.salaryDetails?.type || 'Fixed'}</div></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                                    <div className="panel" style={{ padding: '1.5rem' }}>
+                                        <div className="panel-header" style={{ marginBottom: '1rem' }}>Leave Balances</div>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                            {['Sick', 'Casual', 'Paid'].map(type => (
+                                                <div key={type} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.75rem', border: '1px solid var(--border-dark)', borderRadius: '4px' }}>
+                                                    <span style={{ fontSize: '0.85rem' }}>{type} Leaves</span>
+                                                    <span style={{ fontWeight: '600', color: 'var(--primary)' }}>{user?.leaveQuotas?.[type.toLowerCase()] || 0}</span>
+                                                </div>
+                                            ))}
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         )}
 
-                        {activeSubTab === 'Expenses & Travel' && (
-                            <div className="panel" style={{ textAlign: 'center', padding: '4rem' }}>
-                                <Briefcase size={48} color="var(--text-muted)" style={{ margin: '0 auto 1rem' }} />
-                                <h3 style={{ marginBottom: '0.5rem' }}>No Active Expenses</h3>
-                                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '1rem' }}>You haven't filed any expenses this quarter.</p>
-                                <button className="btn btn-primary">+ Claim New Expense</button>
-                            </div>
-                        )}
-
-                        {activeSubTab === 'Apps' && (
-                            <div className="panel" style={{ textAlign: 'center', padding: '4rem' }}>
-                                <Building2 size={48} color="var(--text-muted)" style={{ margin: '0 auto 1rem' }} />
-                                <h3 style={{ marginBottom: '0.5rem' }}>Connected Applications</h3>
-                                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '1rem' }}>Manage your third-party integrations like Slack, Zoom, and Jira.</p>
-                                <button className="btn" style={{ border: '1px solid var(--border-dark)' }}>Manage Connectors</button>
-                            </div>
-                        )}
-
-                        {/* If 'Leave' keep existing placeholder logic or simplified version */}
-                        {activeSubTab === 'Leave' && (
-                            <div className="panel" style={{ padding: '2rem', textAlign: 'center' }}>
-                                <h3>Leave Management</h3>
-                                <p style={{ color: 'var(--text-muted)', marginTop: '0.5rem' }}>Leave analytics and balances are visible here.</p>
-                            </div>
-                        )}
-                    </div>
+                    </div >
                 </>
             );
         }
@@ -1001,11 +1316,67 @@ export default function Dashboard({ user, onLogout }) {
         if (activeSidebar === 'My Team') {
             return (
                 <>
-                    <div className="sub-nav"><div className="sub-nav-item active">SUMMARY</div></div>
+                    <div className="sub-nav"><div className="sub-nav-item active">TEAM MEMBERS</div></div>
                     <div className="page-content">
-                        <div className="panel" style={{ marginBottom: '2rem' }}>
-                            <div className="panel-header">Team calendar (March 2026)</div>
-                            {renderCalendarGrid()}
+                        <div className="grid" style={{ gridTemplateColumns: '1fr 300px', gap: '2rem' }}>
+                            <div className="panel">
+                                <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <span>Team: {user?.department || 'My Department'}</span>
+                                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{teammates.length} Members</span>
+                                </div>
+                                <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '1rem', marginTop: '1rem' }}>
+                                    {teammates.map(t => (
+                                        <div
+                                            key={t._id}
+                                            className="panel"
+                                            style={{
+                                                padding: '1.25rem',
+                                                cursor: 'pointer',
+                                                transition: 'transform 0.2s',
+                                                border: '1px solid var(--border-dark)',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '1rem'
+                                            }}
+                                            onClick={() => setShowPublicProfile(t)}
+                                        >
+                                            <div className="avatar" style={{ width: '48px', height: '48px', background: 'var(--primary)', color: 'white' }}>
+                                                {t.name.substring(0, 1).toUpperCase()}
+                                            </div>
+                                            <div style={{ overflow: 'hidden' }}>
+                                                <div style={{ fontWeight: '600', fontSize: '0.9rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.name}</div>
+                                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{t.designation}</div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    {teammates.length === 0 && (
+                                        <div style={{ gridColumn: 'span 12', textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
+                                            No other teammates found in your department.
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                            <div>
+                                <div className="panel" style={{ marginBottom: '1rem' }}>
+                                    <div className="panel-header">Team Stats ({statsPeriod})</div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', padding: '1rem 0' }}>
+                                        <div>
+                                            <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>AVG HRS / DAY</div>
+                                            <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{Math.floor(teamStats.avgHours)}h {Math.round((teamStats.avgHours % 1) * 60)}m</div>
+                                        </div>
+                                        <div>
+                                            <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>ON TIME ARRIVAL</div>
+                                            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--primary)' }}>{teamStats.onTimePercentage}%</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="panel">
+                                    <div className="panel-header">Team calendar</div>
+                                    <div style={{ transform: 'scale(0.8)', transformOrigin: 'top left' }}>
+                                        {renderCalendarGrid()}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </>
@@ -1230,12 +1601,31 @@ export default function Dashboard({ user, onLogout }) {
                                         <form onSubmit={handleUpdateUser} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
                                             <div><label style={labelStyle}>Role</label><select value={selectedUser.role} onChange={e => setSelectedUser({ ...selectedUser, role: e.target.value })} style={inputStyle}><option value="Employee">Employee</option><option value="Admin">Admin</option><option value="Super Admin">Super Admin</option></select></div>
                                             <div><label style={labelStyle}>Status</label><select value={selectedUser.isActive} onChange={e => setSelectedUser({ ...selectedUser, isActive: e.target.value === 'true' })} style={inputStyle}><option value="true">Active</option><option value="false">Inactive</option></select></div>
-                                            <div style={{ gridColumn: 'span 2' }}><h4 style={{ color: 'var(--primary)', borderBottom: '1px solid var(--border-dark)', paddingBottom: '0.5rem', marginTop: '0.5rem' }}>Finances (Monthly)</h4></div>
-                                            <div><label style={labelStyle}>Basic Salary</label><input type="number" value={selectedUser.salary?.basic || 0} onChange={e => setSelectedUser({ ...selectedUser, salary: { ...selectedUser.salary, basic: Number(e.target.value) } })} style={inputStyle} /></div>
-                                            <div><label style={labelStyle}>Allowances</label><input type="number" value={selectedUser.salary?.allowance || 0} onChange={e => setSelectedUser({ ...selectedUser, salary: { ...selectedUser.salary, allowance: Number(e.target.value) } })} style={inputStyle} /></div>
-                                            <div><label style={labelStyle}>HRA</label><input type="number" value={selectedUser.salary?.hra || 0} onChange={e => setSelectedUser({ ...selectedUser, salary: { ...selectedUser.salary, hra: Number(e.target.value) } })} style={inputStyle} /></div>
-                                            <div><label style={labelStyle}>Deductions</label><input type="number" value={selectedUser.salary?.deductions || 0} onChange={e => setSelectedUser({ ...selectedUser, salary: { ...selectedUser.salary, deductions: Number(e.target.value) } })} style={inputStyle} /></div>
-                                            <div style={{ gridColumn: 'span 2', marginTop: '1rem' }}><button className="btn btn-primary" type="submit">Update User Details</button></div>
+
+                                            <div style={{ gridColumn: 'span 2' }}>
+                                                <h4 style={{ color: 'var(--primary)', borderBottom: '1px solid var(--border-dark)', paddingBottom: '0.5rem', marginTop: '0.5rem', fontSize: '0.9rem' }}>Work Schedule</h4>
+                                            </div>
+                                            <div><label style={labelStyle}>Shift Start (HH:mm)</label><input type="text" value={selectedUser.workingSchedule?.shiftStart || '11:00'} onChange={e => setSelectedUser({ ...selectedUser, workingSchedule: { ...selectedUser.workingSchedule, shiftStart: e.target.value } })} style={inputStyle} /></div>
+                                            <div><label style={labelStyle}>Shift End (HH:mm)</label><input type="text" value={selectedUser.workingSchedule?.shiftEnd || '18:00'} onChange={e => setSelectedUser({ ...selectedUser, workingSchedule: { ...selectedUser.workingSchedule, shiftEnd: e.target.value } })} style={inputStyle} /></div>
+                                            <div><label style={labelStyle}>Min Hours/Day</label><input type="number" value={selectedUser.workingSchedule?.minHours || 7} onChange={e => setSelectedUser({ ...selectedUser, workingSchedule: { ...selectedUser.workingSchedule, minHours: Number(e.target.value) } })} style={inputStyle} /></div>
+                                            <div><label style={labelStyle}>Week Offs (Comma sep.)</label><input type="text" value={selectedUser.workingSchedule?.weekOffs?.join(',') || 'Sunday'} onChange={e => setSelectedUser({ ...selectedUser, workingSchedule: { ...selectedUser.workingSchedule, weekOffs: e.target.value.split(',') } })} style={inputStyle} /></div>
+
+                                            <div style={{ gridColumn: 'span 2' }}>
+                                                <h4 style={{ color: 'var(--primary)', borderBottom: '1px solid var(--border-dark)', paddingBottom: '0.5rem', marginTop: '0.5rem', fontSize: '0.9rem' }}>Leave Quotas</h4>
+                                            </div>
+                                            <div><label style={labelStyle}>Paid Leaves</label><input type="number" value={selectedUser.leaveQuotas?.paid || 12} onChange={e => setSelectedUser({ ...selectedUser, leaveQuotas: { ...selectedUser.leaveQuotas, paid: Number(e.target.value) } })} style={inputStyle} /></div>
+                                            <div><label style={labelStyle}>Sick Leaves</label><input type="number" value={selectedUser.leaveQuotas?.sick || 6} onChange={e => setSelectedUser({ ...selectedUser, leaveQuotas: { ...selectedUser.leaveQuotas, sick: Number(e.target.value) } })} style={inputStyle} /></div>
+                                            <div><label style={labelStyle}>Casual Leaves</label><input type="number" value={selectedUser.leaveQuotas?.casual || 6} onChange={e => setSelectedUser({ ...selectedUser, leaveQuotas: { ...selectedUser.leaveQuotas, casual: Number(e.target.value) } })} style={inputStyle} /></div>
+
+                                            <div style={{ gridColumn: 'span 2' }}>
+                                                <h4 style={{ color: 'var(--primary)', borderBottom: '1px solid var(--border-dark)', paddingBottom: '0.5rem', marginTop: '0.5rem', fontSize: '0.9rem' }}>Finances & Salary</h4>
+                                            </div>
+                                            <div><label style={labelStyle}>Salary Type</label><select value={selectedUser.salaryDetails?.type || 'Fixed'} onChange={e => setSelectedUser({ ...selectedUser, salaryDetails: { ...selectedUser.salaryDetails, type: e.target.value } })} style={inputStyle}><option value="Fixed">Fixed</option><option value="Variable">Variable</option></select></div>
+                                            <div><label style={labelStyle}>Monthly Amount</label><input type="number" value={selectedUser.salaryDetails?.monthlyAmount || 0} onChange={e => setSelectedUser({ ...selectedUser, salaryDetails: { ...selectedUser.salaryDetails, monthlyAmount: Number(e.target.value) } })} style={inputStyle} /></div>
+
+                                            <div style={{ gridColumn: 'span 2', marginTop: '1rem' }}>
+                                                <button className="btn btn-primary" type="submit">Update User Profile</button>
+                                            </div>
                                         </form>
                                     </div>
                                 </div>
@@ -1293,6 +1683,79 @@ export default function Dashboard({ user, onLogout }) {
         return null;
     };
 
+    const renderAlertModal = () => {
+        if (!customAlert) return null;
+        return (
+            <div style={modalOverlay}>
+                <div style={{ ...modalContent, maxWidth: '450px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '1rem', color: 'var(--text-main)' }}>
+                        {customAlert.type === 'confirm' ? 'Confirmation' : 'Update'}
+                    </div>
+                    <div style={{ fontSize: '1rem', color: 'var(--text-muted)', marginBottom: '2rem', whiteSpace: 'pre-line' }}>
+                        {customAlert.message}
+                    </div>
+                    <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+                        {customAlert.type === 'confirm' ? (
+                            <>
+                                <button className="btn btn-secondary" style={{ padding: '0.6rem 2rem' }} onClick={() => setCustomAlert(null)}>Cancel</button>
+                                <button className="btn btn-primary" style={{ padding: '0.6rem 2rem' }} onClick={() => { customAlert.onConfirm(); setCustomAlert(null); }}>Confirm</button>
+                            </>
+                        ) : (
+                            <button className="btn btn-primary" style={{ padding: '0.6rem 2rem' }} onClick={() => setCustomAlert(null)}>Okay</button>
+                        )}
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+    const renderLogInfoModal = () => {
+        if (!showLogInfo) return null;
+        const formatTime = (dateStr) => {
+            if (!dateStr) return 'Not available';
+            return new Date(dateStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        };
+        return (
+            <div style={modalOverlay}>
+                <div style={{ ...modalContent, maxWidth: '400px' }}>
+                    <div className="panel-header" style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '1.1rem', fontWeight: '600' }}>Attendance Log Details</span>
+                        <span style={{ cursor: 'pointer', fontSize: '1.25rem' }} onClick={() => setShowLogInfo(null)}>✕</span>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                        <div style={{ padding: '1rem', background: 'var(--bg-main)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-dark)' }}>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Date</div>
+                            <div style={{ fontWeight: '600' }}>{new Date(showLogInfo.date).toDateString()}</div>
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                            <div style={{ padding: '1rem', background: 'var(--bg-main)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-dark)' }}>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Clock In</div>
+                                <div style={{ fontWeight: '600', color: '#27ae60' }}>{formatTime(showLogInfo.clockInTime)}</div>
+                            </div>
+                            <div style={{ padding: '1rem', background: 'var(--bg-main)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-dark)' }}>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Clock Out</div>
+                                <div style={{ fontWeight: '600', color: '#e74c3c' }}>{showLogInfo.clockOutTime ? formatTime(showLogInfo.clockOutTime) : 'Session Active'}</div>
+                            </div>
+                        </div>
+                        <div style={{ padding: '1rem', background: 'var(--bg-main)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-dark)' }}>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Working Mode / Status</div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <span className={`badge ${showLogInfo.workingMode?.toLowerCase() === 'remote' ? 'wfh' : 'on-site'}`} style={{ fontSize: '0.7rem' }}>
+                                    {showLogInfo.workingMode || 'On-site'}
+                                </span>
+                                <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>•</span>
+                                <span style={{ fontSize: '0.85rem' }}>{showLogInfo.status || 'Active'}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div style={{ marginTop: '2rem' }}>
+                        <button className="btn btn-primary" style={{ width: '100%' }} onClick={() => setShowLogInfo(null)}>Close</button>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
     const renderHolidayModal = () => {
         return (
             <div style={modalOverlay}>
@@ -1326,19 +1789,59 @@ export default function Dashboard({ user, onLogout }) {
         );
     };
 
+    const renderPublicProfileModal = () => {
+        if (!showPublicProfile) return null;
+        const u = showPublicProfile;
+        return (
+            <div style={modalOverlay}>
+                <div style={{ ...modalContent, maxWidth: '600px' }}>
+                    <div className="panel-header" style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between' }}>
+                        <span>Public Profile</span>
+                        <span style={{ cursor: 'pointer' }} onClick={() => setShowPublicProfile(null)}>✕</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', marginBottom: '2rem' }}>
+                        <div className="avatar" style={{ width: '80px', height: '80px', fontSize: '2rem', background: 'var(--primary)', color: 'white' }}>{u.name?.substring(0, 1).toUpperCase()}</div>
+                        <div>
+                            <h2 style={{ fontSize: '1.5rem', fontWeight: '600', color: 'var(--text-main)' }}>{u.name}</h2>
+                            <p style={{ color: 'var(--text-muted)' }}>{u.designation} | {u.department}</p>
+                        </div>
+                    </div>
+                    <div className="grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                        <div><label style={labelStyle}>Email</label><div style={{ fontSize: '0.9rem', color: 'var(--text-main)' }}>{u.email}</div></div>
+                        <div><label style={labelStyle}>Department</label><div style={{ fontSize: '0.9rem', color: 'var(--text-main)' }}>{u.department}</div></div>
+                        <div><label style={labelStyle}>Joining Date</label><div style={{ fontSize: '0.9rem', color: 'var(--text-main)' }}>{u.joiningDate ? new Date(u.joiningDate).toLocaleDateString() : 'N/A'}</div></div>
+                        <div><label style={labelStyle}>Employee ID</label><div style={{ fontSize: '0.9rem', color: 'var(--text-main)' }}>KEKA-{u._id?.substring(u._id.length - 6).toUpperCase() || 'ID'}</div></div>
+                    </div>
+                    {u.welcomeProfile?.about && (
+                        <div style={{ marginTop: '1.5rem' }}>
+                            <label style={labelStyle}>About</label>
+                            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: '1.5' }}>{u.welcomeProfile.about}</div>
+                        </div>
+                    )}
+                    <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end' }}>
+                        <button className="btn btn-secondary" onClick={() => setShowPublicProfile(null)}>Close</button>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
     return (
         <div className="dashboard-layout">
-            {/* Sidebar Navigation */}
             <aside className="sidebar">
                 <div className="sidebar-brand">
                     <span style={{ color: 'var(--primary)' }}>TP</span>&nbsp; Interns
                 </div>
                 <nav className="sidebar-nav">
-                    {sidebarItems.map(item => (
+                    {sidebarItems.filter(item => item.name !== 'My Team' || teammates.length > 0).map(item => (
                         <div
                             key={item.name}
                             className={`nav-item ${activeSidebar === item.name ? 'active' : ''}`}
-                            onClick={() => { setActiveSidebar(item.name); setActiveSubTab('Leave'); }}
+                            onClick={() => {
+                                setActiveSidebar(item.name);
+                                if (item.name === 'Me') setActiveSubTab('Attendance');
+                                if (item.name === 'My Team') setActiveSubTab('TEAM MEMBERS');
+                            }}
                         >
                             {item.icon}
                             <span className="nav-text">{item.name}</span>
@@ -1347,7 +1850,6 @@ export default function Dashboard({ user, onLogout }) {
                 </nav>
             </aside>
 
-            {/* Main Content Component */}
             <main className="main-content">
                 <header className="topbar">
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
@@ -1356,9 +1858,7 @@ export default function Dashboard({ user, onLogout }) {
                             {new Date().toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
                         </div>
                     </div>
-                    <div className="topbar-actions">
-                        <button className="btn btn-danger" onClick={onLogout} style={{ padding: '0.25rem 0.75rem' }}>Log Out</button>
-
+                    <div className="topbar-actions" style={{ position: 'relative' }}>
                         <button
                             onClick={toggleTheme}
                             style={{ background: 'transparent', border: 'none', color: 'var(--text-topbar)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
@@ -1371,16 +1871,95 @@ export default function Dashboard({ user, onLogout }) {
                         <div
                             className="avatar"
                             style={{ cursor: 'pointer', background: '#10b981' }}
-                            onClick={() => { setActiveSidebar('Me'); setActiveSubTab('Profile'); }}
+                            onClick={() => setShowProfileMenu(!showProfileMenu)}
                         >
                             {user?.name?.substring(0, 2).toUpperCase() || 'ME'}
                         </div>
+
+                        {showProfileMenu && (
+                            <div className="panel" style={{
+                                position: 'absolute',
+                                top: '100%',
+                                right: '0',
+                                marginTop: '0.5rem',
+                                minWidth: '180px',
+                                zIndex: 100,
+                                padding: '0.5rem 0',
+                                boxShadow: '0 10px 25px rgba(0,0,0,0.3)',
+                                border: '1px solid var(--border-dark)'
+                            }}>
+                                <div
+                                    style={{ padding: '0.75rem 1.25rem', borderBottom: '1px solid var(--border-dark)' }}
+                                >
+                                    <div style={{ fontWeight: '600', color: 'var(--text-main)', fontSize: '0.85rem' }}>{user?.name}</div>
+                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{user?.role}</div>
+                                </div>
+                                <div
+                                    className="dropdown-item"
+                                    onClick={() => { setActiveSidebar('Me'); setActiveSubTab('Profile'); setShowProfileMenu(false); }}
+                                >
+                                    My Profile
+                                </div>
+                                <div
+                                    className="dropdown-item danger"
+                                    style={{ color: '#ef4444' }}
+                                    onClick={handleLogout}
+                                >
+                                    Log Out
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </header>
                 <div className="dashboard-content">
                     {renderContent()}
                 </div>
                 {showHolidayModal && renderHolidayModal()}
+                {showLogInfo && renderLogInfoModal()}
+                {renderAlertModal()}
+                {renderPublicProfileModal()}
+
+                {showClockInModal && (
+                    <div style={modalOverlay}>
+                        <div style={{ ...modalContent, maxWidth: '400px' }}>
+                            <div className="panel-header" style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between' }}>
+                                <span>Clock In - Select Mode</span>
+                                <span style={{ cursor: 'pointer' }} onClick={() => setShowClockInModal(false)}>✕</span>
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                <div
+                                    onClick={() => setSelectedWorkingMode('On-site')}
+                                    style={{
+                                        padding: '1rem',
+                                        border: `1px solid ${selectedWorkingMode === 'On-site' ? 'var(--primary)' : 'var(--border-dark)'}`,
+                                        borderRadius: 'var(--radius-md)',
+                                        cursor: 'pointer',
+                                        background: selectedWorkingMode === 'On-site' ? 'rgba(var(--primary-rgb), 0.1)' : 'transparent'
+                                    }}
+                                >
+                                    <div style={{ fontWeight: '500' }}>Working On-Site</div>
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Working from the office location.</div>
+                                </div>
+                                <div
+                                    onClick={() => setSelectedWorkingMode('Remote')}
+                                    style={{
+                                        padding: '1rem',
+                                        border: `1px solid ${selectedWorkingMode === 'Remote' ? 'var(--primary)' : 'var(--border-dark)'}`,
+                                        borderRadius: 'var(--radius-md)',
+                                        cursor: 'pointer',
+                                        background: selectedWorkingMode === 'Remote' ? 'rgba(var(--primary-rgb), 0.1)' : 'transparent'
+                                    }}
+                                >
+                                    <div style={{ fontWeight: '500' }}>Working Remotely</div>
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Working from home or another location.</div>
+                                </div>
+                                <button className="btn btn-primary" style={{ marginTop: '1rem' }} onClick={confirmClockIn}>
+                                    Confirm Clock In
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </main>
         </div>
     );

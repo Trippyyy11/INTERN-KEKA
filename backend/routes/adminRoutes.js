@@ -16,6 +16,8 @@ const router = express.Router();
 
 // All routes here are restricted to Admin or Super Admin
 router.use(protect);
+router.get('/settings', getSettings);
+
 router.use(authorize(['Admin', 'Super Admin']));
 
 router.get('/users', getUsers);
@@ -29,7 +31,6 @@ router.post('/configs', createOrgConfig);
 router.delete('/configs/:id', deleteOrgConfig);
 
 // System Settings
-router.get('/settings', getSettings);
 router.put('/settings', updateSettings);
 
 export default router;

@@ -25,10 +25,13 @@ export const approveUser = async (req, res) => {
 // @desc    Update user specific data (Salary, Designation etc by Admin)
 export const updateUserDetails = async (req, res) => {
     try {
-        const { salary, role, department, designation, isActive } = req.body;
+        const { salary, role, department, designation, isActive, workingSchedule, leaveQuotas, salaryDetails } = req.body;
         const user = await User.findById(req.params.id);
         if (user) {
             if (salary) user.salary = { ...user.salary, ...salary };
+            if (workingSchedule) user.workingSchedule = { ...user.workingSchedule, ...workingSchedule };
+            if (leaveQuotas) user.leaveQuotas = { ...user.leaveQuotas, ...leaveQuotas };
+            if (salaryDetails) user.salaryDetails = { ...user.salaryDetails, ...salaryDetails };
             if (role) user.role = role;
             if (department) user.department = department;
             if (designation) user.designation = designation;
