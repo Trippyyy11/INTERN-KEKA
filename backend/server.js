@@ -26,6 +26,7 @@ import leaveRoutes from './routes/leaveRoutes.js';
 import payslipRoutes from './routes/payslipRoutes.js';
 import dashboardRoutes from './routes/dashboardRoutes.js';
 import socialRoutes from './routes/socialRoutes.js';
+import requestRoutes from './routes/requestRoutes.js';
 
 // Testing Route
 app.get('/', (req, res) => {
@@ -40,6 +41,7 @@ app.use('/api/leaves', leaveRoutes);
 app.use('/api/payslips', payslipRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/social', socialRoutes);
+app.use('/api/requests', requestRoutes);
 
 // Default Error handling middleware
 app.use((err, req, res, next) => {

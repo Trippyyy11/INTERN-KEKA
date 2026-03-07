@@ -22,7 +22,12 @@ import {
     HelpCircle,
     Info,
     Network,
-    Trash2
+    Trash2,
+    Send,
+    X,
+    ChevronDown,
+    CheckCircle,
+    XCircle
 } from 'lucide-react';
 
 import OrganizationTree from './OrganizationTree';
@@ -63,6 +68,21 @@ export default function Dashboard({ user, onLogout, setUser }) {
     const [activeLog, setActiveLog] = useState(null);
     const [showLogInfo, setShowLogInfo] = useState(null);
     const [isAttendanceFinished, setIsAttendanceFinished] = useState(false);
+    const [attendancePeriod, setAttendancePeriod] = useState('30 DAYS');
+    const [currentCalendarMonth, setCurrentCalendarMonth] = useState(new Date().getMonth());
+    const [currentCalendarYear, setCurrentCalendarYear] = useState(new Date().getFullYear());
+    const [myLeaves, setMyLeaves] = useState([]);
+
+    // Request states
+    const [requestType, setRequestType] = useState('');
+    const [requestStartDate, setRequestStartDate] = useState('');
+    const [requestEndDate, setRequestEndDate] = useState('');
+    const [requestMessage, setRequestMessage] = useState('');
+    const [requestRecipients, setRequestRecipients] = useState([]);
+    const [recipientSearch, setRecipientSearch] = useState('');
+    const [recipientSuggestions, setRecipientSuggestions] = useState([]);
+    const [myRequests, setMyRequests] = useState([]);
+    const [requestSubmitting, setRequestSubmitting] = useState(false);
 
     // Admin states
     const [allUsers, setAllUsers] = useState([]);
@@ -138,11 +158,69 @@ export default function Dashboard({ user, onLogout, setUser }) {
         } catch (err) { console.error('Failed to fetch leave stats'); }
     };
 
+    const fetchMyLeaves = async () => {
+        try {
+            const res = await api.get('/leaves');
+            setMyLeaves(res.data);
+        } catch (err) { console.error('Failed to fetch my leaves'); }
+    };
+
     useEffect(() => {
-        if (activeSidebar === 'Me' && activeSubTab === 'Leave') {
+        if (activeSidebar === 'Me' && (activeSubTab === 'Leave' || activeSubTab === 'Attendance')) {
             fetchLeaveStats();
+            fetchMyLeaves();
+        }
+        if (activeSidebar === 'Me' && activeSubTab === 'Request') {
+            fetchMyRequests();
         }
     }, [activeSidebar, activeSubTab]);
+
+    const fetchMyRequests = async () => {
+        try {
+            const res = await api.get('/requests/my');
+            setMyRequests(res.data);
+        } catch (err) { console.error('Failed to fetch requests'); }
+    };
+
+    const searchRecipients = async (query) => {
+        setRecipientSearch(query);
+        if (query.length < 2) {
+            setRecipientSuggestions([]);
+            return;
+        }
+        try {
+            const res = await api.get(`/requests/search-users?q=${query}`);
+            setRecipientSuggestions(res.data.filter(u => !requestRecipients.some(r => r._id === u._id)));
+        } catch (err) { console.error('Search failed'); }
+    };
+
+    const submitRequest = async () => {
+        if (!requestType || !requestStartDate || !requestEndDate || requestRecipients.length === 0) {
+            setCustomAlert({ message: 'Please fill in all required fields (type, dates, and at least one recipient).', type: 'info' });
+            return;
+        }
+        setRequestSubmitting(true);
+        try {
+            await api.post('/requests', {
+                type: requestType,
+                startDate: requestStartDate,
+                endDate: requestEndDate,
+                message: requestMessage,
+                recipients: requestRecipients.map(r => r._id)
+            });
+            setCustomAlert({ message: 'Request submitted successfully!', type: 'info' });
+            setRequestType('');
+            setRequestStartDate('');
+            setRequestEndDate('');
+            setRequestMessage('');
+            setRequestRecipients([]);
+            fetchMyRequests();
+        } catch (err) {
+            setCustomAlert({ message: err.response?.data?.message || 'Failed to submit request.', type: 'info' });
+        } finally {
+            setRequestSubmitting(false);
+        }
+    };
 
     const [isProfileEditing, setIsProfileEditing] = useState(false);
     const [tempProfile, setTempProfile] = useState({});
@@ -261,6 +339,22 @@ export default function Dashboard({ user, onLogout, setUser }) {
             onTime: `${Math.round((onTimeCount / periodLogs.length) * 100)}%`
         };
     }, [attendanceLogs, statsPeriod, user]);
+
+    const filteredAttendanceLogs = useMemo(() => {
+        if (attendancePeriod === '30 DAYS') {
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+            return attendanceLogs.filter(log => new Date(log.date) >= thirtyDaysAgo);
+        } else {
+            const monthsArr = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+            const monthIndex = monthsArr.indexOf(attendancePeriod);
+            const year = new Date().getFullYear();
+            return attendanceLogs.filter(log => {
+                const d = new Date(log.date);
+                return d.getMonth() === monthIndex && d.getFullYear() === year;
+            });
+        }
+    }, [attendanceLogs, attendancePeriod]);
 
     const fetchOrgConfigs = async () => {
         try {
@@ -1174,7 +1268,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
             return (
                 <>
                     <div className="sub-nav">
-                        {['Attendance', 'Leave', 'Profile'].map(tab => (
+                        {['Attendance', 'Leave', 'Request', 'Profile'].map(tab => (
                             <div
                                 key={tab}
                                 className={`sub-nav-item ${activeSubTab === tab ? 'active' : ''}`}
@@ -1340,18 +1434,30 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                         {attendanceTab === 'Attendance Log' && (
                                             <>
                                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-                                                    <span style={{ fontSize: '1rem', fontWeight: '500' }}>Last 30 Days</span>
+                                                    <span style={{ fontSize: '1rem', fontWeight: '500' }}>Attendance: {attendancePeriod}</span>
                                                     <div style={{ display: 'flex', borderRadius: '4px', border: '1px solid var(--border-dark)', overflow: 'hidden' }}>
-                                                        {['30 DAYS', 'FEB', 'JAN', 'DEC', 'NOV', 'OCT', 'SEP'].map((m, i) => (
-                                                            <div key={m} style={{
-                                                                padding: '0.4rem 0.75rem', fontSize: '0.7rem', cursor: 'pointer',
-                                                                background: i === 0 ? 'var(--primary)' : 'transparent',
-                                                                color: i === 0 ? 'white' : 'var(--text-muted)',
-                                                                borderRight: i === 6 ? 'none' : '1px solid var(--border-dark)'
-                                                            }}>
-                                                                {m}
-                                                            </div>
-                                                        ))}
+                                                        {(() => {
+                                                            const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+                                                            const currentMonth = new Date().getMonth(); // 0-11
+                                                            const displayMonths = ['30 DAYS'];
+                                                            for (let i = currentMonth; i >= 0; i--) {
+                                                                displayMonths.push(months[i]);
+                                                            }
+                                                            return displayMonths.map((m, i) => (
+                                                                <div
+                                                                    key={m}
+                                                                    onClick={() => setAttendancePeriod(m)}
+                                                                    style={{
+                                                                        padding: '0.4rem 0.75rem', fontSize: '0.7rem', cursor: 'pointer',
+                                                                        background: attendancePeriod === m ? 'var(--primary)' : 'transparent',
+                                                                        color: attendancePeriod === m ? 'white' : 'var(--text-muted)',
+                                                                        borderRight: i === displayMonths.length - 1 ? 'none' : '1px solid var(--border-dark)'
+                                                                    }}
+                                                                >
+                                                                    {m}
+                                                                </div>
+                                                            ));
+                                                        })()}
                                                     </div>
                                                 </div>
                                                 <table className="data-table">
@@ -1366,7 +1472,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                                         </tr>
                                                     </thead>
                                                     <tbody>
-                                                        {attendanceLogs.length > 0 ? attendanceLogs.map(log => (
+                                                        {filteredAttendanceLogs.length > 0 ? filteredAttendanceLogs.map(log => (
                                                             <tr key={log._id}>
                                                                 <td style={{ fontSize: '0.8rem' }}>{new Date(log.date).toLocaleDateString('en-US', { weekday: 'short', day: '2-digit', month: 'short' })}</td>
                                                                 <td>
@@ -1404,13 +1510,18 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                                                 <td><Info size={14} color="var(--primary)" style={{ cursor: 'pointer' }} onClick={() => setShowLogInfo(log)} /></td>
                                                             </tr>
                                                         )) : (
-                                                            <tr style={{ border: 'none' }}><td colSpan="6" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>No logs found for this period</td></tr>
+                                                            <tr style={{ border: 'none' }}><td colSpan="6" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>No logs found for {attendancePeriod}</td></tr>
                                                         )}
                                                     </tbody>
                                                 </table>
                                             </>
                                         )}
-                                        {attendanceTab !== 'Attendance Log' && (
+                                        {attendanceTab === 'Calendar' && (
+                                            <div style={{ padding: '1.25rem' }}>
+                                                {renderAttendanceCalendar()}
+                                            </div>
+                                        )}
+                                        {['Attendance Requests', 'Overtime Requests'].includes(attendanceTab) && (
                                             <div style={{ padding: '4rem', textAlign: 'center', color: 'var(--text-muted)' }}>
                                                 <div style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>{attendanceTab} Content</div>
                                                 <p style={{ fontSize: '0.85rem' }}>This section is currently being updated with real-time data.</p>
@@ -1651,6 +1762,279 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                 </div>
                             </div>
                         )}
+
+                        {activeSubTab === 'Request' && (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: '800px' }}>
+                                {/* Request Form */}
+                                <div className="panel" style={{ padding: '2rem', borderRadius: '20px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '2rem' }}>
+                                        <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(var(--primary-rgb, 155, 89, 182), 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                            <Send size={18} color="var(--primary)" />
+                                        </div>
+                                        <div>
+                                            <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '700', color: 'var(--text-main)' }}>New Request</h3>
+                                            <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)' }}>Submit a leave, WFH, or half-day request</p>
+                                        </div>
+                                    </div>
+
+                                    {/* Request Type */}
+                                    <div style={{ marginBottom: '1.5rem' }}>
+                                        <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Request Type *</label>
+                                        <div style={{ position: 'relative' }}>
+                                            <select
+                                                value={requestType}
+                                                onChange={e => setRequestType(e.target.value)}
+                                                style={{
+                                                    width: '100%',
+                                                    padding: '0.85rem 1rem',
+                                                    borderRadius: '12px',
+                                                    border: '1px solid var(--border-dark)',
+                                                    background: 'var(--bg-main)',
+                                                    color: 'var(--text-main)',
+                                                    fontSize: '0.9rem',
+                                                    fontWeight: '500',
+                                                    appearance: 'none',
+                                                    cursor: 'pointer',
+                                                    outline: 'none',
+                                                    transition: 'border-color 0.2s'
+                                                }}
+                                            >
+                                                <option value="">Select request type...</option>
+                                                <option value="Leave Application">🏖️ Leave Application</option>
+                                                <option value="Work From Home">🏠 Work From Home</option>
+                                                <option value="Half Day">⏰ Half Day</option>
+                                            </select>
+                                            <ChevronDown size={16} color="var(--text-muted)" style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+                                        </div>
+                                    </div>
+
+                                    {/* Recipients */}
+                                    <div style={{ marginBottom: '1.5rem' }}>
+                                        <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Recipients *</label>
+                                        <div style={{
+                                            border: '1px solid var(--border-dark)',
+                                            borderRadius: '12px',
+                                            padding: '0.5rem',
+                                            background: 'var(--bg-main)',
+                                            minHeight: '50px'
+                                        }}>
+                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: requestRecipients.length > 0 ? '0.5rem' : 0 }}>
+                                                {requestRecipients.map(r => (
+                                                    <div key={r._id} style={{
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: '0.4rem',
+                                                        background: 'rgba(var(--primary-rgb, 155, 89, 182), 0.1)',
+                                                        border: '1px solid rgba(var(--primary-rgb, 155, 89, 182), 0.2)',
+                                                        padding: '0.35rem 0.6rem 0.35rem 0.75rem',
+                                                        borderRadius: '20px',
+                                                        fontSize: '0.8rem',
+                                                        fontWeight: '600',
+                                                        color: 'var(--primary)'
+                                                    }}>
+                                                        <span>{r.name}</span>
+                                                        <X size={14} style={{ cursor: 'pointer', opacity: 0.7 }} onClick={() => setRequestRecipients(requestRecipients.filter(x => x._id !== r._id))} />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <input
+                                                type="text"
+                                                placeholder="Search for a person..."
+                                                value={recipientSearch}
+                                                onChange={e => searchRecipients(e.target.value)}
+                                                style={{
+                                                    width: '100%',
+                                                    border: 'none',
+                                                    outline: 'none',
+                                                    padding: '0.4rem 0.5rem',
+                                                    background: 'transparent',
+                                                    color: 'var(--text-main)',
+                                                    fontSize: '0.85rem'
+                                                }}
+                                            />
+                                        </div>
+                                        {recipientSuggestions.length > 0 && (
+                                            <div style={{
+                                                border: '1px solid var(--border-dark)',
+                                                borderRadius: '12px',
+                                                marginTop: '0.5rem',
+                                                background: 'var(--bg-panel)',
+                                                boxShadow: '0 10px 30px rgba(0,0,0,0.15)',
+                                                overflow: 'hidden',
+                                                maxHeight: '200px',
+                                                overflowY: 'auto'
+                                            }}>
+                                                {recipientSuggestions.map(u => (
+                                                    <div key={u._id} onClick={() => {
+                                                        setRequestRecipients([...requestRecipients, u]);
+                                                        setRecipientSearch('');
+                                                        setRecipientSuggestions([]);
+                                                    }} style={{
+                                                        padding: '0.75rem 1rem',
+                                                        cursor: 'pointer',
+                                                        borderBottom: '1px solid var(--border-dark)',
+                                                        transition: 'background 0.15s',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: '0.75rem'
+                                                    }}
+                                                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(var(--primary-rgb, 155, 89, 182), 0.08)'}
+                                                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                                                    >
+                                                        <div style={{
+                                                            width: '32px', height: '32px', borderRadius: '50%',
+                                                            background: 'linear-gradient(135deg, var(--primary), #e74c3c)',
+                                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                            color: 'white', fontSize: '0.7rem', fontWeight: '700'
+                                                        }}>{u.name?.charAt(0)?.toUpperCase()}</div>
+                                                        <div>
+                                                            <div style={{ fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-main)' }}>{u.name}</div>
+                                                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{u.designation || u.email}</div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Date Range */}
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+                                        <div>
+                                            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>From Date *</label>
+                                            <input
+                                                type="date"
+                                                value={requestStartDate}
+                                                onChange={e => setRequestStartDate(e.target.value)}
+                                                style={{
+                                                    width: '100%',
+                                                    padding: '0.85rem 1rem',
+                                                    borderRadius: '12px',
+                                                    border: '1px solid var(--border-dark)',
+                                                    background: 'var(--bg-main)',
+                                                    color: 'var(--text-main)',
+                                                    fontSize: '0.9rem',
+                                                    outline: 'none'
+                                                }}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>To Date *</label>
+                                            <input
+                                                type="date"
+                                                value={requestEndDate}
+                                                onChange={e => setRequestEndDate(e.target.value)}
+                                                min={requestStartDate}
+                                                style={{
+                                                    width: '100%',
+                                                    padding: '0.85rem 1rem',
+                                                    borderRadius: '12px',
+                                                    border: '1px solid var(--border-dark)',
+                                                    background: 'var(--bg-main)',
+                                                    color: 'var(--text-main)',
+                                                    fontSize: '0.9rem',
+                                                    outline: 'none'
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Message */}
+                                    <div style={{ marginBottom: '2rem' }}>
+                                        <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Message</label>
+                                        <textarea
+                                            value={requestMessage}
+                                            onChange={e => setRequestMessage(e.target.value)}
+                                            placeholder="Add a reason or additional details for your request..."
+                                            rows={4}
+                                            style={{
+                                                width: '100%',
+                                                padding: '0.85rem 1rem',
+                                                borderRadius: '12px',
+                                                border: '1px solid var(--border-dark)',
+                                                background: 'var(--bg-main)',
+                                                color: 'var(--text-main)',
+                                                fontSize: '0.85rem',
+                                                resize: 'vertical',
+                                                outline: 'none',
+                                                fontFamily: 'inherit',
+                                                lineHeight: '1.5'
+                                            }}
+                                        />
+                                    </div>
+
+                                    {/* Submit */}
+                                    <button
+                                        className="btn btn-primary"
+                                        onClick={submitRequest}
+                                        disabled={requestSubmitting}
+                                        style={{
+                                            width: '100%',
+                                            padding: '0.9rem',
+                                            borderRadius: '12px',
+                                            fontSize: '0.9rem',
+                                            fontWeight: '700',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            gap: '0.5rem',
+                                            opacity: requestSubmitting ? 0.7 : 1,
+                                            letterSpacing: '0.5px'
+                                        }}
+                                    >
+                                        <Send size={16} />
+                                        {requestSubmitting ? 'Submitting...' : 'Submit Request'}
+                                    </button>
+                                </div>
+
+                                {/* Request History */}
+                                <div className="panel" style={{ padding: '2rem', borderRadius: '20px' }}>
+                                    <h3 style={{ margin: '0 0 1.5rem 0', fontSize: '1rem', fontWeight: '700', color: 'var(--text-main)' }}>My Requests</h3>
+                                    {myRequests.length > 0 ? (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                            {myRequests.map(req => (
+                                                <div key={req._id} style={{
+                                                    padding: '1rem 1.25rem',
+                                                    borderRadius: '14px',
+                                                    border: '1px solid var(--border-dark)',
+                                                    background: 'var(--bg-main)',
+                                                    transition: 'all 0.2s'
+                                                }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                            <span style={{ fontSize: '0.9rem', fontWeight: '700', color: 'var(--text-main)' }}>{req.type}</span>
+                                                        </div>
+                                                        <span style={{
+                                                            fontSize: '0.7rem',
+                                                            fontWeight: '700',
+                                                            padding: '0.25rem 0.75rem',
+                                                            borderRadius: '20px',
+                                                            background: req.status === 'Approved' ? 'rgba(52, 211, 153, 0.1)' : req.status === 'Rejected' ? 'rgba(248, 113, 113, 0.1)' : 'rgba(251, 191, 36, 0.1)',
+                                                            color: req.status === 'Approved' ? '#34d399' : req.status === 'Rejected' ? '#f87171' : '#fbbf24',
+                                                            border: `1px solid ${req.status === 'Approved' ? '#34d39930' : req.status === 'Rejected' ? '#f8717130' : '#fbbf2430'}`,
+                                                            textTransform: 'uppercase',
+                                                            letterSpacing: '0.5px'
+                                                        }}>{req.status}</span>
+                                                    </div>
+                                                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.35rem' }}>
+                                                        📅 {new Date(req.startDate).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' })} — {new Date(req.endDate).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                                    </div>
+                                                    {req.message && <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>💬 {req.message}</div>}
+                                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.35rem' }}>
+                                                        To: {req.recipients?.map(r => r.name).join(', ')}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
+                                            <FileText size={40} style={{ marginBottom: '0.75rem', opacity: 0.5 }} />
+                                            <p style={{ fontSize: '0.85rem', margin: 0 }}>No requests submitted yet.</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
 
                         {activeSubTab === 'Profile' && (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -2290,6 +2674,223 @@ export default function Dashboard({ user, onLogout, setUser }) {
                         <button className="btn btn-primary" style={{ width: '100%' }} onClick={() => setShowLogInfo(null)}>Close</button>
                     </div>
                 </div>
+            </div>
+        );
+    };
+
+    const renderAttendanceCalendar = () => {
+        const daysInMonth = (month, year) => new Date(year, month + 1, 0).getDate();
+        const firstDayOfMonth = (month, year) => new Date(year, month, 1).getDay();
+
+        const currentMonthData = [];
+        const totalDays = daysInMonth(currentCalendarMonth, currentCalendarYear);
+        const startOffset = (firstDayOfMonth(currentCalendarMonth, currentCalendarYear) + 6) % 7;
+
+        for (let i = 0; i < startOffset; i++) {
+            currentMonthData.push({ day: '', type: 'empty' });
+        }
+
+        const today = new Date();
+        const todayStr = today.toLocaleDateString('en-CA');
+
+        for (let d = 1; d <= totalDays; d++) {
+            const dateObj = new Date(currentCalendarYear, currentCalendarMonth, d);
+            const dateStr = dateObj.toLocaleDateString('en-CA');
+
+            let status = null;
+            let label = '';
+            let color = 'transparent';
+            let bgColor = 'transparent';
+            let type = 'day';
+
+            const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+            if (user?.workingSchedule?.weekOffs?.includes(dayName)) {
+                status = 'week-off';
+                label = 'OFF';
+                color = '#94a3b8';
+                bgColor = 'rgba(148, 163, 184, 0.08)';
+            }
+
+            const log = attendanceLogs.find(l => new Date(l.date).toLocaleDateString('en-CA') === dateStr);
+            if (log) {
+                if (log.workingMode === 'Remote') {
+                    status = 'wfh';
+                    label = 'HOME';
+                    color = '#60a5fa';
+                    bgColor = 'rgba(96, 165, 250, 0.15)';
+                } else {
+                    status = 'present';
+                    label = 'OFFICE';
+                    color = '#34d399';
+                    bgColor = 'rgba(52, 211, 153, 0.15)';
+                }
+            }
+
+            const leave = myLeaves.find(l => {
+                const start = new Date(l.startDate).setHours(0, 0, 0, 0);
+                const end = new Date(l.endDate).setHours(0, 0, 0, 0);
+                const current = dateObj.setHours(0, 0, 0, 0);
+                return current >= start && current <= end && l.status === 'Approved';
+            });
+            if (leave) {
+                status = 'leave';
+                label = 'LEAVE';
+                color = '#fbbf24';
+                bgColor = 'rgba(251, 191, 36, 0.15)';
+            }
+
+            const holiday = dashData.holidays?.find(h => new Date(h.date).toLocaleDateString('en-CA') === dateStr);
+            if (holiday) {
+                status = 'holiday';
+                label = holiday.name;
+                color = '#f87171';
+                bgColor = 'rgba(248, 113, 113, 0.15)';
+            }
+
+            currentMonthData.push({ day: d, status, label, date: dateStr, color, bgColor, type, isToday: dateStr === todayStr });
+        }
+
+        const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+        return (
+            <div style={{ maxWidth: '750px', margin: '0 auto', animation: 'fadeIn 0.4s ease-out' }}>
+                <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '1rem',
+                    background: 'var(--bg-panel)',
+                    padding: '1.25rem',
+                    borderRadius: '20px',
+                    border: '1px solid var(--border-dark)',
+                    boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
+                    backdropFilter: 'blur(10px)',
+                    marginBottom: '1.5rem'
+                }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                            <h2 style={{ fontSize: '1.5rem', fontWeight: '800', margin: 0, letterSpacing: '-0.5px', color: 'var(--text-main)' }}>{months[currentCalendarMonth]}</h2>
+                            <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '500' }}>Year {currentCalendarYear}</p>
+                        </div>
+
+                        <div style={{ display: 'flex', background: 'var(--bg-main)', borderRadius: '12px', padding: '0.25rem', border: '1px solid var(--border-dark)' }}>
+                            <button className="btn-icon" onClick={() => {
+                                if (currentCalendarMonth === 0) { setCurrentCalendarMonth(11); setCurrentCalendarYear(currentCalendarYear - 1); }
+                                else { setCurrentCalendarMonth(currentCalendarMonth - 1); }
+                            }} style={{ padding: '0.4rem 0.8rem', background: 'transparent', border: 'none', color: 'var(--text-main)', cursor: 'pointer', fontSize: '1.1rem' }}>‹</button>
+
+                            <div style={{ display: 'flex', gap: '4px', alignItems: 'center', margin: '0 0.5rem' }}>
+                                {['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'].slice(0, new Date().getMonth() + 1).map((m, idx) => (
+                                    <button
+                                        key={m}
+                                        onClick={() => { setCurrentCalendarMonth(idx); setCurrentCalendarYear(new Date().getFullYear()); }}
+                                        style={{
+                                            padding: '0.35rem 0.65rem',
+                                            fontSize: '0.65rem',
+                                            fontWeight: '800',
+                                            background: (currentCalendarMonth === idx && currentCalendarYear === new Date().getFullYear()) ? 'var(--primary)' : 'transparent',
+                                            color: (currentCalendarMonth === idx && currentCalendarYear === new Date().getFullYear()) ? '#ffffff' : 'var(--text-muted)',
+                                            border: 'none',
+                                            borderRadius: '8px',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
+                                        }}
+                                    >
+                                        {m}
+                                    </button>
+                                ))}
+                            </div>
+
+                            <button className="btn-icon" onClick={() => {
+                                if (currentCalendarMonth === 11) { setCurrentCalendarMonth(0); setCurrentCalendarYear(currentCalendarYear + 1); }
+                                else { setCurrentCalendarMonth(currentCalendarMonth + 1); }
+                            }} style={{ padding: '0.4rem 0.8rem', background: 'transparent', border: 'none', color: 'var(--text-main)', cursor: 'pointer', fontSize: '1.1rem' }}>›</button>
+                        </div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '1.25rem', padding: '0.75rem 0', borderTop: '1px solid var(--border-dark)' }}>
+                        {[
+                            { color: '#34d399', label: 'Office' },
+                            { color: '#60a5fa', label: 'Remote' },
+                            { color: '#fbbf24', label: 'Leave' },
+                            { color: '#f87171', label: 'Holiday' }
+                        ].map(legend => (
+                            <div key={legend.label} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: '600' }}>
+                                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: legend.color, boxShadow: `0 0 10px ${legend.color}40` }}></div>
+                                {legend.label}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(7, 1fr)',
+                    gap: '10px',
+                    padding: '1.5rem',
+                    background: 'var(--bg-panel)',
+                    borderRadius: '24px',
+                    border: '1px solid var(--border-dark)',
+                    boxShadow: '0 10px 40px rgba(0,0,0,0.05)'
+                }}>
+                    {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(h => (
+                        <div key={h} style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '0.5rem' }}>{h}</div>
+                    ))}
+                    {currentMonthData.map((item, i) => (
+                        <div key={i} className="calendar-cell" style={{
+                            minHeight: '70px',
+                            background: item.type === 'empty' ? 'transparent' : (item.isToday ? 'rgba(var(--primary-rgb, 155, 89, 182), 0.1)' : 'var(--bg-main)'),
+                            borderRadius: '16px',
+                            border: item.type === 'empty' ? 'none' : (item.isToday ? '1px solid var(--primary)' : '1px solid var(--border-dark)'),
+                            padding: '0.6rem',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'space-between',
+                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                            cursor: item.type === 'empty' ? 'default' : 'pointer',
+                            overflow: 'hidden',
+                            boxShadow: item.isToday ? '0 0 20px rgba(var(--primary-rgb, 155, 89, 182), 0.15)' : 'none'
+                        }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                <span style={{
+                                    fontSize: '0.9rem',
+                                    fontWeight: '800',
+                                    color: item.isToday ? 'var(--primary)' : (item.type === 'empty' ? 'transparent' : 'var(--text-main)'),
+                                    opacity: item.type === 'empty' ? 0 : 1
+                                }}>{item.day}</span>
+                                {item.isToday && <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: 'var(--primary)', boxShadow: '0 0 8px var(--primary)' }}></div>}
+                            </div>
+
+                            {item.status && (
+                                <div style={{
+                                    fontSize: '0.55rem',
+                                    fontWeight: '900',
+                                    padding: '4px 6px',
+                                    borderRadius: '8px',
+                                    textAlign: 'center',
+                                    color: item.color,
+                                    background: item.bgColor,
+                                    border: `1px solid ${item.color}40`,
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.5px'
+                                }}>
+                                    {item.label}
+                                </div>
+                            )}
+                        </div>
+                    ))}
+                </div>
+                <style>{`
+                    .calendar-cell:hover {
+                        transform: translateY(-4px);
+                        filter: brightness(1.05);
+                        border-color: var(--primary) !important;
+                        box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+                    }
+                    @keyframes fadeIn {
+                        from { opacity: 0; transform: translateY(10px); }
+                        to { opacity: 1; transform: translateY(0); }
+                    }
+                `}</style>
             </div>
         );
     };
