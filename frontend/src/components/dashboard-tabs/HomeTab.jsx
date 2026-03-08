@@ -364,16 +364,20 @@ export default function HomeTab({
                                                 <div key={activity._id} style={{ marginBottom: '1.5rem', paddingBottom: '1.5rem', borderBottom: '1px solid var(--border-dark)', position: 'relative' }}>
                                                     {canDelete && (
                                                         <button
-                                                            onClick={async () => {
-                                                                if (window.confirm('Are you sure you want to delete this activity?')) {
-                                                                    try {
-                                                                        await api.delete(`/social/${activity._id}`);
-                                                                        showAlert('Activity deleted successfully.', 'info');
-                                                                        fetchPublicData();
-                                                                    } catch (err) {
-                                                                        showAlert('Failed to delete activity.', 'error');
+                                                            onClick={() => {
+                                                                showAlert(
+                                                                    'Are you sure you want to delete this activity?',
+                                                                    'confirm',
+                                                                    async () => {
+                                                                        try {
+                                                                            await api.delete(`/social/${activity._id}`);
+                                                                            showAlert('Activity deleted successfully.', 'info');
+                                                                            fetchPublicData();
+                                                                        } catch (err) {
+                                                                            showAlert('Failed to delete activity.', 'error');
+                                                                        }
                                                                     }
-                                                                }
+                                                                );
                                                             }}
                                                             style={{ position: 'absolute', top: 0, right: 0, background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '0.5rem' }}
                                                             title="Delete Activity"
@@ -548,25 +552,6 @@ export default function HomeTab({
                                         )}
                                     </div>
 
-                                    <div className="panel" style={{ marginBottom: '1rem' }}>
-                                        <div className="panel-header" style={{ marginBottom: '1rem' }}>Knowledge Base & Content</div>
-                                        <div className="grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                                            <div style={{ padding: '1rem', border: '1px solid var(--border-dark)', borderRadius: 'var(--radius-md)', display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                                                <FileText size={24} color="var(--primary)" />
-                                                <div>
-                                                    <div style={{ fontWeight: '500' }}>Company Handbook 2026</div>
-                                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Updated 2 days ago</div>
-                                                </div>
-                                            </div>
-                                            <div style={{ padding: '1rem', border: '1px solid var(--border-dark)', borderRadius: 'var(--radius-md)', display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                                                <FileText size={24} color="#f59e0b" />
-                                                <div>
-                                                    <div style={{ fontWeight: '500' }}>Travel & Expenses Policy</div>
-                                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Updated 1 month ago</div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
                                 </div>
                             )}
                         </div>
