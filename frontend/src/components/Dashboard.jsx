@@ -84,6 +84,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
     const [recipientSuggestions, setRecipientSuggestions] = useState([]);
     const [myRequests, setMyRequests] = useState([]);
     const [requestSubmitting, setRequestSubmitting] = useState(false);
+    const [expandedRequests, setExpandedRequests] = useState([]);
 
     // Admin states
     const [allUsers, setAllUsers] = useState([]);
@@ -1166,7 +1167,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
                         )}
 
                         {activeSubTab === 'Request' && (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: '800px' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '2rem', alignItems: 'start' }}>
                                 {/* Request Form */}
                                 <div className="panel" style={{ padding: '2rem', borderRadius: '20px' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '2rem' }}>
@@ -1389,43 +1390,93 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                 </div>
 
                                 {/* Request History */}
-                                <div className="panel" style={{ padding: '2rem', borderRadius: '20px' }}>
+                                <div className="panel" style={{ padding: '2rem', borderRadius: '20px', height: 'fit-content' }}>
                                     <h3 style={{ margin: '0 0 1.5rem 0', fontSize: '1rem', fontWeight: '700', color: 'var(--text-main)' }}>My Requests</h3>
                                     {myRequests.length > 0 ? (
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                                            {myRequests.map(req => (
-                                                <div key={req._id} style={{
-                                                    padding: '1rem 1.25rem',
-                                                    borderRadius: '14px',
-                                                    border: '1px solid var(--border-dark)',
-                                                    background: 'var(--bg-main)',
-                                                    transition: 'all 0.2s'
-                                                }}>
-                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                            <span style={{ fontSize: '0.9rem', fontWeight: '700', color: 'var(--text-main)' }}>{req.type}</span>
+                                            {myRequests.map(req => {
+                                                const isExpanded = expandedRequests.includes(req._id);
+                                                return (
+                                                    <div key={req._id} style={{
+                                                        padding: '1rem 1.25rem',
+                                                        borderRadius: '14px',
+                                                        border: '1px solid var(--border-dark)',
+                                                        background: 'var(--bg-main)',
+                                                        transition: 'all 0.2s'
+                                                    }}>
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                                <span style={{ fontSize: '0.9rem', fontWeight: '700', color: 'var(--text-main)' }}>{req.type}</span>
+                                                            </div>
+                                                            <span style={{
+                                                                fontSize: '0.7rem',
+                                                                fontWeight: '700',
+                                                                padding: '0.25rem 0.75rem',
+                                                                borderRadius: '20px',
+                                                                background: req.status === 'Approved' ? 'rgba(0, 255, 136, 0.1)' : req.status === 'Rejected' ? 'rgba(255, 171, 0, 0.1)' : 'rgba(204, 255, 0, 0.1)',
+                                                                color: req.status === 'Approved' ? '#00ff88' : req.status === 'Rejected' ? '#ffab00' : '#ccff00',
+                                                                border: `1px solid ${req.status === 'Approved' ? '#00ff8830' : req.status === 'Rejected' ? '#ffab0030' : '#ccff0030'}`,
+                                                                textTransform: 'uppercase',
+                                                                letterSpacing: '0.5px'
+                                                            }}>{req.status}</span>
                                                         </div>
-                                                        <span style={{
-                                                            fontSize: '0.7rem',
-                                                            fontWeight: '700',
-                                                            padding: '0.25rem 0.75rem',
-                                                            borderRadius: '20px',
-                                                            background: req.status === 'Approved' ? 'rgba(0, 255, 136, 0.1)' : req.status === 'Rejected' ? 'rgba(255, 171, 0, 0.1)' : 'rgba(204, 255, 0, 0.1)',
-                                                            color: req.status === 'Approved' ? '#00ff88' : req.status === 'Rejected' ? '#ffab00' : '#ccff00',
-                                                            border: `1px solid ${req.status === 'Approved' ? '#00ff8830' : req.status === 'Rejected' ? '#ffab0030' : '#ccff0030'}`,
-                                                            textTransform: 'uppercase',
-                                                            letterSpacing: '0.5px'
-                                                        }}>{req.status}</span>
+                                                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.35rem' }}>
+                                                            📅 {new Date(req.startDate).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' })} — {new Date(req.endDate).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                                        </div>
+
+                                                        {req.message && (
+                                                            <div style={{ marginTop: '0.5rem' }}>
+                                                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                                                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontStyle: 'italic', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                                        💬 Message
+                                                                    </div>
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            if (isExpanded) {
+                                                                                setExpandedRequests(expandedRequests.filter(id => id !== req._id));
+                                                                            } else {
+                                                                                setExpandedRequests([...expandedRequests, req._id]);
+                                                                            }
+                                                                        }}
+                                                                        style={{
+                                                                            background: 'transparent',
+                                                                            border: 'none',
+                                                                            color: 'var(--primary)',
+                                                                            fontSize: '0.75rem',
+                                                                            fontWeight: '600',
+                                                                            cursor: 'pointer',
+                                                                            display: 'flex',
+                                                                            alignItems: 'center',
+                                                                            gap: '2px'
+                                                                        }}
+                                                                    >
+                                                                        {isExpanded ? 'Collapse' : 'Expand'}
+                                                                        <ChevronDown size={14} style={{ transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+                                                                    </button>
+                                                                </div>
+                                                                {isExpanded && (
+                                                                    <div style={{
+                                                                        fontSize: '0.8rem',
+                                                                        color: 'var(--text-muted)',
+                                                                        marginTop: '0.5rem',
+                                                                        padding: '0.75rem',
+                                                                        background: 'rgba(var(--primary-rgb, 155, 89, 182), 0.05)',
+                                                                        borderRadius: '8px',
+                                                                        lineHeight: '1.4',
+                                                                        border: '1px solid rgba(var(--primary-rgb, 155, 89, 182), 0.1)'
+                                                                    }}>
+                                                                        {req.message}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        )}
+
+                                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
+                                                            To: {req.recipients?.map(r => r.name).join(', ')}
+                                                        </div>
                                                     </div>
-                                                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.35rem' }}>
-                                                        📅 {new Date(req.startDate).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' })} — {new Date(req.endDate).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' })}
-                                                    </div>
-                                                    {req.message && <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>💬 {req.message}</div>}
-                                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.35rem' }}>
-                                                        To: {req.recipients?.map(r => r.name).join(', ')}
-                                                    </div>
-                                                </div>
-                                            ))}
+                                                );
+                                            })}
                                         </div>
                                     ) : (
                                         <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
