@@ -125,6 +125,8 @@ export default function Dashboard({ user, onLogout, setUser }) {
     const [showPublicProfile, setShowPublicProfile] = useState(null); // stores user object
     const [leaveStats, setLeaveStats] = useState({ balances: {}, history: [], monthlyStats: [], weeklyPattern: [] });
     const [socialFeed, setSocialFeed] = useState([]);
+    const [showAttendancePolicyModal, setShowAttendancePolicyModal] = useState(false);
+    const [attendancePolicyTab, setAttendancePolicyTab] = useState('Penalisation Policy');
 
     useEffect(() => {
         const timer = setInterval(() => setCurrentTime(new Date().toLocaleTimeString()), 1000);
@@ -315,7 +317,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
         startDate.setHours(0, 0, 0, 0);
 
         const periodLogs = attendanceLogs.filter(log => new Date(log.date) >= startDate);
-        if (periodLogs.length === 0) return { avgHours: '0h 0m', onTime: '0%' };
+        if (periodLogs.length === 0) return { avgHours: '0h 0m', onTime: '0%', hasData: false };
 
         let totalH = 0;
         let onTimeCount = 0;
@@ -337,7 +339,8 @@ export default function Dashboard({ user, onLogout, setUser }) {
 
         return {
             avgHours: `${avgH}h ${avgM}m`,
-            onTime: `${Math.round((onTimeCount / periodLogs.length) * 100)}%`
+            onTime: `${Math.round((onTimeCount / periodLogs.length) * 100)}%`,
+            hasData: true
         };
     }, [attendanceLogs, statsPeriod, user]);
 
@@ -688,38 +691,46 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                             </select>
                                         </div>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                                    <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(var(--primary-rgb), 0.2)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem' }}>ME</div>
-                                                    <span style={{ fontSize: '0.85rem' }}>Me</span>
-                                                </div>
-                                                <div style={{ textAlign: 'right' }}>
-                                                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', letterSpacing: '0.3px' }}>Avg Hrs / Day</div>
-                                                    <div style={{ fontSize: '0.9rem', fontWeight: '500' }}>{meStats.avgHours}</div>
-                                                </div>
-                                                <div style={{ textAlign: 'right' }}>
-                                                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', letterSpacing: '0.3px' }}>On Time Arrival</div>
-                                                    <div style={{ fontSize: '0.9rem', fontWeight: '500' }}>{meStats.onTime}</div>
-                                                </div>
-                                            </div>
-                                            {teammateIndividualStats.length > 0 && teammateIndividualStats.map(ts => (
-                                                <div key={ts._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                                        <div className="avatar" style={{ width: '32px', height: '32px', fontSize: '0.7rem', background: 'rgba(var(--primary-rgb), 0.1)', color: 'var(--text-muted)' }}>
-                                                            {ts.name.substring(0, 2).toUpperCase()}
+                                            {(meStats.hasData || teammateIndividualStats.length > 0) ? (
+                                                <>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                                            <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(var(--primary-rgb), 0.2)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem' }}>ME</div>
+                                                            <span style={{ fontSize: '0.85rem' }}>Me</span>
                                                         </div>
-                                                        <span style={{ fontSize: '0.85rem' }}>{ts.name}</span>
+                                                        <div style={{ textAlign: 'right' }}>
+                                                            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', letterSpacing: '0.3px' }}>Avg Hrs / Day</div>
+                                                            <div style={{ fontSize: '0.9rem', fontWeight: '500' }}>{meStats.avgHours}</div>
+                                                        </div>
+                                                        <div style={{ textAlign: 'right' }}>
+                                                            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', letterSpacing: '0.3px' }}>On Time Arrival</div>
+                                                            <div style={{ fontSize: '0.9rem', fontWeight: '500' }}>{meStats.onTime}</div>
+                                                        </div>
                                                     </div>
-                                                    <div style={{ textAlign: 'right' }}>
-                                                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', letterSpacing: '0.3px' }}>Avg Hrs / Day</div>
-                                                        <div style={{ fontSize: '0.9rem', fontWeight: '500' }}>{Math.floor(ts.avgHours)}h {Math.round((ts.avgHours % 1) * 60)}m</div>
-                                                    </div>
-                                                    <div style={{ textAlign: 'right' }}>
-                                                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', letterSpacing: '0.3px' }}>On Time Arrival</div>
-                                                        <div style={{ fontSize: '0.9rem', fontWeight: '500' }}>{ts.onTimePercentage}%</div>
-                                                    </div>
+                                                    {teammateIndividualStats.map(ts => (
+                                                        <div key={ts._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                                                <div className="avatar" style={{ width: '32px', height: '32px', fontSize: '0.7rem', background: 'rgba(var(--primary-rgb), 0.1)', color: 'var(--text-muted)' }}>
+                                                                    {ts.name.substring(0, 2).toUpperCase()}
+                                                                </div>
+                                                                <span style={{ fontSize: '0.85rem' }}>{ts.name}</span>
+                                                            </div>
+                                                            <div style={{ textAlign: 'right' }}>
+                                                                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', letterSpacing: '0.3px' }}>Avg Hrs / Day</div>
+                                                                <div style={{ fontSize: '0.9rem', fontWeight: '500' }}>{Math.floor(ts.avgHours)}h {Math.round((ts.avgHours % 1) * 60)}m</div>
+                                                            </div>
+                                                            <div style={{ textAlign: 'right' }}>
+                                                                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', letterSpacing: '0.3px' }}>On Time Arrival</div>
+                                                                <div style={{ fontSize: '0.9rem', fontWeight: '500' }}>{ts.onTimePercentage}%</div>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </>
+                                            ) : (
+                                                <div style={{ textAlign: 'center', padding: '2rem 0', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                                                    No data available to show for this period.
                                                 </div>
-                                            ))}
+                                            )}
                                         </div>
                                     </div>
 
@@ -787,7 +798,10 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', color: 'var(--primary)', cursor: 'pointer' }}>
                                                     <Home size={12} /> {isClockedIn ? (isWFH ? 'Work From Home' : 'Work On-Site') : (selectedWorkingMode === 'Remote' ? 'Work From Home' : 'Work On-Site')}
                                                 </div>
-                                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                                <div
+                                                    style={{ fontSize: '0.75rem', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                                                    onClick={() => setShowAttendancePolicyModal(true)}
+                                                >
                                                     <FileText size={12} /> Attendance Policy
                                                 </div>
                                             </div>
@@ -798,7 +812,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                 <div className="panel" style={{ padding: 0 }}>
                                     <div style={{ padding: '0 1.25rem', borderBottom: '1px solid var(--border-dark)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                         <div style={{ display: 'flex', gap: '0.5rem', fontSize: '0.9rem', padding: '0.75rem 0' }}>
-                                            {['Attendance Log', 'Calendar', 'Attendance Requests', 'Overtime Requests'].map(tab => (
+                                            {['Attendance Log', 'Calendar', 'Attendance Requests'].map(tab => (
                                                 <span
                                                     key={tab}
                                                     onClick={() => setAttendanceTab(tab)}
@@ -2423,6 +2437,144 @@ export default function Dashboard({ user, onLogout, setUser }) {
         );
     };
 
+    const renderAttendancePolicyModal = () => {
+        if (!showAttendancePolicyModal) return null;
+        return (
+            <div style={modalOverlay}>
+                <div style={{ ...modalContent, maxWidth: '850px', maxHeight: '90vh', overflowY: 'auto' }}>
+                    <div className="panel-header" style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '1.25rem', fontWeight: '600' }}>Attendance Policy</span>
+                        <span style={{ cursor: 'pointer', fontSize: '1.5rem' }} onClick={() => setShowAttendancePolicyModal(false)}>✕</span>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', borderBottom: '1px solid var(--border-dark)', paddingBottom: '0.5rem' }}>
+                        {['Penalisation Policy', 'Time tracking policy'].map(tab => (
+                            <button
+                                key={tab}
+                                onClick={() => setAttendancePolicyTab(tab)}
+                                style={{
+                                    padding: '0.6rem 1.25rem',
+                                    background: attendancePolicyTab === tab ? 'var(--primary)' : 'rgba(var(--primary-rgb), 0.1)',
+                                    color: attendancePolicyTab === tab ? '#fff' : 'var(--text-main)',
+                                    border: '1px solid var(--border-dark)',
+                                    borderRadius: '8px',
+                                    cursor: 'pointer',
+                                    fontSize: '0.85rem',
+                                    fontWeight: '600',
+                                    transition: 'all 0.2s'
+                                }}
+                            >
+                                {tab}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div style={{ color: 'var(--text-main)', fontSize: '0.9rem', lineHeight: '1.6' }}>
+                        {attendancePolicyTab === 'Penalisation Policy' ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                                <div>
+                                    <div style={{ color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Below are the details of your Penalisation Policy</div>
+                                    <div style={{ fontWeight: '500' }}>Penalisation policy is effective 01 Feb 2025</div>
+                                </div>
+
+                                <div>
+                                    <h4 style={{ margin: '0 0 0.75rem 0', color: 'var(--text-main)', fontWeight: '700' }}>No Attendance</h4>
+                                    <p style={{ margin: '0 0 0.75rem 0' }}>You will be penalized 1 day(s) of Paid Leave for every single missing attendance day</p>
+                                    <div style={{ background: 'rgba(var(--primary-rgb), 0.05)', padding: '0.75rem 1rem', borderRadius: '8px', border: '1px solid var(--primary)', color: 'var(--primary)', marginBottom: '1rem', fontSize: '0.85rem' }}>
+                                        You have a buffer period of 2 day(s) to regularize your attendance before the penalization happens.
+                                    </div>
+                                    <div style={{ fontSize: '0.85rem' }}>
+                                        <div style={{ marginBottom: '0.5rem', fontWeight: '500' }}>The order of paid leave for deduction is:</div>
+                                        <ul style={{ margin: '0 0 0.5rem 0', paddingLeft: '1.5rem' }}>
+                                            <li>Paid Leave</li>
+                                        </ul>
+                                        <div style={{ color: 'var(--text-muted)' }}>In case no Paid Leave are left, Unpaid leave will be deducted.</div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <h4 style={{ margin: '0 0 0.75rem 0', color: 'var(--text-main)', fontWeight: '700' }}>Late Arrival</h4>
+                                    <p style={{ margin: 0 }}>You won't be penalized for any late arrival incidents.</p>
+                                </div>
+
+                                <div>
+                                    <h4 style={{ margin: '0 0 0.75rem 0', color: 'var(--text-main)', fontWeight: '700' }}>Work Hours</h4>
+                                    <p style={{ margin: '0 0 0.75rem 0' }}>You will be penalized, in following manner, based on the shortage of effective hours in a day:</p>
+                                    <ul style={{ margin: '0 0 1rem 0', paddingLeft: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                        <li>0.25 day(s) of Paid Leave deduction if average effective hours in a day, is less than 100 % of shift hours.</li>
+                                        <li>0.5 day(s) of Paid Leave deduction if average effective hours in a day, is less than 80 % of shift hours.</li>
+                                        <li>1 day(s) of Paid Leave deduction if average effective hours in a day, is less than 50 % of shift hours.</li>
+                                    </ul>
+                                    <p style={{ marginBottom: '1rem', fontStyle: 'italic', color: 'var(--text-muted)' }}>In case you have both Late Arrival and Work Hour penalization for the same day, penalization for only Shortage Of work hours will apply.</p>
+                                    <div style={{ background: 'rgba(var(--primary-rgb), 0.05)', padding: '0.75rem 1rem', borderRadius: '8px', border: '1px solid var(--primary)', color: 'var(--primary)', marginBottom: '1rem', fontSize: '0.85rem' }}>
+                                        You have a buffer period of 2 day(s) to regularize your attendance before the penalization happens.
+                                    </div>
+                                    <div style={{ fontSize: '0.85rem' }}>
+                                        <div style={{ marginBottom: '0.5rem', fontWeight: '500' }}>The order of paid leave for deduction is:</div>
+                                        <ul style={{ margin: '0 0 0.5rem 0', paddingLeft: '1.5rem' }}>
+                                            <li>Paid Leave</li>
+                                        </ul>
+                                        <div style={{ color: 'var(--text-muted)' }}>In case no Paid Leave are left, Unpaid leave will be deducted.</div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <h4 style={{ margin: '0 0 0.75rem 0', color: 'var(--text-main)', fontWeight: '700' }}>Missing Swipes</h4>
+                                    <p style={{ margin: '0 0 0.75rem 0' }}>In case of missing swipes exceeding 3 working day(s) in a month, 0.5 day(s) of Paid Leave for every 3 subsequent incident(s) of missing swipe day</p>
+                                    <div style={{ background: 'rgba(var(--primary-rgb), 0.05)', padding: '0.75rem 1rem', borderRadius: '8px', border: '1px solid var(--primary)', color: 'var(--primary)', marginBottom: '1rem', fontSize: '0.85rem' }}>
+                                        You have a buffer period of 2 day(s) to regularize your attendance before the penalization happens.
+                                    </div>
+                                    <div style={{ fontSize: '0.85rem' }}>
+                                        <div style={{ marginBottom: '0.5rem', fontWeight: '500' }}>The order of paid leave for deduction is:</div>
+                                        <ul style={{ margin: '0 0 0.5rem 0', paddingLeft: '1.5rem' }}>
+                                            <li>Paid Leave</li>
+                                        </ul>
+                                        <div style={{ color: 'var(--text-muted)' }}>In case no Paid Leave are left, Unpaid leave will be deducted.</div>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                                <div>
+                                    <div style={{ color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Below are the details of time tracking policy assigned to you</div>
+                                </div>
+
+                                <div>
+                                    <h4 style={{ margin: '0 0 0.75rem 0', color: 'var(--text-main)', fontWeight: '700' }}>Bio-Metric & Web Clock-In</h4>
+                                    <ul style={{ margin: 0, paddingLeft: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                        <li>Your attendance is automatically tracked using biometric device(s)</li>
+                                        <li>Your attendance is tracked using web clock-in, i.e you have to log in to Keka website and mark your attendance (Browser Only).</li>
+                                    </ul>
+                                </div>
+
+                                <div>
+                                    <h4 style={{ margin: '0 0 0.75rem 0', color: 'var(--text-main)', fontWeight: '700' }}>Work from Home (WFH)</h4>
+                                    <ul style={{ margin: 0, paddingLeft: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                        <li>You can request for only full day WFH</li>
+                                        <li>You are required to clock-in/out when doing WFH. In case of late clock-in, no clock-in, or less effective/gross hours clocked, the system will penalise based on penalisation policy assigned to you.</li>
+                                        <li>No approval is required if WFH request doesn’t exceed 5 time(s) in a Month.</li>
+                                    </ul>
+                                </div>
+
+                                <div>
+                                    <h4 style={{ margin: '0 0 0.75rem 0', color: 'var(--text-main)', fontWeight: '700' }}>Regularization</h4>
+                                    <ul style={{ margin: 0, paddingLeft: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                        <li>In case of penalisation due to attendance discrepancy, you are allowed to request regularisation .</li>
+                                        <li>Approval is required for all Regularization requests.</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    <div style={{ marginTop: '2rem', textAlign: 'right' }}>
+                        <button className="btn btn-secondary" onClick={() => setShowAttendancePolicyModal(false)}>Close</button>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
     return (
         <div className="dashboard-layout">
             <aside className="sidebar">
@@ -2517,7 +2669,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
             {renderAlertModal()}
             {renderPublicProfileModal()}
             {renderAnnouncementModal()}
-            {renderAnnouncementModal()}
+            {renderAttendancePolicyModal()}
 
             {
                 showClockInModal && (
