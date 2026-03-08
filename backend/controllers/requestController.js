@@ -70,7 +70,7 @@ export const getInboxRequests = async (req, res) => {
 // @access  Private
 export const updateRequestStatus = async (req, res) => {
     try {
-        const { status } = req.body;
+        const { status, actionNote } = req.body;
         const request = await Request.findById(req.params.id);
 
         if (!request) {
@@ -86,6 +86,9 @@ export const updateRequestStatus = async (req, res) => {
         request.status = status;
         request.actionBy = req.user._id;
         request.actionDate = new Date();
+        if (actionNote) {
+            request.actionNote = actionNote;
+        }
         const updated = await request.save();
 
         const populated = await Request.findById(updated._id)

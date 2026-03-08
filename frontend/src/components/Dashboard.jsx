@@ -83,7 +83,10 @@ export default function Dashboard({ user, onLogout, setUser }) {
     const [recipientSearch, setRecipientSearch] = useState('');
     const [recipientSuggestions, setRecipientSuggestions] = useState([]);
     const [myRequests, setMyRequests] = useState([]);
+    const [inboxRequests, setInboxRequests] = useState([]);
+    const [requestActionNote, setRequestActionNote] = useState('');
     const [requestSubmitting, setRequestSubmitting] = useState(false);
+
     const [expandedRequests, setExpandedRequests] = useState([]);
 
     // Admin states
@@ -170,12 +173,13 @@ export default function Dashboard({ user, onLogout, setUser }) {
     };
 
     useEffect(() => {
-        if (activeSidebar === 'Me' && (activeSubTab === 'Leave' || activeSubTab === 'Attendance')) {
+        if (activeSidebar === 'Me' && (activeSubTab === 'Leave' || activeSubTab === 'Attendance' || activeSubTab === 'Request')) {
             fetchLeaveStats();
             fetchMyLeaves();
-        }
-        if (activeSidebar === 'Me' && activeSubTab === 'Request') {
             fetchMyRequests();
+        }
+        if (activeSidebar === 'Inbox') {
+            fetchInboxRequests();
         }
     }, [activeSidebar, activeSubTab]);
 
@@ -184,6 +188,24 @@ export default function Dashboard({ user, onLogout, setUser }) {
             const res = await api.get('/requests/my');
             setMyRequests(res.data);
         } catch (err) { console.error('Failed to fetch requests'); }
+    };
+
+    const fetchInboxRequests = async () => {
+        try {
+            const res = await api.get('/requests/inbox');
+            setInboxRequests(res.data);
+        } catch (err) { console.error('Failed to fetch inbox requests'); }
+    };
+
+    const handleRequestAction = async (requestId, status) => {
+        try {
+            await api.put(`/requests/${requestId}/status`, { status, actionNote: requestActionNote });
+            showAlert(`Request ${status} successfully!`, 'info');
+            setRequestActionNote('');
+            fetchInboxRequests();
+        } catch (err) {
+            showAlert(err.response?.data?.message || 'Action failed', 'info');
+        }
     };
 
     const searchRecipients = async (query) => {
@@ -197,6 +219,26 @@ export default function Dashboard({ user, onLogout, setUser }) {
             setRecipientSuggestions(res.data.filter(u => !requestRecipients.some(r => r._id === u._id)));
         } catch (err) { console.error('Search failed'); }
     };
+
+    const getStatusStyle = (status) => {
+        const isApproved = status === 'Approved';
+        const isRejected = status === 'Rejected';
+
+        if (isLightMode) {
+            return {
+                background: isApproved ? 'rgba(21, 128, 61, 0.12)' : isRejected ? 'rgba(185, 28, 28, 0.12)' : 'rgba(180, 83, 9, 0.12)',
+                color: isApproved ? '#15803d' : isRejected ? '#b91c1c' : '#b45309',
+                border: `1px solid ${isApproved ? 'rgba(21, 128, 61, 0.25)' : isRejected ? 'rgba(185, 28, 28, 0.25)' : 'rgba(180, 83, 9, 0.25)'}`
+            };
+        } else {
+            return {
+                background: isApproved ? 'rgba(0, 255, 136, 0.1)' : isRejected ? 'rgba(255, 71, 87, 0.1)' : 'rgba(255, 171, 0, 0.1)',
+                color: isApproved ? '#00ff88' : isRejected ? '#ff4757' : '#ffab00',
+                border: `1px solid ${isApproved ? 'rgba(0, 255, 136, 0.2)' : isRejected ? 'rgba(255, 71, 87, 0.2)' : 'rgba(255, 171, 0, 0.2)'}`
+            };
+        }
+    };
+
 
     const submitRequest = async () => {
         if (!requestType || !requestStartDate || !requestEndDate || requestRecipients.length === 0) {
@@ -902,11 +944,11 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                                                         const shiftStartMins = shiftH * 60 + shiftM;
 
                                                                         if (totalMins < shiftStartMins) {
-                                                                            return <span style={{ color: '#00ff88', fontWeight: '500' }}>Early</span>;
+                                                                            return <span style={{ color: isLightMode ? '#15803d' : '#00ff88', fontWeight: '500' }}>Early</span>;
                                                                         } else if (totalMins <= shiftStartMins + 60) {
                                                                             return <span style={{ color: 'var(--primary)', fontWeight: '500' }}>On Time</span>;
                                                                         } else {
-                                                                            return <span style={{ color: '#ff4757', fontWeight: '500' }}>Late</span>;
+                                                                            return <span style={{ color: isLightMode ? '#b91c1c' : '#ff4757', fontWeight: '500' }}>Late</span>;
                                                                         }
                                                                     })()}
                                                                 </td>
@@ -924,7 +966,69 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                                 {renderAttendanceCalendar()}
                                             </div>
                                         )}
-                                        {['Attendance Requests', 'Overtime Requests'].includes(attendanceTab) && (
+                                        {attendanceTab === 'Attendance Requests' && (
+                                            <div>
+                                                <div style={{ fontSize: '0.9rem', fontWeight: '500', marginBottom: '1rem', color: 'var(--text-main)' }}>Work From Home Requests</div>
+                                                <div className="panel" style={{ padding: 0 }}>
+                                                    <table className="data-table">
+                                                        <thead>
+                                                            <tr style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                                                                <th>Request Dates</th>
+                                                                <th>Request Type</th>
+                                                                <th>Status</th>
+                                                                <th>Requested By</th>
+                                                                <th>Action Taken On</th>
+                                                                <th>Message</th>
+                                                                <th>Reject/Cancel Reason</th>
+                                                                <th>Actions</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {myRequests.filter(r => r.type === 'Work From Home').length > 0 ? myRequests.filter(r => r.type === 'Work From Home').map(r => (
+                                                                <tr key={r._id}>
+                                                                    <td style={{ fontSize: '0.8rem' }}>
+                                                                        {new Date(r.startDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                                                        {r.startDate !== r.endDate && ` - ${new Date(r.endDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}`}
+                                                                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                                                                            {Math.ceil((new Date(r.endDate) - new Date(r.startDate)) / (1000 * 60 * 60 * 24)) + 1} day(s)
+                                                                        </div>
+                                                                    </td>
+                                                                    <td style={{ fontSize: '0.85rem' }}>
+                                                                        {r.type}
+                                                                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Requested on {new Date(r.createdAt).toLocaleDateString()}</div>
+                                                                    </td>
+                                                                    <td>
+                                                                        <span style={{
+                                                                            padding: '0.2rem 0.6rem',
+                                                                            borderRadius: '20px',
+                                                                            fontSize: '0.7rem',
+                                                                            fontWeight: '700',
+                                                                            textTransform: 'uppercase',
+                                                                            letterSpacing: '0.5px',
+                                                                            ...getStatusStyle(r.status)
+                                                                        }}>
+                                                                            {r.status}
+                                                                        </span>
+                                                                        {r.status !== 'Pending' && r.actionBy && (
+                                                                            <div style={{ fontSize: '0.65rem', color: isLightMode ? 'rgba(0,0,0,0.6)' : 'var(--text-muted)', marginTop: '4px', fontWeight: '500' }}>by {r.actionBy.name}</div>
+                                                                        )}
+                                                                    </td>
+
+                                                                    <td style={{ fontSize: '0.8rem' }}>{user.name}</td>
+                                                                    <td style={{ fontSize: '0.8rem' }}>{r.status !== 'Pending' && r.actionDate ? new Date(r.actionDate).toLocaleDateString() : '-'}</td>
+                                                                    <td style={{ fontSize: '0.75rem', color: 'var(--text-muted)', maxWidth: '150px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.message || '-'}</td>
+                                                                    <td style={{ fontSize: '0.75rem', color: 'var(--text-muted)', maxWidth: '150px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.actionNote || '-'}</td>
+                                                                    <td><Info size={14} color="var(--primary)" style={{ cursor: 'pointer' }} /></td>
+                                                                </tr>
+                                                            )) : (
+                                                                <tr><td colSpan="8" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>No WFH requests found.</td></tr>
+                                                            )}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        )}
+                                        {['Overtime Requests'].includes(attendanceTab) && (
                                             <div style={{ padding: '4rem', textAlign: 'center', color: 'var(--text-muted)' }}>
                                                 <div style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>{attendanceTab} Content</div>
                                                 <p style={{ fontSize: '0.85rem' }}>This section is currently being updated with real-time data.</p>
@@ -1119,11 +1223,12 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                                     <th>Requested By</th>
                                                     <th>Action Taken On</th>
                                                     <th>Leave Note</th>
+                                                    <th>Reject/Cancellation Reason</th>
                                                     <th>Actions</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {leaveStats.history?.length > 0 ? leaveStats.history.map(h => (
+                                                {myRequests.filter(r => ['Leave Application', 'Half Day'].includes(r.type)).length > 0 ? myRequests.filter(r => ['Leave Application', 'Half Day'].includes(r.type)).map(h => (
                                                     <tr key={h._id}>
                                                         <td style={{ fontSize: '0.8rem' }}>
                                                             {new Date(h.startDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
@@ -1138,26 +1243,29 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                                         </td>
                                                         <td>
                                                             <span style={{
-                                                                padding: '0.2rem 0.5rem',
-                                                                borderRadius: '4px',
+                                                                padding: '0.2rem 0.6rem',
+                                                                borderRadius: '20px',
                                                                 fontSize: '0.7rem',
-                                                                fontWeight: '500',
-                                                                background: h.status === 'Approved' ? '#00ff8820' : h.status === 'Rejected' ? '#ffab0020' : '#ccff0020',
-                                                                color: h.status === 'Approved' ? '#00ff88' : h.status === 'Rejected' ? '#ffab00' : '#ccff00'
+                                                                fontWeight: '700',
+                                                                textTransform: 'uppercase',
+                                                                letterSpacing: '0.5px',
+                                                                ...getStatusStyle(h.status)
                                                             }}>
                                                                 {h.status}
                                                             </span>
-                                                            {h.status === 'Approved' && h.approvedBy && (
-                                                                <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '4px' }}>by {h.approvedBy.name}</div>
+                                                            {h.status !== 'Pending' && h.actionBy && (
+                                                                <div style={{ fontSize: '0.65rem', color: isLightMode ? 'rgba(0,0,0,0.6)' : 'var(--text-muted)', marginTop: '4px', fontWeight: '500' }}>by {h.actionBy.name}</div>
                                                             )}
                                                         </td>
+
                                                         <td style={{ fontSize: '0.8rem' }}>{user.name}</td>
-                                                        <td style={{ fontSize: '0.8rem' }}>{h.status !== 'Pending' ? new Date(h.updatedAt).toLocaleDateString() : '-'}</td>
-                                                        <td style={{ fontSize: '0.75rem', color: 'var(--text-muted)', maxWidth: '150px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{h.reason || '-'}</td>
+                                                        <td style={{ fontSize: '0.8rem' }}>{h.status !== 'Pending' && h.actionDate ? new Date(h.actionDate).toLocaleDateString() : '-'}</td>
+                                                        <td style={{ fontSize: '0.75rem', color: 'var(--text-muted)', maxWidth: '150px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{h.message || '-'}</td>
+                                                        <td style={{ fontSize: '0.75rem', color: 'var(--text-muted)', maxWidth: '150px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{h.actionNote || '-'}</td>
                                                         <td><Info size={14} color="var(--primary)" style={{ cursor: 'pointer' }} /></td>
                                                     </tr>
                                                 )) : (
-                                                    <tr><td colSpan="7" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>No leave history found.</td></tr>
+                                                    <tr><td colSpan="8" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>No leave history found.</td></tr>
                                                 )}
                                             </tbody>
                                         </table>
@@ -1413,12 +1521,11 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                                                 fontWeight: '700',
                                                                 padding: '0.25rem 0.75rem',
                                                                 borderRadius: '20px',
-                                                                background: req.status === 'Approved' ? 'rgba(0, 255, 136, 0.1)' : req.status === 'Rejected' ? 'rgba(255, 171, 0, 0.1)' : 'rgba(204, 255, 0, 0.1)',
-                                                                color: req.status === 'Approved' ? '#00ff88' : req.status === 'Rejected' ? '#ffab00' : '#ccff00',
-                                                                border: `1px solid ${req.status === 'Approved' ? '#00ff8830' : req.status === 'Rejected' ? '#ffab0030' : '#ccff0030'}`,
                                                                 textTransform: 'uppercase',
-                                                                letterSpacing: '0.5px'
+                                                                letterSpacing: '0.5px',
+                                                                ...getStatusStyle(req.status)
                                                             }}>{req.status}</span>
+
                                                         </div>
                                                         <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.35rem' }}>
                                                             📅 {new Date(req.startDate).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' })} — {new Date(req.endDate).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' })}
@@ -2043,7 +2150,93 @@ export default function Dashboard({ user, onLogout, setUser }) {
 
 
 
-        if (['Inbox', 'Engage', 'Performance'].includes(activeSidebar)) {
+        if (activeSidebar === 'Inbox') {
+            return (
+                <div className="page-content">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                        <h2 style={{ fontSize: '1.25rem', margin: 0 }}>Inbox</h2>
+                    </div>
+
+                    <div className="panel" style={{ padding: 0 }}>
+                        <table className="data-table">
+                            <thead>
+                                <tr style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                                    <th>Dates</th>
+                                    <th>Request Type</th>
+                                    <th>Status</th>
+                                    <th>Requested By</th>
+                                    <th>Action Taken On</th>
+                                    <th>Leave / WFH Note</th>
+                                    <th>Action Note</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {inboxRequests.length > 0 ? inboxRequests.map(r => (
+                                    <tr key={r._id}>
+                                        <td style={{ fontSize: '0.8rem' }}>
+                                            {new Date(r.startDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                            {r.startDate !== r.endDate && ` - ${new Date(r.endDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}`}
+                                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                                                {Math.ceil((new Date(r.endDate) - new Date(r.startDate)) / (1000 * 60 * 60 * 24)) + 1} day(s)
+                                            </div>
+                                        </td>
+                                        <td style={{ fontSize: '0.85rem' }}>
+                                            {r.type}
+                                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Requested on {new Date(r.createdAt).toLocaleDateString()}</div>
+                                        </td>
+                                        <td>
+                                            <span style={{
+                                                padding: '0.2rem 0.6rem',
+                                                borderRadius: '20px',
+                                                fontSize: '0.7rem',
+                                                fontWeight: '700',
+                                                textTransform: 'uppercase',
+                                                letterSpacing: '0.5px',
+                                                ...getStatusStyle(r.status)
+                                            }}>
+                                                {r.status}
+                                            </span>
+                                            {r.status !== 'Pending' && r.actionBy && (
+                                                <div style={{ fontSize: '0.65rem', color: isLightMode ? 'rgba(0,0,0,0.6)' : 'var(--text-muted)', marginTop: '4px', fontWeight: '500' }}>by {r.actionBy.name}</div>
+                                            )}
+                                        </td>
+
+                                        <td style={{ fontSize: '0.8rem' }}>{r.user?.name}</td>
+                                        <td style={{ fontSize: '0.8rem' }}>{r.status !== 'Pending' && r.actionDate ? new Date(r.actionDate).toLocaleDateString() : '-'}</td>
+                                        <td style={{ fontSize: '0.75rem', color: 'var(--text-muted)', maxWidth: '150px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.message || '-'}</td>
+                                        <td style={{ fontSize: '0.75rem', color: 'var(--text-muted)', maxWidth: '150px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.actionNote || '-'}</td>
+                                        <td>
+                                            {r.status === 'Pending' ? (
+                                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                    <div style={{ position: 'relative' }}>
+                                                        <input
+                                                            type="text"
+                                                            placeholder="Optional Note"
+                                                            value={requestActionNote}
+                                                            onChange={(e) => setRequestActionNote(e.target.value)}
+                                                            style={{ padding: '0.4rem 0.5rem', fontSize: '0.7rem', borderRadius: '4px', border: '1px solid var(--border-dark)', background: 'var(--bg-main)', color: 'var(--text-main)', width: '100px' }}
+                                                        />
+                                                    </div>
+                                                    <button className="btn btn-primary btn-sm" style={{ padding: '0.4rem 0.6rem', fontSize: '0.7rem' }} onClick={() => handleRequestAction(r._id, 'Approved')}>Approve</button>
+                                                    <button className="btn btn-danger btn-sm" style={{ padding: '0.4rem 0.6rem', fontSize: '0.7rem' }} onClick={() => handleRequestAction(r._id, 'Rejected')}>Deny</button>
+                                                </div>
+                                            ) : (
+                                                <Info size={14} color="var(--primary)" style={{ cursor: 'pointer' }} />
+                                            )}
+                                        </td>
+                                    </tr>
+                                )) : (
+                                    <tr><td colSpan="8" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>No requests in your inbox.</td></tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            );
+        }
+
+        if (['Engage', 'Performance'].includes(activeSidebar)) {
             return (
                 <div className="page-content" style={{ textAlign: 'center', paddingTop: '6rem', color: 'var(--text-muted)' }}>
                     <Building2 size={64} style={{ margin: '0 auto 1.5rem', opacity: 0.2 }} />

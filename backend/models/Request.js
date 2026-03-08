@@ -18,7 +18,8 @@ const requestSchema = new mongoose.Schema(
             default: 'Pending'
         },
         actionBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-        actionDate: { type: Date }
+        actionDate: { type: Date },
+        actionNote: { type: String }
     },
     { timestamps: true }
 );
