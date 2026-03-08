@@ -12,7 +12,7 @@ export default function AuthPage({ onLogin }) {
     const [formData, setFormData] = useState({
         name: '', email: '', password: '', confirmPassword: '',
         designation: '', department: '', joiningDate: '', dob: '',
-        place: '', phoneNumber: ''
+        place: '', phoneNumber: '', gender: ''
     });
     const [otp, setOtp] = useState('');
     const [options, setOptions] = useState({ departments: [], designations: [] });
@@ -138,6 +138,15 @@ export default function AuthPage({ onLogin }) {
                         {options.departments.map(o => <option key={o._id} value={o.name}>{o.name}</option>)}
                     </select>
                 </div>
+                <div>
+                    <label style={labelStyle}>Gender</label>
+                    <select required value={formData.gender} onChange={e => setFormData({ ...formData, gender: e.target.value })} style={inputStyle}>
+                        <option value="">Select</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
                 <div><label style={labelStyle}>Joining Date</label><input required type="date" value={formData.joiningDate} onChange={e => setFormData({ ...formData, joiningDate: e.target.value })} style={inputStyle} /></div>
                 <div><label style={labelStyle}>Date of Birth</label><input required type="date" value={formData.dob} onChange={e => setFormData({ ...formData, dob: e.target.value })} style={inputStyle} /></div>
                 <div><label style={labelStyle}>Place</label><input required type="text" value={formData.place} onChange={e => setFormData({ ...formData, place: e.target.value })} placeholder="City" style={inputStyle} /></div>
@@ -151,7 +160,8 @@ export default function AuthPage({ onLogin }) {
 
     const renderStep4 = () => (
         <div style={{ textAlign: 'center', padding: '1rem 0' }}>
-            <CheckCircle2 size={64} color="#10b981" style={{ margin: '0 auto 1.5rem' }} />
+            <CheckCircle2 size={64} style={{ margin: '0 auto 1.5rem', color: 'var(--primary)' }} />
+
             <h3 style={{ color: 'white', marginBottom: '0.75rem' }}>Account Created!</h3>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', lineHeight: '1.5' }}>
                 Your account has been successfully created. We have sent an approval request to the Admins.
@@ -206,9 +216,10 @@ export default function AuthPage({ onLogin }) {
 }
 
 const containerStyle = { minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, var(--bg-main) 0%, var(--bg-panel) 100%)', padding: '2rem' };
-const cardStyle = { background: 'var(--bg-panel)', padding: '2.5rem', borderRadius: 'var(--radius-lg)', width: '100%', boxShadow: '0 10px 25px rgba(0,0,0,0.5)', border: '1px solid var(--border-dark)', transition: 'max-width 0.3s' };
-const inputStyle = { width: '100%', padding: '0.75rem 0.85rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-dark)', background: 'var(--bg-main)', color: 'white', outline: 'none', boxSizing: 'border-box', fontSize: '0.85rem' };
+const cardStyle = { background: 'var(--bg-panel)', padding: '2.5rem', borderRadius: 'var(--radius-lg)', width: '100%', boxShadow: 'var(--glow-panel)', border: '1px solid var(--border-dark)', transition: 'max-width 0.3s' };
+const inputStyle = { width: '100%', padding: '0.75rem 0.85rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-dark)', background: 'var(--bg-main)', color: 'var(--text-main)', outline: 'none', boxSizing: 'border-box', fontSize: '0.85rem' };
 const labelStyle = { display: 'block', marginBottom: '0.4rem', fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '500' };
 const btnStyle = { background: 'var(--primary)', color: 'white', padding: '0.75rem', borderRadius: 'var(--radius-md)', fontWeight: '600', fontSize: '0.9rem', cursor: 'pointer', border: 'none', width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem', transition: 'all 0.2s' };
 const errorBanner = { background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', padding: '0.75rem', borderRadius: '4px', marginBottom: '1rem', fontSize: '0.8rem', textAlign: 'center' };
-const successBanner = { background: 'rgba(0, 255, 136, 0.1)', color: '#00ff88', padding: '0.75rem', borderRadius: '4px', marginBottom: '1rem', fontSize: '0.8rem', textAlign: 'center' };
+const successBanner = { background: 'rgba(var(--primary-rgb), 0.1)', color: 'var(--primary)', padding: '0.75rem', borderRadius: '8px', marginBottom: '1rem', fontSize: '0.8rem', textAlign: 'center' };
+

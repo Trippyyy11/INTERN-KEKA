@@ -57,8 +57,11 @@ export default function HomeTab({
 
             {homeSubTab === 'Dashboard' && (
                 <>
-                    <div className="welcome-banner">
-                        <h1>Welcome {user?.name}!</h1>
+                    <div className="welcome-banner" style={{ position: 'relative' }}>
+                        <div style={{ position: 'relative', zIndex: 3 }}>
+                            <h1>Welcome {user?.name}!</h1>
+                            <p style={{ marginTop: '0.5rem', opacity: 0.8, fontSize: '0.9rem' }}>Have a great day at Teaching Pariksha!</p>
+                        </div>
                     </div>
 
                     <div className="grid" style={{ gridTemplateColumns: 'minmax(300px, 350px) 1fr', gap: '2rem', minHeight: '600px', backgroundImage: 'url("data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'400\' height=\'600\' viewBox=\'0 0 400 600\'><path d=\'M350,600 C350,500 320,400 400,300 C380,300 360,320 340,350 C340,250 300,150 400,50 C380,100 350,150 340,200 C320,150 300,100 250,50 C280,100 300,150 310,220 C280,200 250,180 200,150 C240,180 280,220 310,260 C250,250 200,240 150,250 C200,270 250,290 320,300 C280,320 250,340 200,400 C300,350 310,400 350,600 Z\' fill=\'rgba(255,255,255,0.03)\'/></svg>")', backgroundPosition: 'right bottom', backgroundRepeat: 'no-repeat' }}>
@@ -169,9 +172,10 @@ export default function HomeTab({
                                                 onClick={() => setOrgActionTab('Poll')}
                                             >📊 Poll</span>
                                             <span
-                                                className={`tab-pill purple ${orgActionTab === 'Praise' ? 'active' : ''}`}
+                                                className={`tab-pill blue ${orgActionTab === 'Praise' ? 'active' : ''}`}
                                                 onClick={() => setOrgActionTab('Praise')}
                                             >🏆 Praise</span>
+
                                         </div>
 
                                         {orgActionTab === 'Post' && (
@@ -297,16 +301,17 @@ export default function HomeTab({
                                                 <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
                                                     <button
                                                         style={{
-                                                            background: 'linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)',
+                                                            background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
                                                             color: 'white',
                                                             border: 'none',
-                                                            borderRadius: '6px',
+                                                            borderRadius: '8px',
                                                             padding: '0.6rem 2rem',
-                                                            fontSize: '0.85rem',
+                                                            fontSize: '0.9rem',
                                                             cursor: 'pointer',
                                                             fontWeight: 'bold',
-                                                            boxShadow: '0 4px 12px rgba(168, 85, 247, 0.3)'
+                                                            boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
                                                         }}
+
                                                         onClick={async () => {
                                                             if (praise.user && praise.message) {
                                                                 try {
@@ -428,8 +433,9 @@ export default function HomeTab({
                                                                             style={{
                                                                                 position: 'relative',
                                                                                 background: isLightMode ? '#f9fafb' : 'rgba(255,255,255,0.02)',
-                                                                                border: hasVoted ? '1px solid #ff00cc' : '1px solid var(--border-dark)',
-                                                                                borderRadius: '6px',
+                                                                                border: hasVoted ? '1px solid var(--primary)' : '1px solid var(--border-dark)',
+                                                                                borderRadius: '12px',
+
                                                                                 padding: '0.8rem 1rem',
                                                                                 cursor: 'pointer',
                                                                                 overflow: 'hidden',
@@ -444,7 +450,8 @@ export default function HomeTab({
                                                                                 }
                                                                             }}
                                                                         >
-                                                                            <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: `${percent}%`, background: hasVoted ? 'rgba(255, 0, 204, 0.2)' : 'rgba(255, 0, 204, 0.05)', zIndex: 0, transition: 'width 0.4s ease-out' }}></div>
+                                                                            <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: `${percent}%`, background: hasVoted ? 'rgba(var(--primary-rgb), 0.2)' : 'rgba(var(--primary-rgb), 0.05)', zIndex: 0, transition: 'width 0.4s ease-out' }}></div>
+
                                                                             <div style={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem', color: 'var(--text-main)' }}>
                                                                                 <span style={{ fontWeight: hasVoted ? '600' : 'normal' }}>{opt.text}</span>
                                                                                 <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '600' }}>{percent}% ({opt.votes.length})</span>

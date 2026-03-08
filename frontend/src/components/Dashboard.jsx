@@ -224,20 +224,14 @@ export default function Dashboard({ user, onLogout, setUser }) {
         const isApproved = status === 'Approved';
         const isRejected = status === 'Rejected';
 
-        if (isLightMode) {
-            return {
-                background: isApproved ? 'rgba(21, 128, 61, 0.12)' : isRejected ? 'rgba(185, 28, 28, 0.12)' : 'rgba(180, 83, 9, 0.12)',
-                color: isApproved ? '#15803d' : isRejected ? '#b91c1c' : '#b45309',
-                border: `1px solid ${isApproved ? 'rgba(21, 128, 61, 0.25)' : isRejected ? 'rgba(185, 28, 28, 0.25)' : 'rgba(180, 83, 9, 0.25)'}`
-            };
-        } else {
-            return {
-                background: isApproved ? 'rgba(0, 255, 136, 0.1)' : isRejected ? 'rgba(255, 71, 87, 0.1)' : 'rgba(255, 171, 0, 0.1)',
-                color: isApproved ? '#00ff88' : isRejected ? '#ff4757' : '#ffab00',
-                border: `1px solid ${isApproved ? 'rgba(0, 255, 136, 0.2)' : isRejected ? 'rgba(255, 71, 87, 0.2)' : 'rgba(255, 171, 0, 0.2)'}`
-            };
-        }
+        return {
+            background: isApproved ? 'rgba(var(--success-rgb), 0.1)' : isRejected ? 'rgba(var(--danger-rgb), 0.1)' : 'rgba(var(--warning-rgb), 0.1)',
+            color: isApproved ? 'var(--success)' : isRejected ? 'var(--danger)' : 'var(--warning)',
+            border: `1px solid ${isApproved ? 'rgba(var(--success-rgb), 0.2)' : isRejected ? 'rgba(var(--danger-rgb), 0.2)' : 'rgba(var(--warning-rgb), 0.2)'}`
+        };
     };
+
+
 
 
     const submitRequest = async () => {
@@ -292,6 +286,49 @@ export default function Dashboard({ user, onLogout, setUser }) {
     const toggleTheme = () => {
         setIsLightMode(!isLightMode);
     };
+
+    const getAttendanceProgress = () => {
+        if (!isClockedIn || !activeLog?.clockInTime) return 0;
+        const elapsed = calculateElapsedTime(activeLog.clockInTime);
+        const shiftMins = (systemSettings?.workingHoursPerDay || 8) * 60;
+        return Math.min(elapsed.totalMins / shiftMins, 1);
+    };
+
+    const renderHourglass = () => {
+        const progress = getAttendanceProgress();
+        const sandColor = "#fbbf24"; // Amber/Gold
+
+        return (
+            <div style={{ position: 'relative', width: '40px', height: '55px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginLeft: '25px' }} title={`${Math.round(progress * 100)}% of shift completed`}>
+                <svg width="40" height="55" viewBox="0 0 40 55" style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))' }}>
+                    {/* Glass Frame Outlines */}
+                    <path d="M10,5 L30,5 M10,50 L30,50" stroke="var(--primary)" strokeWidth="3" strokeLinecap="round" />
+                    <path d="M11,6 C11,22 20,27.5 20,27.5 C20,27.5 29,22 29,6 Z" fill="none" stroke="var(--primary)" strokeWidth="1.5" strokeOpacity="0.5" />
+                    <path d="M11,49 C11,33 20,27.5 20,27.5 C20,27.5 29,33 29,49 Z" fill="none" stroke="var(--primary)" strokeWidth="1.5" strokeOpacity="0.5" />
+
+                    {/* Top Sand (Decreasing) - Using simple rect with clip-path or complex path */}
+                    <path
+                        d={`M20,27.5 L${29 - (progress * 9)},${6 + (progress * 21)} L${11 + (progress * 9)},${6 + (progress * 21)} Z`}
+                        fill={sandColor}
+                        style={{ transition: 'all 1s ease' }}
+                    />
+
+                    {/* Bottom Sand (Increasing) */}
+                    <path
+                        d={`M${11 + (1 - progress) * 9},49 L${29 - (1 - progress) * 9},49 Q20,${49 - progress * 21} 20,${49 - progress * 21} Z`}
+                        fill={sandColor}
+                        style={{ transition: 'all 1s ease' }}
+                    />
+
+                    {/* Falling Stream */}
+                    {isClockedIn && progress < 1 && (
+                        <line x1="20" y1="27" x2="20" y2="48" stroke={sandColor} strokeWidth="1.5" className="timer-pulse" strokeDasharray="2,2" />
+                    )}
+                </svg>
+            </div>
+        );
+    };
+
 
     const fetchGlobalFinances = async () => {
         try {
@@ -808,16 +845,21 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                     <div className="panel panel-actions" style={{ padding: '1.25rem' }}>
                                         <div className="panel-header" style={{ marginBottom: '0.75rem' }}>Actions</div>
                                         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                            <div>
-                                                <div style={{ fontSize: '1.25rem', fontWeight: '400', marginBottom: '0.25rem' }}>{currentTime}</div>
-                                                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>{new Date().toDateString()}</div>
-                                                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'capitalize', letterSpacing: '0.3px', marginBottom: '0.25rem' }}>Total Hours <HelpCircle size={10} /></div>
-                                                <div style={{ fontSize: '0.85rem' }}>
-                                                    Effective: <span style={{ fontWeight: '500' }}>{isClockedIn ? calculateElapsedTime(activeLog?.clockInTime).text : '0h 0m'}</span>
+                                            <div style={{ display: 'flex', alignItems: 'center' }}>
+                                                <div>
+                                                    <div style={{ fontSize: '1.25rem', fontWeight: '400', marginBottom: '0.25rem' }}>
+                                                        <span className={isClockedIn ? 'timer-pulse' : ''} style={{ display: 'inline-block' }}>{currentTime}</span>
+                                                    </div>
+                                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>{new Date().toDateString()}</div>
+                                                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'capitalize', letterSpacing: '0.3px', marginBottom: '0.25rem' }}>Total Hours <HelpCircle size={10} /></div>
+                                                    <div style={{ fontSize: '0.85rem' }}>
+                                                        Effective: <span style={{ fontWeight: '500' }}>{isClockedIn ? calculateElapsedTime(activeLog?.clockInTime).text : '0h 0m'}</span>
+                                                    </div>
+                                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                                                        Gross: {isClockedIn ? calculateElapsedTime(activeLog?.clockInTime).text : '0h 0m'}
+                                                    </div>
                                                 </div>
-                                                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                                                    Gross: {isClockedIn ? calculateElapsedTime(activeLog?.clockInTime).text : '0h 0m'}
-                                                </div>
+                                                {isClockedIn && renderHourglass()}
                                             </div>
                                             <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem' }}>
                                                 {isAttendanceFinished && !isClockedIn ? (
@@ -833,8 +875,14 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                                         >
                                                             {isClockedIn ? 'Web Clock-out' : 'Web Clock-in'}
                                                         </button>
-                                                        <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>
-                                                            {isClockedIn ? `${calculateElapsedTime(activeLog?.clockInTime).text} Since Last Login` : 'Currently offline'}
+                                                        <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center' }}>
+                                                            {isClockedIn ? (
+                                                                <>
+                                                                    <span className="action-timer-dot timer-pulse"></span>
+                                                                    <Clock size={10} className="timer-pulse" style={{ marginRight: '4px' }} />
+                                                                    {calculateElapsedTime(activeLog?.clockInTime).text} Since Last Login
+                                                                </>
+                                                            ) : 'Currently offline'}
                                                         </div>
                                                     </>
                                                 )}
@@ -863,7 +911,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                                         padding: '0.4rem 1rem',
                                                         cursor: 'pointer',
                                                         color: attendanceTab === tab ? '#ffffff' : 'var(--text-muted)',
-                                                        backgroundColor: attendanceTab === tab ? '#11005E' : 'transparent',
+                                                        backgroundColor: attendanceTab === tab ? 'var(--primary)' : 'transparent',
                                                         borderRadius: '6px',
                                                         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                                                         fontWeight: '500'
@@ -944,11 +992,11 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                                                         const shiftStartMins = shiftH * 60 + shiftM;
 
                                                                         if (totalMins < shiftStartMins) {
-                                                                            return <span style={{ color: isLightMode ? '#15803d' : '#00ff88', fontWeight: '500' }}>Early</span>;
+                                                                            return <span style={{ color: 'var(--success)', fontWeight: '500' }}>Early</span>;
                                                                         } else if (totalMins <= shiftStartMins + 60) {
                                                                             return <span style={{ color: 'var(--primary)', fontWeight: '500' }}>On Time</span>;
                                                                         } else {
-                                                                            return <span style={{ color: isLightMode ? '#b91c1c' : '#ff4757', fontWeight: '500' }}>Late</span>;
+                                                                            return <span style={{ color: 'var(--danger)', fontWeight: '500' }}>Late</span>;
                                                                         }
                                                                     })()}
                                                                 </td>
@@ -1737,7 +1785,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                         </div>
                                         <div>
                                             <label style={labelStyle}>Salary Type</label>
-                                            <div style={{ fontSize: '0.95rem', fontWeight: '600', color: '#00ff88' }}>{user?.salaryDetails?.type || 'Fixed'}</div>
+                                            <div style={{ fontSize: '0.95rem', fontWeight: '600', color: 'var(--neon-green)' }}>{user?.salaryDetails?.type || 'Fixed'}</div>
                                         </div>
                                     </div>
                                 </div>
@@ -1915,7 +1963,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                                 </div>
                                             </div>
 
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(16, 185, 129, 0.05)', border: '1px solid rgba(16, 185, 129, 0.2)', padding: '1.5rem', borderRadius: 'var(--radius-md)' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(var(--primary-rgb), 0.05)', border: '1px solid rgba(var(--primary-rgb), 0.2)', padding: '1.5rem', borderRadius: 'var(--radius-md)' }}>
                                                 <span style={{ fontSize: '1.1rem', fontWeight: '500' }}>Net Payout (Take Home)</span>
                                                 <span style={{ fontSize: '1.75rem', fontWeight: 'bold', color: 'var(--success)' }}>
                                                     ${payslips[0].netPay}
