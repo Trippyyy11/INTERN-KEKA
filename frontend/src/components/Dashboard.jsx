@@ -13,7 +13,7 @@ import {
     Bell,
     Clock,
     Calendar,
-    MoreHorizontal,
+    MoreVertical,
     ThumbsUp,
     MessageSquare,
     FileText,
@@ -27,15 +27,24 @@ import {
     X,
     ChevronDown,
     CheckCircle,
-    XCircle
+    XCircle,
+    Settings,
+    DollarSign
 } from 'lucide-react';
 
 import OrganizationTree from './OrganizationTree';
 import HomeTab from './dashboard-tabs/HomeTab';
+import EngageTab from './dashboard-tabs/EngageTab';
 
 export default function Dashboard({ user, onLogout, setUser }) {
-    const [activeSidebar, setActiveSidebar] = useState('Home');
-    const [activeSubTab, setActiveSubTab] = useState('Attendance');
+    // Persistence helper
+    const getSavedState = (key, defaultVal) => {
+        const saved = localStorage.getItem(key);
+        return saved !== null ? saved : defaultVal;
+    };
+
+    const [activeSidebar, setActiveSidebar] = useState(getSavedState('activeSidebar', 'Home'));
+    const [activeSubTab, setActiveSubTab] = useState(getSavedState('activeSubTab', 'Attendance'));
 
     // Check initial theme preference
     const getInitialTheme = () => {
@@ -47,8 +56,8 @@ export default function Dashboard({ user, onLogout, setUser }) {
     const [showProfileMenu, setShowProfileMenu] = useState(false);
 
     // Home states
-    const [homeTab, setHomeTab] = useState('Organization');
-    const [homeSubTab, setHomeSubTab] = useState('Welcome');
+    const [homeTab, setHomeTab] = useState(getSavedState('homeTab', 'Activities'));
+    const [homeSubTab, setHomeSubTab] = useState(getSavedState('homeSubTab', 'Dashboard'));
     const [postText, setPostText] = useState('');
     const [welcomeResponses, setWelcomeResponses] = useState({
         about: user?.welcomeProfile?.about || '',
@@ -102,6 +111,9 @@ export default function Dashboard({ user, onLogout, setUser }) {
     const [showEditModal, setShowEditModal] = useState(false);
     const [selectedUser, setSelectedUser] = useState(null);
     const [newConfig, setNewConfig] = useState({ name: '', type: 'Department', date: '', description: '' });
+    const [editMode, setEditMode] = useState(false);
+    const [modalTab, setModalTab] = useState('Personal');
+    const [activeActionMenu, setActiveActionMenu] = useState(null);
 
     const [dashData, setDashData] = useState({
         birthdays: { today: [], upcoming: [] },
@@ -112,6 +124,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
         holidays: []
     });
 
+    const [engageTab, setEngageTab] = useState(getSavedState('engageTab', 'Create'));
     const [orgActionTab, setOrgActionTab] = useState('Post');
     const [orgActivityTab, setOrgActivityTab] = useState('Birthdays');
 
@@ -157,6 +170,27 @@ export default function Dashboard({ user, onLogout, setUser }) {
             localStorage.setItem('theme', 'dark');
         }
     }, [isLightMode]);
+
+    // Persist navigation states
+    useEffect(() => {
+        localStorage.setItem('activeSidebar', activeSidebar);
+    }, [activeSidebar]);
+
+    useEffect(() => {
+        localStorage.setItem('activeSubTab', activeSubTab);
+    }, [activeSubTab]);
+
+    useEffect(() => {
+        localStorage.setItem('homeTab', homeTab);
+    }, [homeTab]);
+
+    useEffect(() => {
+        localStorage.setItem('homeSubTab', homeSubTab);
+    }, [homeSubTab]);
+
+    useEffect(() => {
+        localStorage.setItem('engageTab', engageTab);
+    }, [engageTab]);
 
     const fetchLeaveStats = async () => {
         try {
@@ -643,11 +677,10 @@ export default function Dashboard({ user, onLogout, setUser }) {
         { name: 'Me', icon: <User size={20} /> },
         { name: 'Inbox', icon: <Mail size={20} /> },
         { name: 'My Team', icon: <Users size={20} /> },
-        { name: 'Organization Tree', icon: <Network size={20} /> },
         { name: 'My Finances', icon: <Briefcase size={20} /> },
         { name: 'Org', icon: <Building2 size={20} /> },
         { name: 'Engage', icon: <Award size={20} /> },
-        { name: 'Performance', icon: <TrendingUp size={20} /> }
+        { name: 'Admin', icon: <Settings size={20} /> }
     ];
 
     /* ---------------- MOCK DATA HELPERS ---------------- */
@@ -713,16 +746,6 @@ export default function Dashboard({ user, onLogout, setUser }) {
                     dashData={dashData}
                     setShowHolidayModal={setShowHolidayModal}
                     homeTab={homeTab} setHomeTab={setHomeTab}
-                    orgActionTab={orgActionTab} setOrgActionTab={setOrgActionTab}
-                    postText={postText} setPostText={setPostText}
-                    poll={poll} setPoll={setPoll}
-                    praise={praise} setPraise={setPraise}
-                    allUsers={allUsers}
-                    setShowAnnouncementModal={setShowAnnouncementModal}
-                    socialFeed={socialFeed}
-                    showAlert={showAlert}
-                    fetchPublicData={fetchPublicData}
-                    isLightMode={isLightMode}
                     orgActivityTab={orgActivityTab} setOrgActivityTab={setOrgActivityTab}
                     wishedUsers={wishedUsers} setWishedUsers={setWishedUsers}
                     setActiveSidebar={setActiveSidebar}
@@ -730,6 +753,10 @@ export default function Dashboard({ user, onLogout, setUser }) {
                     editingResponse={editingResponse} setEditingResponse={setEditingResponse}
                     welcomeResponses={welcomeResponses} setWelcomeResponses={setWelcomeResponses}
                     handleSaveResponse={handleSaveResponse}
+                    isLightMode={isLightMode}
+                    socialFeed={socialFeed}
+                    showAlert={showAlert}
+                    fetchPublicData={fetchPublicData}
                 />
             );
         }
@@ -1867,29 +1894,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
             );
         }
 
-        if (activeSidebar === 'Organization Tree') {
-            if (user?.role === 'Admin' || user?.role === 'Super Admin') {
-                return (
-                    <div className="page-content" style={{ height: 'calc(100vh - 64px)' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem', alignItems: 'center' }}>
-                            <h2 style={{ color: 'var(--text-main)', margin: 0 }}>Organization Hierarchy</h2>
-                        </div>
-                        <div style={{ flex: 1, height: 'calc(100% - 3rem)' }}>
-                            <OrganizationTree />
-                        </div>
-                    </div>
-                );
-            } else {
-                return (
-                    <div className="page-content">
-                        <div className="panel" style={{ textAlign: 'center', padding: '3rem' }}>
-                            <h3 style={{ color: 'var(--text-main)' }}>Access Denied</h3>
-                            <p style={{ color: 'var(--text-muted)' }}>You do not have permission to view the organization tree.</p>
-                        </div>
-                    </div>
-                );
-            }
-        }
+
 
         if (activeSidebar === 'My Finances') {
             const isSuper = user?.role === 'Super Admin';
@@ -1897,9 +1902,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
                 <>
                     <div className="sub-nav">
                         <div className={`sub-nav-item ${activeSubTab === 'Leave' ? 'active' : ''}`} onClick={() => setActiveSubTab('Leave')}>PAYSLIPS</div>
-                        <div className="sub-nav-item">TAX DECLARATIONS</div>
                         <div className="sub-nav-item">BANK INFO</div>
-                        {isSuper && <div className={`sub-nav-item ${activeSubTab === 'Global' ? 'active' : ''}`} onClick={() => setActiveSubTab('Global')}>GLOBAL VIEW</div>}
                     </div>
                     <div className="page-content">
                         {activeSubTab === 'Global' && isSuper ? (
@@ -1983,213 +1986,196 @@ export default function Dashboard({ user, onLogout, setUser }) {
 
 
         if (activeSidebar === 'Org') {
+            return (
+                <div className="page-content">
+                    <div className="sub-nav" style={{ marginTop: '-1.5rem', marginBottom: '1.5rem' }}>
+                        <div className={`sub-nav-item active`}>ORGANIZATION TREE</div>
+                    </div>
+                    <div style={{ height: 'calc(100vh - 200px)' }}>
+                        <OrganizationTree />
+                    </div>
+                </div>
+            );
+        }
+
+        if (activeSidebar === 'Admin') {
             const isAdminOrSuper = user?.role === 'Admin' || user?.role === 'Super Admin';
-            const isSuper = user?.role === 'Super Admin';
-            const pagedUsers = allUsers.filter(u => u.isApproved);
+            if (!isAdminOrSuper) return null;
+
             const pendingUsers = allUsers.filter(u => !u.isApproved);
+            const pagedUsers = allUsers.filter(u => u.isApproved);
 
             return (
                 <div className="page-content">
-                    {isAdminOrSuper ? (
-                        <>
-                            <div className="sub-nav" style={{ marginTop: '-1.5rem', marginBottom: '1.5rem' }}>
-                                <div className={`sub-nav-item ${activeSubTab === 'Leave' ? 'active' : ''}`} onClick={() => setActiveSubTab('Leave')}>USERS</div>
-                                <div className={`sub-nav-item ${activeSubTab === 'Approvals' ? 'active' : ''}`} onClick={() => setActiveSubTab('Approvals')}>APPROVALS ({pendingUsers.length})</div>
-                                <div className={`sub-nav-item ${activeSubTab === 'Configs' ? 'active' : ''}`} onClick={() => setActiveSubTab('Configs')}>ORG CONFIGS</div>
-                                <div className={`sub-nav-item ${activeSubTab === 'Settings' ? 'active' : ''}`} onClick={() => setActiveSubTab('Settings')}>SYSTEM SETTINGS</div>
+                    <div className="sub-nav" style={{ marginTop: '-1.5rem', marginBottom: '1.5rem' }}>
+                        <div className={`sub-nav-item ${activeSubTab === 'Leave' ? 'active' : ''}`} onClick={() => setActiveSubTab('Leave')}>USERS</div>
+                        <div className={`sub-nav-item ${activeSubTab === 'Approvals' ? 'active' : ''}`} onClick={() => setActiveSubTab('Approvals')}>APPROVALS ({pendingUsers.length})</div>
+                        <div className={`sub-nav-item ${activeSubTab === 'Configs' ? 'active' : ''}`} onClick={() => setActiveSubTab('Configs')}>ORG CONFIGS</div>
+                        <div className={`sub-nav-item ${activeSubTab === 'Settings' ? 'active' : ''}`} onClick={() => setActiveSubTab('Settings')}>SYSTEM SETTINGS</div>
+                    </div>
+
+                    {activeSubTab === 'Settings' && (
+                        <div className="panel" style={{ maxWidth: '600px' }}>
+                            <div className="panel-header">Company Settings</div>
+                            <div style={{ display: 'flex', gap: '1rem', flexDirection: 'column' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Company Name</label>
+                                    <input type="text" value={systemSettings.companyName || ''} onChange={e => setSystemSettings({ ...systemSettings, companyName: e.target.value })} style={inputStyle} />
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Working Hours / Day</label>
+                                    <input type="number" value={systemSettings.workingHoursPerDay || ''} onChange={e => setSystemSettings({ ...systemSettings, workingHoursPerDay: e.target.value })} style={{ ...inputStyle, width: '100px' }} />
+                                </div>
+                                <div style={{ borderTop: '1px solid var(--border-dark)', marginTop: '0.5rem', paddingTop: '1rem' }}>
+                                    <div style={{ fontSize: '0.85rem', fontWeight: '500', marginBottom: '1rem' }}>Default Leave Quotas (Apply to All Users)</div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                        {[
+                                            { label: 'Paid Leave', key: 'paid' },
+                                            { label: 'Sick Leave', key: 'sick' },
+                                            { label: 'Casual Leave', key: 'casual' },
+                                            { label: 'Comp Off', key: 'compOff' }
+                                        ].map(q => (
+                                            <div key={q.key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{q.label}</label>
+                                                <input
+                                                    type="number"
+                                                    value={systemSettings.defaultLeaveQuotas?.[q.key] ?? 0}
+                                                    onChange={e => setSystemSettings({
+                                                        ...systemSettings,
+                                                        defaultLeaveQuotas: { ...systemSettings.defaultLeaveQuotas, [q.key]: parseInt(e.target.value) || 0 }
+                                                    })}
+                                                    style={{ ...inputStyle, width: '60px' }}
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                                <button className="btn btn-primary" onClick={handleSaveSettings} style={{ marginTop: '1rem' }}>Save Settings</button>
                             </div>
+                        </div>
+                    )}
 
-                            {activeSubTab === 'Settings' && (
-                                <div className="panel" style={{ maxWidth: '600px' }}>
-                                    <div className="panel-header">Company Settings</div>
-                                    <div style={{ display: 'flex', gap: '1rem', flexDirection: 'column' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                            <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Company Name</label>
-                                            <input type="text" value={systemSettings.companyName || ''} onChange={e => setSystemSettings({ ...systemSettings, companyName: e.target.value })} style={inputStyle} />
-                                        </div>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                            <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Working Hours / Day</label>
-                                            <input type="number" value={systemSettings.workingHoursPerDay || ''} onChange={e => setSystemSettings({ ...systemSettings, workingHoursPerDay: e.target.value })} style={{ ...inputStyle, width: '100px' }} />
-                                        </div>
+                    {activeSubTab === 'Leave' && (
+                        <div className="panel">
+                            <div className="panel-header">Active Employees</div>
+                            <table className="data-table">
+                                <thead>
+                                    <tr><th>NAME</th><th>EMAIL</th><th>DESIGNATION</th><th>DEPT</th><th>ROLE</th><th style={{ textAlign: 'center' }}>ACTIONS</th></tr>
+                                </thead>
+                                <tbody>
+                                    {pagedUsers.map(u => (
+                                        <tr key={u._id}>
+                                            <td>{u.name}</td><td>{u.email}</td><td>{u.designation}</td><td>{u.department}</td>
+                                            <td><span className={`badge ${u.role.replace(' ', '-').toLowerCase()}`}>{u.role}</span></td>
+                                            <td style={{ position: 'relative', textAlign: 'center' }}>
+                                                <button
+                                                    className="btn-icon"
+                                                    style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+                                                    onClick={() => setActiveActionMenu(activeActionMenu === u._id ? null : u._id)}
+                                                >
+                                                    <MoreVertical size={20} />
+                                                </button>
 
-                                        <div style={{ borderTop: '1px solid var(--border-dark)', marginTop: '0.5rem', paddingTop: '1rem' }}>
-                                            <div style={{ fontSize: '0.85rem', fontWeight: '500', marginBottom: '1rem' }}>Default Leave Quotas (Apply to All Users)</div>
-                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                                                {[
-                                                    { label: 'Paid Leave', key: 'paid' },
-                                                    { label: 'Sick Leave', key: 'sick' },
-                                                    { label: 'Casual Leave', key: 'casual' },
-                                                    { label: 'Comp Off', key: 'compOff' }
-                                                ].map(q => (
-                                                    <div key={q.key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                        <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{q.label}</label>
-                                                        <input
-                                                            type="number"
-                                                            value={systemSettings.defaultLeaveQuotas?.[q.key] ?? 0}
-                                                            onChange={e => setSystemSettings({
-                                                                ...systemSettings,
-                                                                defaultLeaveQuotas: { ...systemSettings.defaultLeaveQuotas, [q.key]: parseInt(e.target.value) || 0 }
-                                                            })}
-                                                            style={{ ...inputStyle, width: '60px' }}
-                                                        />
+                                                {activeActionMenu === u._id && (
+                                                    <div className="panel" style={{
+                                                        position: 'absolute',
+                                                        top: '100%',
+                                                        right: '0',
+                                                        zIndex: 10,
+                                                        minWidth: '120px',
+                                                        boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+                                                        padding: '0.5rem 0'
+                                                    }}>
+                                                        <div
+                                                            className="dropdown-item"
+                                                            onClick={() => {
+                                                                setSelectedUser(u);
+                                                                setShowEditModal(true);
+                                                                setEditMode(false);
+                                                                setModalTab('Personal');
+                                                                setActiveActionMenu(null);
+                                                            }}
+                                                            style={{ padding: '0.5rem 1rem', cursor: 'pointer', fontSize: '0.85rem' }}
+                                                        >
+                                                            View
+                                                        </div>
+                                                        <div
+                                                            className="dropdown-item"
+                                                            onClick={() => {
+                                                                setSelectedUser(u);
+                                                                setShowEditModal(true);
+                                                                setEditMode(true);
+                                                                setModalTab('Personal');
+                                                                setActiveActionMenu(null);
+                                                            }}
+                                                            style={{ padding: '0.5rem 1rem', cursor: 'pointer', fontSize: '0.85rem' }}
+                                                        >
+                                                            Edit
+                                                        </div>
                                                     </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                        <button className="btn btn-primary" onClick={handleSaveSettings} style={{ marginTop: '1rem' }}>Save Settings</button>
-                                    </div>
-                                </div>
-                            )}
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
 
-                            {activeSubTab === 'Leave' && (
-                                <div className="panel">
-                                    <div className="panel-header">Active Employees</div>
-                                    <table className="data-table">
-                                        <thead>
-                                            <tr><th>NAME</th><th>EMAIL</th><th>DESIGNATION</th><th>DEPT</th><th>ROLE</th><th>ACTIONS</th></tr>
-                                        </thead>
-                                        <tbody>
-                                            {pagedUsers.map(u => (
-                                                <tr key={u._id}>
-                                                    <td>{u.name}</td><td>{u.email}</td><td>{u.designation}</td><td>{u.department}</td>
-                                                    <td><span className={`badge ${u.role.replace(' ', '-').toLowerCase()}`}>{u.role}</span></td>
-                                                    <td>
-                                                        <button className="btn btn-sm" style={{ background: 'var(--bg-main)', border: '1px solid var(--border-dark)' }} onClick={() => { setSelectedUser(u); setShowEditModal(true); }}>Edit</button>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            )}
+                    {activeSubTab === 'Approvals' && (
+                        <div className="panel">
+                            <div className="panel-header">Pending Approval Requests</div>
+                            {pendingUsers.length > 0 ? (
+                                <table className="data-table">
+                                    <thead>
+                                        <tr><th>NAME</th><th>EMAIL</th><th>DESIGNATION</th><th>DEPT</th><th>PHONE</th><th>ACTIONS</th></tr>
+                                    </thead>
+                                    <tbody>
+                                        {pendingUsers.map(u => (
+                                            <tr key={u._id}>
+                                                <td>{u.name}</td><td>{u.email}</td><td>{u.designation}</td><td>{u.department}</td><td>{u.phoneNumber}</td>
+                                                <td>
+                                                    <button className="btn btn-sm btn-primary" onClick={() => handleApproveUser(u._id)}>Approve</button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            ) : <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>No pending requests.</div>}
+                        </div>
+                    )}
 
-                            {activeSubTab === 'Approvals' && (
-                                <div className="panel">
-                                    <div className="panel-header">Pending Approval Requests</div>
-                                    {pendingUsers.length > 0 ? (
-                                        <table className="data-table">
-                                            <thead>
-                                                <tr><th>NAME</th><th>EMAIL</th><th>DESIGNATION</th><th>DEPT</th><th>PHONE</th><th>ACTIONS</th></tr>
-                                            </thead>
-                                            <tbody>
-                                                {pendingUsers.map(u => (
-                                                    <tr key={u._id}>
-                                                        <td>{u.name}</td><td>{u.email}</td><td>{u.designation}</td><td>{u.department}</td><td>{u.phoneNumber}</td>
-                                                        <td>
-                                                            <button className="btn btn-sm btn-primary" onClick={() => handleApproveUser(u._id)}>Approve</button>
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    ) : <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>No pending requests.</div>}
-                                </div>
-                            )}
-
-                            {activeSubTab === 'Configs' && (
-                                <div className="grid" style={{ gridTemplateColumns: '1fr 2fr', gap: '2rem' }}>
-                                    <div className="panel">
-                                        <div className="panel-header">Add New Config</div>
-                                        <form onSubmit={handleAddConfig} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                                            <select value={newConfig.type} onChange={e => setNewConfig({ ...newConfig, type: e.target.value })} style={inputStyle}>
-                                                <option value="Department">Department</option>
-                                                <option value="Designation">Designation</option>
-                                                <option value="Holiday">Holiday</option>
-                                            </select>
-                                            <input required type="text" placeholder="Name / Title" value={newConfig.name} onChange={e => setNewConfig({ ...newConfig, name: e.target.value })} style={inputStyle} />
-                                            {newConfig.type === 'Holiday' && (
-                                                <input required type="date" value={newConfig.date} onChange={e => setNewConfig({ ...newConfig, date: e.target.value })} style={inputStyle} />
-                                            )}
-                                            <button type="submit" className="btn btn-primary">Add Config</button>
-                                        </form>
-                                    </div>
-                                    <div className="panel">
-                                        <div className="panel-header">Existing Configurations</div>
-                                        <table className="data-table">
-                                            <thead><tr><th>TYPE</th><th>NAME</th><th>DATE</th><th>ACTIONS</th></tr></thead>
-                                            <tbody>
-                                                {orgConfigs.map(c => (
-                                                    <tr key={c._id}>
-                                                        <td>{c.type}</td><td>{c.name}</td><td>{c.date ? new Date(c.date).toLocaleDateString() : '-'}</td>
-                                                        <td><button className="btn btn-sm btn-danger" onClick={() => handleDeleteConfig(c._id)}>Delete</button></td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            )}
-
-                            {showEditModal && selectedUser && (
-                                <div style={modalOverlay}>
-                                    <div style={modalContent}>
-                                        <div className="panel-header" style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between' }}>
-                                            <span>Edit User: {selectedUser.name}</span>
-                                            <span style={{ cursor: 'pointer' }} onClick={() => setShowEditModal(false)}>✕</span>
-                                        </div>
-                                        <form onSubmit={handleUpdateUser} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
-                                            <div><label style={labelStyle}>Role</label><select value={selectedUser.role} onChange={e => setSelectedUser({ ...selectedUser, role: e.target.value })} style={inputStyle}><option value="Employee">Employee</option><option value="Admin">Admin</option><option value="Super Admin">Super Admin</option></select></div>
-                                            <div><label style={labelStyle}>Status</label><select value={selectedUser.isActive} onChange={e => setSelectedUser({ ...selectedUser, isActive: e.target.value === 'true' })} style={inputStyle}><option value="true">Active</option><option value="false">Inactive</option></select></div>
-
-                                            <div style={{ gridColumn: 'span 2' }}>
-                                                <h4 style={{ color: 'var(--primary)', borderBottom: '1px solid var(--border-dark)', paddingBottom: '0.5rem', marginTop: '0.5rem', fontSize: '0.9rem' }}>Work Schedule</h4>
-                                            </div>
-                                            <div><label style={labelStyle}>Shift Start (HH:mm)</label><input type="text" value={selectedUser.workingSchedule?.shiftStart || '11:00'} onChange={e => setSelectedUser({ ...selectedUser, workingSchedule: { ...selectedUser.workingSchedule, shiftStart: e.target.value } })} style={inputStyle} /></div>
-                                            <div><label style={labelStyle}>Shift End (HH:mm)</label><input type="text" value={selectedUser.workingSchedule?.shiftEnd || '18:00'} onChange={e => setSelectedUser({ ...selectedUser, workingSchedule: { ...selectedUser.workingSchedule, shiftEnd: e.target.value } })} style={inputStyle} /></div>
-                                            <div><label style={labelStyle}>Min Hours/Day</label><input type="number" value={selectedUser.workingSchedule?.minHours || 7} onChange={e => setSelectedUser({ ...selectedUser, workingSchedule: { ...selectedUser.workingSchedule, minHours: Number(e.target.value) } })} style={inputStyle} /></div>
-                                            <div><label style={labelStyle}>Week Offs (Comma sep.)</label><input type="text" value={selectedUser.workingSchedule?.weekOffs?.join(',') || 'Sunday'} onChange={e => setSelectedUser({ ...selectedUser, workingSchedule: { ...selectedUser.workingSchedule, weekOffs: e.target.value.split(',') } })} style={inputStyle} /></div>
-
-                                            <div style={{ gridColumn: 'span 2' }}>
-                                                <h4 style={{ color: 'var(--primary)', borderBottom: '1px solid var(--border-dark)', paddingBottom: '0.5rem', marginTop: '0.5rem', fontSize: '0.9rem' }}>Leave Quotas</h4>
-                                            </div>
-                                            <div><label style={labelStyle}>Paid Leaves</label><input type="number" value={selectedUser.leaveQuotas?.paid || 12} onChange={e => setSelectedUser({ ...selectedUser, leaveQuotas: { ...selectedUser.leaveQuotas, paid: Number(e.target.value) } })} style={inputStyle} /></div>
-                                            <div><label style={labelStyle}>Sick Leaves</label><input type="number" value={selectedUser.leaveQuotas?.sick || 6} onChange={e => setSelectedUser({ ...selectedUser, leaveQuotas: { ...selectedUser.leaveQuotas, sick: Number(e.target.value) } })} style={inputStyle} /></div>
-                                            <div><label style={labelStyle}>Casual Leaves</label><input type="number" value={selectedUser.leaveQuotas?.casual || 0} onChange={e => setSelectedUser({ ...selectedUser, leaveQuotas: { ...selectedUser.leaveQuotas, casual: Number(e.target.value) } })} style={inputStyle} /></div>
-                                            <div><label style={labelStyle}>Comp Offs</label><input type="number" value={selectedUser.leaveQuotas?.compOff || 0} onChange={e => setSelectedUser({ ...selectedUser, leaveQuotas: { ...selectedUser.leaveQuotas, compOff: Number(e.target.value) } })} style={inputStyle} /></div>
-
-                                            <div style={{ gridColumn: 'span 2' }}>
-                                                <h4 style={{ color: 'var(--primary)', borderBottom: '1px solid var(--border-dark)', paddingBottom: '0.5rem', marginTop: '0.5rem', fontSize: '0.9rem' }}>Finances & Salary</h4>
-                                            </div>
-                                            <div><label style={labelStyle}>Salary Type</label><select value={selectedUser.salaryDetails?.type || 'Fixed'} onChange={e => setSelectedUser({ ...selectedUser, salaryDetails: { ...selectedUser.salaryDetails, type: e.target.value } })} style={inputStyle}><option value="Fixed">Fixed</option><option value="Variable">Variable</option></select></div>
-                                            <div><label style={labelStyle}>Monthly Amount</label><input type="number" value={selectedUser.salaryDetails?.monthlyAmount || 0} onChange={e => setSelectedUser({ ...selectedUser, salaryDetails: { ...selectedUser.salaryDetails, monthlyAmount: Number(e.target.value) } })} style={inputStyle} /></div>
-
-                                            <div style={{ gridColumn: 'span 2', marginTop: '1rem' }}>
-                                                <button className="btn btn-primary" type="submit">Update User Profile</button>
-                                            </div>
-                                        </form>
-                                    </div>
-                                </div>
-                            )}
-
-                            {showAnnouncementModal && (
-                                <div style={modalOverlay}>
-                                    <div style={modalContent}>
-                                        <div className="panel-header" style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between' }}>
-                                            <span>Add New Announcement</span>
-                                            <span style={{ cursor: 'pointer' }} onClick={() => setShowAnnouncementModal(false)}>✕</span>
-                                        </div>
-                                        <form onSubmit={handleCreateAnnouncement} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                                            <div><label style={labelStyle}>Title</label><input type="text" value={newAnnouncement.title} onChange={e => setNewAnnouncement({ ...newAnnouncement, title: e.target.value })} style={inputStyle} placeholder="Important Update" required /></div>
-                                            <div><label style={labelStyle}>Content</label><textarea value={newAnnouncement.content} onChange={e => setNewAnnouncement({ ...newAnnouncement, content: e.target.value })} style={{ ...inputStyle, height: '100px', resize: 'vertical' }} placeholder="Detail your announcement here..." required /></div>
-                                            <div>
-                                                <label style={labelStyle}>Priority</label>
-                                                <select value={newAnnouncement.priority} onChange={e => setNewAnnouncement({ ...newAnnouncement, priority: e.target.value })} style={inputStyle}>
-                                                    <option value="Low">Low</option>
-                                                    <option value="Medium">Medium</option>
-                                                    <option value="High">High</option>
-                                                </select>
-                                            </div>
-                                            <div style={{ marginTop: '1rem' }}><button className="btn btn-primary" type="submit" style={{ width: '100%' }}>Create Announcement</button></div>
-                                        </form>
-                                    </div>
-                                </div>
-                            )}
-                        </>
-                    ) : (
-                        <div style={{ textAlign: 'center', paddingTop: '6rem', color: 'var(--text-muted)' }}>
-                            <Building2 size={64} style={{ margin: '0 auto 1.5rem', opacity: 0.2 }} />
-                            <h2 style={{ color: 'var(--text-main)' }}>Org Module</h2>
-                            <p style={{ marginTop: '0.5rem', maxWidth: '400px', margin: '0.5rem auto' }}>Your organizational info is managed by Admin.</p>
+                    {activeSubTab === 'Configs' && (
+                        <div className="grid" style={{ gridTemplateColumns: '1fr 2fr', gap: '2rem' }}>
+                            <div className="panel">
+                                <div className="panel-header">Add New Config</div>
+                                <form onSubmit={handleAddConfig} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                    <select value={newConfig.type} onChange={e => setNewConfig({ ...newConfig, type: e.target.value })} style={inputStyle}>
+                                        <option value="Department">Department</option>
+                                        <option value="Designation">Designation</option>
+                                        <option value="Holiday">Holiday</option>
+                                    </select>
+                                    <input required type="text" placeholder="Name / Title" value={newConfig.name} onChange={e => setNewConfig({ ...newConfig, name: e.target.value })} style={inputStyle} />
+                                    {newConfig.type === 'Holiday' && (
+                                        <input required type="date" value={newConfig.date} onChange={e => setNewConfig({ ...newConfig, date: e.target.value })} style={inputStyle} />
+                                    )}
+                                    <button type="submit" className="btn btn-primary">Add Config</button>
+                                </form>
+                            </div>
+                            <div className="panel">
+                                <div className="panel-header">Existing Configurations</div>
+                                <table className="data-table">
+                                    <thead><tr><th>TYPE</th><th>NAME</th><th>DATE</th><th>ACTIONS</th></tr></thead>
+                                    <tbody>
+                                        {orgConfigs.map(c => (
+                                            <tr key={c._id}>
+                                                <td>{c.type}</td><td>{c.name}</td><td>{c.date ? new Date(c.date).toLocaleDateString() : '-'}</td>
+                                                <td><button className="btn btn-sm btn-danger" onClick={() => handleDeleteConfig(c._id)}>Delete</button></td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     )}
                 </div>
@@ -2284,15 +2270,23 @@ export default function Dashboard({ user, onLogout, setUser }) {
             );
         }
 
-        if (['Engage', 'Performance'].includes(activeSidebar)) {
+        if (activeSidebar === 'Engage') {
             return (
-                <div className="page-content" style={{ textAlign: 'center', paddingTop: '6rem', color: 'var(--text-muted)' }}>
-                    <Building2 size={64} style={{ margin: '0 auto 1.5rem', opacity: 0.2 }} />
-                    <h2 style={{ color: 'var(--text-main)' }}>{activeSidebar} Module</h2>
-                    <p style={{ marginTop: '0.5rem', maxWidth: '400px', margin: '0.5rem auto' }}>
-                        This organizational system module is currently isolated in this dashboard view. More features can be configured here.
-                    </p>
-                </div>
+                <EngageTab
+                    user={user}
+                    engageTab={engageTab} setEngageTab={setEngageTab}
+                    orgActionTab={orgActionTab} setOrgActionTab={setOrgActionTab}
+                    postText={postText} setPostText={setPostText}
+                    poll={poll} setPoll={setPoll}
+                    praise={praise} setPraise={setPraise}
+                    allUsers={allUsers}
+                    setShowAnnouncementModal={setShowAnnouncementModal}
+                    socialFeed={socialFeed}
+                    showAlert={showAlert}
+                    fetchPublicData={fetchPublicData}
+                    isLightMode={isLightMode}
+                    dashData={dashData}
+                />
             );
         }
 
@@ -2729,6 +2723,244 @@ export default function Dashboard({ user, onLogout, setUser }) {
         );
     };
 
+    const renderEditModal = () => {
+        if (!showEditModal || !selectedUser) return null;
+        const u = selectedUser;
+        const isAdmin = user?.role === 'Admin' || user?.role === 'Super Admin';
+
+        return (
+            <div style={{ ...modalOverlay, left: '260px', top: '60px', width: 'calc(100vw - 260px)', height: 'calc(100vh - 60px)', padding: 0, background: 'transparent' }}>
+                <div style={{ ...modalContent, width: '100%', height: '100%', maxWidth: 'none', maxHeight: 'none', borderRadius: 0, padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', borderLeft: '1px solid var(--border-dark)', boxShadow: 'none' }}>
+                    {/* Header */}
+                    <div style={{ padding: '1.5rem 2rem', background: 'var(--primary)', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+                            <div className="avatar" style={{ width: '50px', height: '50px', fontSize: '1.25rem', background: 'rgba(255,255,255,0.2)', color: 'white', border: '2px solid rgba(255,255,255,0.4)' }}>
+                                {u.name?.substring(0, 1).toUpperCase()}
+                            </div>
+                            <div>
+                                <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '700' }}>{u.name}</h2>
+                                <p style={{ margin: 0, fontSize: '0.85rem', opacity: 0.9 }}>{u.designation} | {u.department}</p>
+                            </div>
+                        </div>
+                        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                            {isAdmin && (
+                                <button
+                                    className="btn btn-sm"
+                                    style={{ background: editMode ? '#ffffff' : 'rgba(255,255,255,0.2)', color: editMode ? 'var(--primary)' : 'white', border: 'none', fontWeight: 'bold' }}
+                                    onClick={() => setEditMode(!editMode)}
+                                >
+                                    {editMode ? 'Viewing Mode' : 'Edit Mode'}
+                                </button>
+                            )}
+                            <span style={{ cursor: 'pointer', fontSize: '1.5rem' }} onClick={() => setShowEditModal(false)}>✕</span>
+                        </div>
+                    </div>
+
+                    {/* Tabs */}
+                    <div style={{ display: 'flex', gap: '2rem', padding: '0 2rem', borderBottom: '1px solid var(--border-dark)', background: 'var(--bg-panel)' }}>
+                        {['Personal', 'Work', 'Salary', 'Leaves'].map(t => (
+                            <div
+                                key={t}
+                                onClick={() => setModalTab(t)}
+                                style={{
+                                    padding: '1rem 0',
+                                    fontSize: '0.9rem',
+                                    fontWeight: '600',
+                                    color: modalTab === t ? 'var(--primary)' : 'var(--text-muted)',
+                                    borderBottom: modalTab === t ? '2px solid var(--primary)' : '2px solid transparent',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s'
+                                }}
+                            >
+                                {t}
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Content */}
+                    <div style={{ padding: '2rem', flex: 1, overflowY: 'auto' }}>
+                        {modalTab === 'Personal' && (
+                            <div className="grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                                <div>
+                                    <label style={labelStyle}>Full Name</label>
+                                    {editMode ? (
+                                        <input type="text" value={u.name} onChange={e => setSelectedUser({ ...u, name: e.target.value })} style={inputStyle} />
+                                    ) : <div style={{ fontWeight: '500' }}>{u.name}</div>}
+                                </div>
+                                <div>
+                                    <label style={labelStyle}>Email Address</label>
+                                    <div style={{ fontWeight: '500' }}>{u.email}</div>
+                                </div>
+                                <div>
+                                    <label style={labelStyle}>Phone Number</label>
+                                    {editMode ? (
+                                        <input type="text" value={u.phoneNumber || ''} onChange={e => setSelectedUser({ ...u, phoneNumber: e.target.value })} style={inputStyle} />
+                                    ) : <div style={{ fontWeight: '500' }}>{u.phoneNumber || 'N/A'}</div>}
+                                </div>
+                                <div>
+                                    <label style={labelStyle}>Gender</label>
+                                    {editMode ? (
+                                        <select value={u.gender || ''} onChange={e => setSelectedUser({ ...u, gender: e.target.value })} style={inputStyle}>
+                                            <option value="">Select Gender</option>
+                                            <option value="Male">Male</option>
+                                            <option value="Female">Female</option>
+                                            <option value="Other">Other</option>
+                                        </select>
+                                    ) : <div style={{ fontWeight: '500' }}>{u.gender || 'N/A'}</div>}
+                                </div>
+                                <div>
+                                    <label style={labelStyle}>Date of Birth</label>
+                                    {editMode ? (
+                                        <input type="date" value={u.dob ? u.dob.split('T')[0] : ''} onChange={e => setSelectedUser({ ...u, dob: e.target.value })} style={inputStyle} />
+                                    ) : <div style={{ fontWeight: '500' }}>{u.dob ? new Date(u.dob).toLocaleDateString() : 'N/A'}</div>}
+                                </div>
+                                <div>
+                                    <label style={labelStyle}>Blood Group</label>
+                                    {editMode ? (
+                                        <input type="text" value={u.bloodGroup || ''} onChange={e => setSelectedUser({ ...u, bloodGroup: e.target.value })} style={inputStyle} />
+                                    ) : <div style={{ fontWeight: '500' }}>{u.bloodGroup || 'N/A'}</div>}
+                                </div>
+                            </div>
+                        )}
+
+                        {modalTab === 'Work' && (
+                            <div className="grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                                <div>
+                                    <label style={labelStyle}>Department</label>
+                                    {editMode ? (
+                                        <input type="text" value={u.department || ''} onChange={e => setSelectedUser({ ...u, department: e.target.value })} style={inputStyle} />
+                                    ) : <div style={{ fontWeight: '500' }}>{u.department}</div>}
+                                </div>
+                                <div>
+                                    <label style={labelStyle}>Designation</label>
+                                    {editMode ? (
+                                        <input type="text" value={u.designation || ''} onChange={e => setSelectedUser({ ...u, designation: e.target.value })} style={inputStyle} />
+                                    ) : <div style={{ fontWeight: '500' }}>{u.designation}</div>}
+                                </div>
+                                <div>
+                                    <label style={labelStyle}>Joining Date</label>
+                                    {editMode ? (
+                                        <input type="date" value={u.joiningDate ? u.joiningDate.split('T')[0] : ''} onChange={e => setSelectedUser({ ...u, joiningDate: e.target.value })} style={inputStyle} />
+                                    ) : <div style={{ fontWeight: '500' }}>{u.joiningDate ? new Date(u.joiningDate).toLocaleDateString() : 'N/A'}</div>}
+                                </div>
+                                <div>
+                                    <label style={labelStyle}>Shift Timings</label>
+                                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                        {editMode ? (
+                                            <>
+                                                <input type="time" value={u.workingSchedule?.shiftStart || '11:00'} onChange={e => setSelectedUser({ ...u, workingSchedule: { ...u.workingSchedule, shiftStart: e.target.value } })} style={inputStyle} />
+                                                <span style={{ color: 'var(--text-muted)' }}>to</span>
+                                                <input type="time" value={u.workingSchedule?.shiftEnd || '07:00 PM'} onChange={e => setSelectedUser({ ...u, workingSchedule: { ...u.workingSchedule, shiftEnd: e.target.value } })} style={inputStyle} />
+                                            </>
+                                        ) : <div style={{ fontWeight: '500' }}>{u.workingSchedule?.shiftStart || '11:00'} to {u.workingSchedule?.shiftEnd || '07:00 PM'}</div>}
+                                    </div>
+                                </div>
+                                <div>
+                                    <label style={labelStyle}>Min. Working Hours / Day</label>
+                                    {editMode ? (
+                                        <input type="number" step="0.5" value={u.workingSchedule?.minHours || 7} onChange={e => setSelectedUser({ ...u, workingSchedule: { ...u.workingSchedule, minHours: parseFloat(e.target.value) } })} style={inputStyle} />
+                                    ) : <div style={{ fontWeight: '500' }}>{u.workingSchedule?.minHours || 7} Hours</div>}
+                                </div>
+                                <div>
+                                    <label style={labelStyle}>Weekly Offs</label>
+                                    {editMode ? (
+                                        <input type="text" value={u.workingSchedule?.weekOffs?.join(', ') || 'Sunday'} onChange={e => setSelectedUser({ ...u, workingSchedule: { ...u.workingSchedule, weekOffs: e.target.value.split(',').map(s => s.trim()) } })} style={inputStyle} placeholder="Sunday, Saturday" />
+                                    ) : <div style={{ fontWeight: '500' }}>{u.workingSchedule?.weekOffs?.join(', ') || 'Sunday'}</div>}
+                                </div>
+                            </div>
+                        )}
+
+                        {modalTab === 'Salary' && (
+                            <div className="grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                                <div>
+                                    <label style={labelStyle}>Salary Type</label>
+                                    {editMode ? (
+                                        <select value={u.salaryDetails?.type || 'Fixed'} onChange={e => setSelectedUser({ ...u, salaryDetails: { ...u.salaryDetails, type: e.target.value } })} style={inputStyle}>
+                                            <option value="Fixed">Fixed</option>
+                                            <option value="Variable">Variable</option>
+                                        </select>
+                                    ) : <div style={{ fontWeight: '500' }}>{u.salaryDetails?.type || 'Fixed'}</div>}
+                                </div>
+                                <div>
+                                    <label style={labelStyle}>Monthly Amount</label>
+                                    {editMode ? (
+                                        <input type="number" value={u.salaryDetails?.monthlyAmount || 0} onChange={e => setSelectedUser({ ...u, salaryDetails: { ...u.salaryDetails, monthlyAmount: parseFloat(e.target.value) } })} style={inputStyle} />
+                                    ) : <div style={{ fontWeight: '600', color: 'var(--success)' }}>${u.salaryDetails?.monthlyAmount || 0}</div>}
+                                </div>
+                                <div style={{ gridColumn: 'span 2', borderTop: '1px solid var(--border-dark)', paddingTop: '1.5rem', marginTop: '0.5rem' }}>
+                                    <div style={{ fontSize: '0.85rem', fontWeight: '700', marginBottom: '1rem' }}>Salary Breakdown</div>
+                                    <div className="grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                        <div>
+                                            <label style={labelStyle}>Basic Salary</label>
+                                            {editMode ? (
+                                                <input type="number" value={u.salary?.basic || 0} onChange={e => setSelectedUser({ ...u, salary: { ...u.salary, basic: parseFloat(e.target.value) } })} style={inputStyle} />
+                                            ) : <div style={{ fontWeight: '500' }}>${u.salary?.basic || 0}</div>}
+                                        </div>
+                                        <div>
+                                            <label style={labelStyle}>HRA</label>
+                                            {editMode ? (
+                                                <input type="number" value={u.salary?.hra || 0} onChange={e => setSelectedUser({ ...u, salary: { ...u.salary, hra: parseFloat(e.target.value) } })} style={inputStyle} />
+                                            ) : <div style={{ fontWeight: '500' }}>${u.salary?.hra || 0}</div>}
+                                        </div>
+                                        <div>
+                                            <label style={labelStyle}>Allowances</label>
+                                            {editMode ? (
+                                                <input type="number" value={u.salary?.allowance || 0} onChange={e => setSelectedUser({ ...u, salary: { ...u.salary, allowance: parseFloat(e.target.value) } })} style={inputStyle} />
+                                            ) : <div style={{ fontWeight: '500' }}>${u.salary?.allowance || 0}</div>}
+                                        </div>
+                                        <div>
+                                            <label style={labelStyle}>Deductions</label>
+                                            {editMode ? (
+                                                <input type="number" value={u.salary?.deductions || 0} onChange={e => setSelectedUser({ ...u, salary: { ...u.salary, deductions: parseFloat(e.target.value) } })} style={inputStyle} />
+                                            ) : <div style={{ fontWeight: '500', color: '#ff4757' }}>-${u.salary?.deductions || 0}</div>}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {modalTab === 'Leaves' && (
+                            <div className="grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                                <div>
+                                    <label style={labelStyle}>Paid Leave Quota</label>
+                                    {editMode ? (
+                                        <input type="number" value={u.leaveQuotas?.paid || 0} onChange={e => setSelectedUser({ ...u, leaveQuotas: { ...u.leaveQuotas, paid: parseInt(e.target.value) } })} style={inputStyle} />
+                                    ) : <div style={{ fontWeight: '500' }}>{u.leaveQuotas?.paid || 0} Days</div>}
+                                </div>
+                                <div>
+                                    <label style={labelStyle}>Sick Leave Quota</label>
+                                    {editMode ? (
+                                        <input type="number" value={u.leaveQuotas?.sick || 0} onChange={e => setSelectedUser({ ...u, leaveQuotas: { ...u.leaveQuotas, sick: parseInt(e.target.value) } })} style={inputStyle} />
+                                    ) : <div style={{ fontWeight: '500' }}>{u.leaveQuotas?.sick || 0} Days</div>}
+                                </div>
+                                <div>
+                                    <label style={labelStyle}>Casual Leave Quota</label>
+                                    {editMode ? (
+                                        <input type="number" value={u.leaveQuotas?.casual || 0} onChange={e => setSelectedUser({ ...u, leaveQuotas: { ...u.leaveQuotas, casual: parseInt(e.target.value) } })} style={inputStyle} />
+                                    ) : <div style={{ fontWeight: '500' }}>{u.leaveQuotas?.casual || 0} Days</div>}
+                                </div>
+                                <div>
+                                    <label style={labelStyle}>Comp Off Quota</label>
+                                    {editMode ? (
+                                        <input type="number" value={u.leaveQuotas?.compOff || 0} onChange={e => setSelectedUser({ ...u, leaveQuotas: { ...u.leaveQuotas, compOff: parseInt(e.target.value) } })} style={inputStyle} />
+                                    ) : <div style={{ fontWeight: '500' }}>{u.leaveQuotas?.compOff || 0} Days</div>}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Footer */}
+                    <div style={{ padding: '1.5rem 2rem', borderTop: '1px solid var(--border-dark)', background: 'var(--bg-main)', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+                        <button className="btn btn-secondary" onClick={() => setShowEditModal(false)}>Close</button>
+                        {editMode && (
+                            <button className="btn btn-primary" onClick={handleUpdateUser}>Update Employee</button>
+                        )}
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
     const renderAttendancePolicyModal = () => {
         if (!showAttendancePolicyModal) return null;
         return (
@@ -2874,14 +3106,22 @@ export default function Dashboard({ user, onLogout, setUser }) {
                     <span style={{ color: 'var(--primary)' }}>TP</span>&nbsp; Interns
                 </div>
                 <nav className="sidebar-nav">
-                    {sidebarItems.filter(item => item.name !== 'My Team' || teammates.length > 0).map(item => (
+                    {sidebarItems.filter(item => {
+                        if (item.name === 'My Team' && teammates.length === 0) return false;
+                        if (item.name === 'Admin' && !(user?.role === 'Admin' || user?.role === 'Super Admin')) return false;
+                        return true;
+                    }).map(item => (
                         <div
                             key={item.name}
                             className={`nav-item ${activeSidebar === item.name ? 'active' : ''}`}
                             onClick={() => {
                                 setActiveSidebar(item.name);
+                                if (item.name === 'Home') setHomeSubTab('Dashboard');
                                 if (item.name === 'Me') setActiveSubTab('Attendance');
                                 if (item.name === 'My Team') setActiveSubTab('TEAM MEMBERS');
+                                if (item.name === 'Org') setActiveSubTab('OrgTree');
+                                if (item.name === 'My Finances') setActiveSubTab('Leave');
+                                if (item.name === 'Admin') setActiveSubTab('Leave');
                             }}
                         >
                             {item.icon}
@@ -2962,6 +3202,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
             {renderPublicProfileModal()}
             {renderAnnouncementModal()}
             {renderAttendancePolicyModal()}
+            {renderEditModal()}
 
             {
                 showClockInModal && (
