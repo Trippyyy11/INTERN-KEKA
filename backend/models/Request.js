@@ -5,11 +5,17 @@ const requestSchema = new mongoose.Schema(
         user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
         type: {
             type: String,
-            enum: ['Leave Application', 'Work From Home', 'Half Day'],
+            enum: ['Leave Application', 'Work From Home', 'Half Day', 'Comp Off', 'Leave Cancellation'],
             required: true
+        },
+        leaveType: {
+            type: String,
+            enum: ['Paid', 'Sick', 'Casual', 'Unpaid']
         },
         startDate: { type: Date, required: true },
         endDate: { type: Date, required: true },
+        associatedLeave: { type: mongoose.Schema.Types.ObjectId, ref: 'Leave' },
+        cancelDates: [{ type: Date }],
         message: { type: String },
         recipients: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
         status: {

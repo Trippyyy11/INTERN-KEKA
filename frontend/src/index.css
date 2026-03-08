@@ -9,7 +9,7 @@
   --bg-sidebar: #09090b;
 
   /* Dark Mode Matte Palette */
-  --bg-main: #121212;
+  --bg-main: rgba(18, 18, 18, 0.9);
   --bg-panel: #1e1e1e;
   --bg-panel-hover: #262626;
   --border-dark: #2d2d2d;
@@ -70,7 +70,7 @@
 
 /* Light Mode Overrides (Inter Tight Theme) */
 body.light-theme {
-  --bg-main: #f8fafc;
+  --bg-main: rgba(248, 250, 252, 0.82);
   --bg-panel: #ffffff;
   --bg-sidebar: #ffffff;
   --border-dark: #e2e8f0;
@@ -231,7 +231,7 @@ ul {
   display: flex;
   height: 100vh;
   overflow: hidden;
-  background-color: var(--bg-main);
+  background-color: transparent;
 }
 
 .sidebar {
@@ -544,18 +544,7 @@ body.light-theme .panel-actions {
   justify-content: center;
 }
 
-.welcome-banner::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  /* Simulating a painting/wave texture */
-  background-image: repeating-radial-gradient(circle at 50% 150%, rgba(255, 171, 0, 0.15) 0, rgba(255, 171, 0, 0.15) 10px, transparent 10px, transparent 20px);
-  opacity: 0.5;
-  pointer-events: none;
-}
+
 
 .welcome-banner h1 {
   position: relative;

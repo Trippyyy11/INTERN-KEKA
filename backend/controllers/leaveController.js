@@ -83,19 +83,31 @@ export const getLeaveStats = async (req, res) => {
             if (leave.status === 'Approved') {
                 const start = new Date(leave.startDate);
                 const end = new Date(leave.endDate);
-                const days = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
 
-                if (summary[leave.type]) {
-                    summary[leave.type].consumed += days;
+                let leaveDays = 0;
+                let currentDate = new Date(start);
+
+                while (currentDate <= end) {
+                    const dateStr = currentDate.toISOString().split('T')[0];
+                    const isCancelled = leave.cancelledDates && leave.cancelledDates.some(d => new Date(d).toISOString().split('T')[0] === dateStr);
+
+                    if (!isCancelled) {
+                        leaveDays++;
+
+                        // Monthly distribution
+                        monthlyStats[currentDate.getMonth()] += 1;
+
+                        // Weekly distribution
+                        let day = currentDate.getDay(); // 0 is Sun
+                        let kekaDayIndex = day === 0 ? 6 : day - 1; // Mon=0, Sun=6
+                        weeklyPattern[kekaDayIndex] += 1;
+                    }
+                    currentDate.setDate(currentDate.getDate() + 1);
                 }
 
-                // Monthly distribution
-                monthlyStats[start.getMonth()] += days;
-
-                // Weekly distribution (simplified: use start date)
-                let day = start.getDay(); // 0 is Sun
-                let kekaDayIndex = day === 0 ? 6 : day - 1; // Mon=0, Sun=6
-                weeklyPattern[kekaDayIndex] += days;
+                if (summary[leave.type]) {
+                    summary[leave.type].consumed += leaveDays;
+                }
             }
         });
 

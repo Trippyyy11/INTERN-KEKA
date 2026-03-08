@@ -59,7 +59,34 @@ export default function HomeTab({
 
             {homeSubTab === 'Dashboard' && (
                 <>
-                    <div className="welcome-banner" style={{ position: 'relative', minHeight: '240px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                    {/* Welcome Banner */}
+                    <div className="welcome-banner" style={{ position: 'relative', overflow: 'hidden' }}>
+                        {/* Abstract Background Decoration */}
+                        <svg style={{ position: 'absolute', top: 0, right: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 1 }} preserveAspectRatio="xMaxYMin slice" viewBox="0 0 1000 300">
+                            <defs>
+                                <linearGradient id="orgGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stopColor={isLightMode ? "#bfdbfe" : "#1e40af"} stopOpacity={isLightMode ? "0.6" : "0.5"} />
+                                    <stop offset="100%" stopColor={isLightMode ? "#eff6ff" : "#1e1b4b"} stopOpacity="0" />
+                                </linearGradient>
+                                <linearGradient id="orgGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stopColor={isLightMode ? "#93c5fd" : "#2563eb"} stopOpacity={isLightMode ? "0.7" : "0.6"} />
+                                    <stop offset="100%" stopColor={isLightMode ? "#dbeafe" : "#1e3a8a"} stopOpacity="0" />
+                                </linearGradient>
+                                <linearGradient id="orgGrad3" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stopColor={isLightMode ? "#60a5fa" : "#3b82f6"} stopOpacity={isLightMode ? "0.8" : "0.7"} />
+                                    <stop offset="100%" stopColor={isLightMode ? "#93c5fd" : "#2563eb"} stopOpacity="0" />
+                                </linearGradient>
+                            </defs>
+                            <path d="M1000,0 L1000,300 C800,250 700,350 500,250 C300,150 350,50 150,0 Z" fill="url(#orgGrad1)" />
+                            <path d="M1000,0 L1000,200 C850,220 750,120 600,70 C450,20 420,0 380,0 Z" fill="url(#orgGrad2)" />
+                            <path d="M1000,0 L1000,100 C950,120 850,50 780,0 Z" fill="url(#orgGrad3)" />
+
+                            {/* Decorative lines */}
+                            <path d="M1000,50 C950,70 850,10 780,-30" stroke={isLightMode ? "rgba(59,130,246,0.3)" : "rgba(255,255,255,0.2)"} strokeWidth="1.5" fill="none" />
+                            <path d="M1000,80 C930,120 820,30 740,-30" stroke={isLightMode ? "rgba(59,130,246,0.2)" : "rgba(255,255,255,0.15)"} strokeWidth="1" fill="none" />
+                            <path d="M1000,120 C900,160 780,50 690,-30" stroke={isLightMode ? "rgba(59,130,246,0.15)" : "rgba(255,255,255,0.1)"} strokeWidth="1" strokeDasharray="5,5" fill="none" />
+                        </svg>
+
                         <div style={{ position: 'relative', zIndex: 3 }}>
                             <h1>Welcome {user?.name}!</h1>
                             <p style={{ marginTop: '0.5rem', opacity: 0.8, fontSize: '0.9rem' }}>Have a great day at Teaching Pariksha!</p>

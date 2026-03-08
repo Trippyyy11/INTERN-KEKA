@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import api from '../api/axios';
 import {
     Home,
@@ -45,6 +45,8 @@ export default function Dashboard({ user, onLogout, setUser }) {
     };
     const [isLightMode, setIsLightMode] = useState(getInitialTheme());
     const [showProfileMenu, setShowProfileMenu] = useState(false);
+    const vantaRef = useRef(null);
+    const [vantaEffect, setVantaEffect] = useState(null);
 
     // Home states
     const [homeTab, setHomeTab] = useState('Organization');
@@ -76,6 +78,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
 
     // Request states
     const [requestType, setRequestType] = useState('');
+    const [requestLeaveType, setRequestLeaveType] = useState('');
     const [requestStartDate, setRequestStartDate] = useState('');
     const [requestEndDate, setRequestEndDate] = useState('');
     const [requestMessage, setRequestMessage] = useState('');
@@ -86,6 +89,8 @@ export default function Dashboard({ user, onLogout, setUser }) {
     const [inboxRequests, setInboxRequests] = useState([]);
     const [requestActionNote, setRequestActionNote] = useState('');
     const [requestSubmitting, setRequestSubmitting] = useState(false);
+    const [selectedLeaveForCancel, setSelectedLeaveForCancel] = useState(null);
+    const [datesToCancel, setDatesToCancel] = useState([]);
 
     const [expandedRequests, setExpandedRequests] = useState([]);
 
@@ -146,6 +151,33 @@ export default function Dashboard({ user, onLogout, setUser }) {
         fetchPublicData();
         return () => clearInterval(timer);
     }, [user]);
+
+    useEffect(() => {
+        if (vantaEffect) vantaEffect.destroy();
+
+        if (window.VANTA && vantaRef.current) {
+            setVantaEffect(window.VANTA.DOTS({
+                el: vantaRef.current,
+                mouseControls: true,
+                touchControls: true,
+                gyroControls: false,
+                minHeight: 200.00,
+                minWidth: 200.00,
+                scale: 1.00,
+                scaleMobile: 1.00,
+                color: isLightMode ? 0x2563eb : 0x3b82f6, // Deeper blue for better contrast
+                color2: isLightMode ? 0x3b82f6 : 0x1e293b,
+                backgroundColor: isLightMode ? 0xf8fafc : 0x121212,
+                size: isLightMode ? 1.50 : 1.50,
+                spacing: 35.00,
+                showLines: false
+            }));
+        }
+
+        return () => {
+            if (vantaEffect) vantaEffect.destroy();
+        };
+    }, [isLightMode]);
 
     // Apply light mode class to body based on state
     useEffect(() => {
@@ -235,25 +267,31 @@ export default function Dashboard({ user, onLogout, setUser }) {
 
 
     const submitRequest = async () => {
-        if (!requestType || !requestStartDate || !requestEndDate || requestRecipients.length === 0) {
-            setCustomAlert({ message: 'Please fill in all required fields (type, dates, and at least one recipient).', type: 'info' });
+        if (!requestType || (requestType === 'Leave Application' && !requestLeaveType) || !requestStartDate || !requestEndDate || requestRecipients.length === 0) {
+            setCustomAlert({ message: 'Please fill in all required fields.', type: 'info' });
             return;
         }
         setRequestSubmitting(true);
         try {
             await api.post('/requests', {
                 type: requestType,
-                startDate: requestStartDate,
-                endDate: requestEndDate,
+                leaveType: requestType === 'Leave Application' ? requestLeaveType : undefined,
+                startDate: requestType === 'Leave Cancellation' && selectedLeaveForCancel ? selectedLeaveForCancel.startDate : requestStartDate,
+                endDate: requestType === 'Leave Cancellation' && selectedLeaveForCancel ? selectedLeaveForCancel.endDate : requestEndDate,
+                associatedLeave: requestType === 'Leave Cancellation' ? selectedLeaveForCancel?._id : undefined,
+                cancelDates: requestType === 'Leave Cancellation' ? datesToCancel : undefined,
                 message: requestMessage,
                 recipients: requestRecipients.map(r => r._id)
             });
             setCustomAlert({ message: 'Request submitted successfully!', type: 'info' });
             setRequestType('');
+            setRequestLeaveType('');
             setRequestStartDate('');
             setRequestEndDate('');
             setRequestMessage('');
             setRequestRecipients([]);
+            setSelectedLeaveForCancel(null);
+            setDatesToCancel([]);
             fetchMyRequests();
         } catch (err) {
             setCustomAlert({ message: err.response?.data?.message || 'Failed to submit request.', type: 'info' });
@@ -1363,10 +1401,106 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                                 <option value="Leave Application">🏖️ Leave Application</option>
                                                 <option value="Work From Home">🏠 Work From Home</option>
                                                 <option value="Half Day">⏰ Half Day</option>
+                                                <option value="Comp Off">🔄 Comp Off</option>
+                                                <option value="Leave Cancellation">🚫 Leave Cancellation</option>
                                             </select>
                                             <ChevronDown size={16} color="var(--text-muted)" style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
                                         </div>
                                     </div>
+
+                                    {requestType === 'Leave Application' && (
+                                        <div style={{ marginBottom: '1.5rem' }}>
+                                            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Leave Type *</label>
+                                            <div style={{ position: 'relative' }}>
+                                                <select
+                                                    value={requestLeaveType}
+                                                    onChange={e => setRequestLeaveType(e.target.value)}
+                                                    style={{
+                                                        width: '100%',
+                                                        padding: '0.85rem 1rem',
+                                                        borderRadius: '12px',
+                                                        border: '1px solid var(--border-dark)',
+                                                        background: 'var(--bg-main)',
+                                                        color: 'var(--text-main)',
+                                                        fontSize: '0.9rem',
+                                                        fontWeight: '500',
+                                                        appearance: 'none',
+                                                        cursor: 'pointer',
+                                                        outline: 'none',
+                                                        transition: 'border-color 0.2s'
+                                                    }}
+                                                >
+                                                    <option value="">Select leave type...</option>
+                                                    <option value="Paid">Paid</option>
+                                                    <option value="Sick">Sick</option>
+                                                    <option value="Casual">Casual</option>
+                                                    <option value="Unpaid">Unpaid</option>
+                                                </select>
+                                                <ChevronDown size={16} color="var(--text-muted)" style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {requestType === 'Leave Cancellation' && (
+                                        <div style={{ marginBottom: '1.5rem' }}>
+                                            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Select Approved Leave *</label>
+                                            <select
+                                                value={selectedLeaveForCancel?._id || ''}
+                                                onChange={e => {
+                                                    const leave = myLeaves.find(l => l._id === e.target.value);
+                                                    setSelectedLeaveForCancel(leave);
+                                                    setDatesToCancel([]);
+                                                }}
+                                                style={{ width: '100%', padding: '0.85rem 1rem', borderRadius: '12px', border: '1px solid var(--border-dark)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '0.9rem', marginBottom: '1rem' }}
+                                            >
+                                                <option value="">Select leave to cancel...</option>
+                                                {myLeaves.filter(l => l.status === 'Approved' && new Date(l.endDate) >= new Date()).map(l => (
+                                                    <option key={l._id} value={l._id}>
+                                                        {l.type} ({new Date(l.startDate).toLocaleDateString()} - {new Date(l.endDate).toLocaleDateString()})
+                                                    </option>
+                                                ))}
+                                            </select>
+
+                                            {selectedLeaveForCancel && (
+                                                <div>
+                                                    <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Select dates to cancel:</label>
+                                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '0.5rem' }}>
+                                                        {(() => {
+                                                            const dates = [];
+                                                            let curr = new Date(selectedLeaveForCancel.startDate);
+                                                            const end = new Date(selectedLeaveForCancel.endDate);
+                                                            while (curr <= end) {
+                                                                dates.push(new Date(curr));
+                                                                curr.setDate(curr.getDate() + 1);
+                                                            }
+                                                            return dates.map(date => {
+                                                                const dateStr = date.toISOString().split('T')[0];
+                                                                const isAlreadyCancelled = selectedLeaveForCancel.cancelledDates?.some(d => new Date(d).toISOString().split('T')[0] === dateStr);
+                                                                return (
+                                                                    <label key={dateStr} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: isAlreadyCancelled ? 'var(--text-muted)' : 'var(--text-main)', cursor: isAlreadyCancelled ? 'not-allowed' : 'pointer' }}>
+                                                                        <input
+                                                                            type="checkbox"
+                                                                            disabled={isAlreadyCancelled}
+                                                                            checked={datesToCancel.includes(dateStr) || isAlreadyCancelled}
+                                                                            onChange={() => {
+                                                                                if (datesToCancel.includes(dateStr)) {
+                                                                                    setDatesToCancel(datesToCancel.filter(d => d !== dateStr));
+                                                                                } else {
+                                                                                    setDatesToCancel([...datesToCancel, dateStr]);
+                                                                                }
+                                                                            }}
+                                                                        />
+                                                                        {date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                                                        {isAlreadyCancelled && <span style={{ fontSize: '0.7rem', color: 'var(--danger)' }}>(Cancelled)</span>}
+                                                                    </label>
+                                                                );
+                                                            });
+                                                        })()}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
 
                                     {/* Recipients */}
                                     <div style={{ marginBottom: '1.5rem' }}>
@@ -2428,10 +2562,13 @@ export default function Dashboard({ user, onLogout, setUser }) {
                 return current >= start && current <= end && l.status === 'Approved';
             });
             if (leave) {
-                status = 'leave';
-                label = 'LEAVE';
-                color = '#fbbf24';
-                bgColor = 'rgba(251, 191, 36, 0.15)';
+                const isCancelled = leave.cancelledDates?.some(d => new Date(d).toLocaleDateString('en-CA') === dateStr);
+                if (!isCancelled) {
+                    status = 'leave';
+                    label = leave.type ? `LEAVE: ${leave.type.toUpperCase()}` : 'LEAVE';
+                    color = '#00f2fe'; // Neon cyan/aquamarine
+                    bgColor = 'rgba(0, 242, 254, 0.15)';
+                }
             }
 
             const holiday = dashData.holidays?.find(h => new Date(h.date).toLocaleDateString('en-CA') === dateStr);
@@ -2870,6 +3007,17 @@ export default function Dashboard({ user, onLogout, setUser }) {
 
     return (
         <div className="dashboard-layout">
+            <div ref={vantaRef} style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                zIndex: 0,
+                opacity: 1, // Always visible
+                pointerEvents: 'none',
+                transition: 'opacity 0.5s ease'
+            }}></div>
             <aside className="sidebar">
                 <div className="sidebar-brand">
                     <span style={{ color: 'var(--primary)' }}>TP</span>&nbsp; Interns

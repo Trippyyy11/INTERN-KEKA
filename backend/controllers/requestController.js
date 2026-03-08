@@ -1,12 +1,13 @@
 import Request from '../models/Request.js';
 import User from '../models/User.js';
+import Leave from '../models/Leave.js';
 
 // @desc    Create a new request (Leave/WFH/Half Day)
 // @route   POST /api/requests
 // @access  Private
 export const createRequest = async (req, res) => {
     try {
-        const { type, startDate, endDate, message, recipients } = req.body;
+        const { type, leaveType, startDate, endDate, message, recipients, associatedLeave, cancelDates } = req.body;
 
         if (!type || !startDate || !endDate || !recipients || recipients.length === 0) {
             return res.status(400).json({ message: 'Type, dates, and at least one recipient are required.' });
@@ -15,8 +16,11 @@ export const createRequest = async (req, res) => {
         const request = await Request.create({
             user: req.user._id,
             type,
+            leaveType,
             startDate,
             endDate,
+            associatedLeave,
+            cancelDates,
             message,
             recipients,
             status: 'Pending'
@@ -90,6 +94,38 @@ export const updateRequestStatus = async (req, res) => {
             request.actionNote = actionNote;
         }
         const updated = await request.save();
+
+        if (status === 'Approved' && (updated.type === 'Leave Application' || updated.type === 'Comp Off')) {
+            await Leave.create({
+                user: updated.user,
+                type: updated.type === 'Comp Off' ? 'Comp Off' : (updated.leaveType || 'Casual'),
+                startDate: updated.startDate,
+                endDate: updated.endDate,
+                reason: updated.message || '',
+                status: 'Approved',
+                approvedBy: req.user._id
+            });
+        }
+
+        if (status === 'Approved' && updated.type === 'Leave Cancellation' && updated.associatedLeave) {
+            const leave = await Leave.findById(updated.associatedLeave);
+            if (leave) {
+                // Determine which dates to cancel
+                const datesToCancel = updated.cancelDates && updated.cancelDates.length > 0
+                    ? updated.cancelDates
+                    : [];
+
+                // If no specific dates provided, we might assume full cancellation? 
+                // Let's rely on cancelDates array for specific or full.
+                if (datesToCancel.length > 0) {
+                    if (!leave.cancelledDates) {
+                        leave.cancelledDates = [];
+                    }
+                    leave.cancelledDates.push(...datesToCancel);
+                    await leave.save();
+                }
+            }
+        }
 
         const populated = await Request.findById(updated._id)
             .populate('user', 'name email designation department')
