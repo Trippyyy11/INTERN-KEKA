@@ -2015,42 +2015,80 @@ export default function Dashboard({ user, onLogout, setUser }) {
                     </div>
 
                     {activeSubTab === 'Settings' && (
-                        <div className="panel" style={{ maxWidth: '600px' }}>
-                            <div className="panel-header">Company Settings</div>
-                            <div style={{ display: 'flex', gap: '1rem', flexDirection: 'column' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Company Name</label>
-                                    <input type="text" value={systemSettings.companyName || ''} onChange={e => setSystemSettings({ ...systemSettings, companyName: e.target.value })} style={inputStyle} />
-                                </div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Working Hours / Day</label>
-                                    <input type="number" value={systemSettings.workingHoursPerDay || ''} onChange={e => setSystemSettings({ ...systemSettings, workingHoursPerDay: e.target.value })} style={{ ...inputStyle, width: '100px' }} />
-                                </div>
-                                <div style={{ borderTop: '1px solid var(--border-dark)', marginTop: '0.5rem', paddingTop: '1rem' }}>
-                                    <div style={{ fontSize: '0.85rem', fontWeight: '500', marginBottom: '1rem' }}>Default Leave Quotas (Apply to All Users)</div>
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                                        {[
-                                            { label: 'Paid Leave', key: 'paid' },
-                                            { label: 'Sick Leave', key: 'sick' },
-                                            { label: 'Casual Leave', key: 'casual' },
-                                            { label: 'Comp Off', key: 'compOff' }
-                                        ].map(q => (
-                                            <div key={q.key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{q.label}</label>
-                                                <input
-                                                    type="number"
-                                                    value={systemSettings.defaultLeaveQuotas?.[q.key] ?? 0}
-                                                    onChange={e => setSystemSettings({
-                                                        ...systemSettings,
-                                                        defaultLeaveQuotas: { ...systemSettings.defaultLeaveQuotas, [q.key]: parseInt(e.target.value) || 0 }
-                                                    })}
-                                                    style={{ ...inputStyle, width: '60px' }}
-                                                />
-                                            </div>
-                                        ))}
+                        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-start', padding: '1rem 0' }}>
+                            <div className="panel" style={{ maxWidth: '850px', width: '100%', padding: '2.5rem', borderRadius: '12px', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.1)' }}>
+                                <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: 'var(--text-main)', marginBottom: '2rem', borderBottom: '1px solid var(--border-dark)', paddingBottom: '1rem' }}>Company Settings</div>
+
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                                    <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
+                                        <div style={{ flex: '1 1 300px' }}>
+                                            <label style={{ display: 'block', fontSize: '0.95rem', color: 'var(--text-muted)', marginBottom: '0.6rem', fontWeight: '500' }}>Company Name</label>
+                                            <input
+                                                type="text"
+                                                value={systemSettings.companyName || ''}
+                                                onChange={e => setSystemSettings({ ...systemSettings, companyName: e.target.value })}
+                                                style={{ ...inputStyle, width: '100%', padding: '0.8rem 1rem', background: 'rgba(255,255,255,0.03)', fontSize: '1rem', border: '1px solid var(--border-dark)' }}
+                                            />
+                                        </div>
+                                        <div style={{ flex: '1 1 200px' }}>
+                                            <label style={{ display: 'block', fontSize: '0.95rem', color: 'var(--text-muted)', marginBottom: '0.6rem', fontWeight: '500' }}>Working Hours / Day</label>
+                                            <input
+                                                type="number"
+                                                value={systemSettings.workingHoursPerDay || ''}
+                                                onChange={e => setSystemSettings({ ...systemSettings, workingHoursPerDay: e.target.value })}
+                                                style={{ ...inputStyle, width: '100%', padding: '0.8rem 1rem', background: 'rgba(255,255,255,0.03)', fontSize: '1rem', border: '1px solid var(--border-dark)' }}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div style={{ borderTop: '1px solid var(--border-dark)', margin: '0.5rem 0', paddingTop: '2rem' }}>
+                                        <div style={{ fontSize: '1.15rem', fontWeight: '600', color: 'var(--text-main)', marginBottom: '1.5rem' }}>Default Leave Quotas <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 'normal', marginLeft: '0.5rem' }}>(Applies to All Users)</span></div>
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
+                                            {[
+                                                { label: 'Paid Leave', key: 'paid' },
+                                                { label: 'Sick Leave', key: 'sick' },
+                                                { label: 'Casual Leave', key: 'casual' },
+                                                { label: 'Comp Off', key: 'compOff' }
+                                            ].map(q => (
+                                                <div key={q.key} style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-dark)', borderRadius: '8px', padding: '1.2rem', display: 'flex', flexDirection: 'column', gap: '0.8rem', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)' }}>
+                                                    <label style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: '500' }}>{q.label}</label>
+                                                    <input
+                                                        type="number"
+                                                        value={systemSettings.defaultLeaveQuotas?.[q.key] ?? 0}
+                                                        onChange={e => setSystemSettings({
+                                                            ...systemSettings,
+                                                            defaultLeaveQuotas: { ...systemSettings.defaultLeaveQuotas, [q.key]: parseInt(e.target.value) || 0 }
+                                                        })}
+                                                        style={{ ...inputStyle, width: '100%', padding: '0.6rem 1rem', background: 'rgba(255,255,255,0.05)', fontSize: '1.1rem', fontWeight: '600', border: '1px solid rgba(255,255,255,0.1)' }}
+                                                    />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
+                                        <button
+                                            className="btn btn-primary"
+                                            onClick={handleSaveSettings}
+                                            style={{
+                                                padding: '0.8rem 3rem',
+                                                fontSize: '1rem',
+                                                fontWeight: 'bold',
+                                                borderRadius: '8px',
+                                                boxShadow: '0 4px 14px rgba(59, 130, 246, 0.4)',
+                                                background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                                                border: 'none',
+                                                color: 'white',
+                                                cursor: 'pointer',
+                                                transition: 'all 0.2s ease-in-out'
+                                            }}
+                                            onMouseOver={(e) => e.target.style.transform = 'translateY(-2px)'}
+                                            onMouseOut={(e) => e.target.style.transform = 'translateY(0)'}
+                                        >
+                                            Save Settings
+                                        </button>
                                     </div>
                                 </div>
-                                <button className="btn btn-primary" onClick={handleSaveSettings} style={{ marginTop: '1rem' }}>Save Settings</button>
                             </div>
                         </div>
                     )}
