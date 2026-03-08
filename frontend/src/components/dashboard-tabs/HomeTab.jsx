@@ -1,9 +1,11 @@
 import React from 'react';
 import { Trash2, FileText, Briefcase, Calendar, Clock, Mail } from 'lucide-react';
 import api from '../../api/axios';
+import ClockStand from './ClockStand';
 
 export default function HomeTab({
     user,
+    activeLog,
     homeSubTab, setHomeSubTab,
     dashData,
     setShowHolidayModal,
@@ -57,11 +59,12 @@ export default function HomeTab({
 
             {homeSubTab === 'Dashboard' && (
                 <>
-                    <div className="welcome-banner" style={{ position: 'relative' }}>
+                    <div className="welcome-banner" style={{ position: 'relative', minHeight: '240px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                         <div style={{ position: 'relative', zIndex: 3 }}>
                             <h1>Welcome {user?.name}!</h1>
                             <p style={{ marginTop: '0.5rem', opacity: 0.8, fontSize: '0.9rem' }}>Have a great day at Teaching Pariksha!</p>
                         </div>
+                        <ClockStand clockInTime={activeLog?.clockInTime} />
                     </div>
 
                     <div className="grid" style={{ gridTemplateColumns: 'minmax(300px, 350px) 1fr', gap: '2rem', minHeight: '600px', backgroundImage: 'url("data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'400\' height=\'600\' viewBox=\'0 0 400 600\'><path d=\'M350,600 C350,500 320,400 400,300 C380,300 360,320 340,350 C340,250 300,150 400,50 C380,100 350,150 340,200 C320,150 300,100 250,50 C280,100 300,150 310,220 C280,200 250,180 200,150 C240,180 280,220 310,260 C250,250 200,240 150,250 C200,270 250,290 320,300 C280,320 250,340 200,400 C300,350 310,400 350,600 Z\' fill=\'rgba(255,255,255,0.03)\'/></svg>")', backgroundPosition: 'right bottom', backgroundRepeat: 'no-repeat' }}>

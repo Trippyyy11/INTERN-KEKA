@@ -709,6 +709,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
             return (
                 <HomeTab
                     user={user}
+                    activeLog={activeLog}
                     homeSubTab={homeSubTab} setHomeSubTab={setHomeSubTab}
                     dashData={dashData}
                     setShowHolidayModal={setShowHolidayModal}
