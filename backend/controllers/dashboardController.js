@@ -66,13 +66,44 @@ export const getDashboardStats = async (req, res) => {
             joiningDate: { $gte: thirtyDaysAgo.toDate() }
         }).select('name joiningDate department avatar');
 
-        // 5. Announcements
+        // 5. Team Activity Stats (Today)
+        const teamMembers = await User.find({ department: myDept }).select('name designation workingSchedule');
+        const teamAttendance = await Attendance.find({
+            date: today.toDate(),
+            user: { $in: teamMembers.map(u => u._id) }
+        });
+
+        const loggedInUserIds = teamAttendance.map(a => a.user.toString());
+        const notInYet = teamMembers.filter(m => !loggedInUserIds.includes(m._id.toString()));
+
+        let onTimeCount = 0;
+        let lateCount = 0;
+        let wfhCount = 0;
+        let remoteCount = 0;
+
+        teamAttendance.forEach(att => {
+            if (att.status === 'WFH') wfhCount++;
+            if (att.workingMode === 'Remote') remoteCount++;
+
+            const user = teamMembers.find(m => m._id.toString() === att.user.toString());
+            if (user && user.workingSchedule && att.clockInTime) {
+                const shiftStart = moment(user.workingSchedule.shiftStart, 'HH:mm');
+                const clockIn = moment(att.clockInTime);
+                if (clockIn.isBefore(shiftStart.add(15, 'minutes'))) { // 15 mins buffer
+                    onTimeCount++;
+                } else {
+                    lateCount++;
+                }
+            }
+        });
+
+        // 6. Announcements
         const announcements = await Announcement.find({ isActive: true })
             .sort({ createdAt: -1 })
             .limit(5)
             .populate('author', 'name');
 
-        // 6. Upcoming Holidays
+        // 7. Upcoming Holidays
         const holidays = await OrgConfig.find({
             type: 'Holiday',
             date: { $gte: today.toDate() }
@@ -85,9 +116,89 @@ export const getDashboardStats = async (req, res) => {
             },
             leaves: teamLeavesToday,
             workingRemotely: teamWorkingRemotely,
+            notInYet,
+            activityStats: {
+                onTimeCount,
+                lateCount,
+                wfhCount,
+                remoteCount
+            },
+            teamAttendance,
             newJoinees,
             announcements,
             holidays
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Get monthly calendar stats for team
+// @route   GET /api/dashboard/team-calendar
+// @access  Private
+export const getTeamCalendarStats = async (req, res) => {
+    try {
+        const { month, year } = req.query;
+        // Use provided month/year or default to current
+        const m = parseInt(month) || (moment().month() + 1);
+        const y = parseInt(year) || moment().year();
+
+        // Use moment.utc or specify format strictly to avoid issues
+        const targetDate = moment(`${y}-${String(m).padStart(2, '0')}-01`, 'YYYY-MM-DD');
+        const startOfMonth = targetDate.clone().startOf('month');
+        const endOfMonth = targetDate.clone().endOf('month');
+
+        const myDept = req.user.department;
+        // Fetch teammates (same department) and self
+        const query = { isActive: true };
+        if (myDept) {
+            query.department = myDept;
+        } else {
+            // If no department assigned, at least show the current user
+            query._id = req.user._id;
+        }
+
+        const teamMembers = await User.find(query).select('name designation avatar workingSchedule');
+
+        if (teamMembers.length === 0) {
+            return res.status(200).json({
+                teamMembers: [],
+                attendance: [],
+                leaves: [],
+                holidays: [],
+                month: targetDate.format('MMMM'),
+                year: targetDate.format('YYYY'),
+                daysInMonth: targetDate.daysInMonth()
+            });
+        }
+
+        // Fetch all data for the month
+        const attendance = await Attendance.find({
+            date: { $gte: startOfMonth.toDate(), $lte: endOfMonth.toDate() },
+            user: { $in: teamMembers.map(u => u._id) }
+        });
+
+        const leaves = await Leave.find({
+            status: 'Approved',
+            $or: [
+                { startDate: { $lte: endOfMonth.toDate() }, endDate: { $gte: startOfMonth.toDate() } }
+            ],
+            user: { $in: teamMembers.map(u => u._id) }
+        }).populate('user', 'name');
+
+        const holidays = await OrgConfig.find({
+            type: 'Holiday',
+            date: { $gte: startOfMonth.toDate(), $lte: endOfMonth.toDate() }
+        });
+
+        res.status(200).json({
+            teamMembers,
+            attendance,
+            leaves,
+            holidays,
+            month: targetDate.format('MMMM'),
+            year: targetDate.format('YYYY'),
+            daysInMonth: targetDate.daysInMonth()
         });
     } catch (error) {
         res.status(500).json({ message: error.message });
