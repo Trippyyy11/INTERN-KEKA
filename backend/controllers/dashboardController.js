@@ -61,10 +61,10 @@ export const getDashboardStats = async (req, res) => {
         // Filter out records where user didn't match the department filter
         const teamWorkingRemotely = workingRemotely.filter(w => w.user !== null);
 
-        // 4. New Joinees (Last 30 days)
+        // 4. New Joinees (Last 30 days) - use createdAt (always set by timestamps) as primary
         const newJoinees = await User.find({
-            joiningDate: { $gte: thirtyDaysAgo.toDate() }
-        }).select('name joiningDate department avatar');
+            createdAt: { $gte: thirtyDaysAgo.toDate() }
+        }).select('name joiningDate createdAt department avatar profilePicture');
 
         // 5. Team Activity Stats (Today)
         const teamMembers = await User.find({ department: myDept }).select('name designation workingSchedule');

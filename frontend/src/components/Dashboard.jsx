@@ -54,8 +54,62 @@ export default function Dashboard({ user, onLogout, setUser }) {
     };
     const [isLightMode, setIsLightMode] = useState(getInitialTheme());
     const [showProfileMenu, setShowProfileMenu] = useState(false);
+    const [showNotifications, setShowNotifications] = useState(false);
+    const [notifications, setNotifications] = useState([]);
+    const [unreadCount, setUnreadCount] = useState(0);
+    const profileDropdownRef = useRef(null);
+    const notificationRef = useRef(null);
     const vantaRef = useRef(null);
     const [vantaEffect, setVantaEffect] = useState(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target)) {
+                setShowProfileMenu(false);
+            }
+            if (notificationRef.current && !notificationRef.current.contains(event.target)) {
+                setShowNotifications(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    // Fetch notifications
+    const fetchNotifications = async () => {
+        try {
+            const res = await api.get('/notifications');
+            setNotifications(res.data.notifications);
+            setUnreadCount(res.data.unreadCount);
+        } catch (err) { console.error('Failed to fetch notifications'); }
+    };
+
+    const markAllNotificationsRead = async () => {
+        try {
+            await api.put('/notifications/read-all');
+            setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+            setUnreadCount(0);
+        } catch (err) { console.error('Failed to mark notifications read'); }
+    };
+
+    const markNotificationRead = async (id) => {
+        try {
+            await api.put(`/notifications/${id}/read`);
+            setNotifications(prev => prev.map(n => n._id === id ? { ...n, isRead: true } : n));
+            setUnreadCount(prev => Math.max(0, prev - 1));
+        } catch (err) { console.error('Failed to mark notification read'); }
+    };
+
+    // Check clock-in reminder and fetch notifications on load and periodically
+    useEffect(() => {
+        fetchNotifications();
+        api.get('/notifications/check-clockin').catch(() => { });
+        const interval = setInterval(() => {
+            fetchNotifications();
+            api.get('/notifications/check-clockin').catch(() => { });
+        }, 60000); // Check every minute
+        return () => clearInterval(interval);
+    }, []);
 
     // Home states
     const [homeTab, setHomeTab] = useState(getSavedState('homeTab', 'Activities'));
@@ -336,6 +390,8 @@ export default function Dashboard({ user, onLogout, setUser }) {
 
     const [isProfileEditing, setIsProfileEditing] = useState(false);
     const [tempProfile, setTempProfile] = useState({});
+    const fileInputRef = useRef(null);
+    const [uploadingPic, setUploadingPic] = useState(false);
 
     const handleUpdateProfile = async (e) => {
         e.preventDefault();
@@ -352,6 +408,49 @@ export default function Dashboard({ user, onLogout, setUser }) {
             } else {
                 showAlert(err.response?.data?.message || 'Update failed', 'error');
             }
+        }
+    };
+
+    const handleProfilePictureUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        if (file.size > 5 * 1024 * 1024) {
+            showAlert('Image size should be less than 5MB', 'error');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+            const base64String = reader.result;
+            try {
+                setUploadingPic(true);
+                const res = await api.put('/auth/profile-picture', { profilePicture: base64String });
+                const updatedUser = { ...user, profilePicture: res.data.profilePicture };
+                setUser(updatedUser);
+                localStorage.setItem('user', JSON.stringify(updatedUser));
+                showAlert('Profile picture updated successfully!', 'info');
+            } catch (err) {
+                showAlert(err.response?.data?.message || 'Failed to update profile picture', 'error');
+            } finally {
+                setUploadingPic(false);
+            }
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const handleRemoveProfilePicture = async () => {
+        try {
+            setUploadingPic(true);
+            const res = await api.put('/auth/profile-picture', { profilePicture: '' });
+            const updatedUser = { ...user, profilePicture: res.data.profilePicture };
+            setUser(updatedUser);
+            localStorage.setItem('user', JSON.stringify(updatedUser));
+            showAlert('Profile picture removed!', 'info');
+        } catch (err) {
+            showAlert(err.response?.data?.message || 'Failed to remove profile picture', 'error');
+        } finally {
+            setUploadingPic(false);
         }
     };
 
@@ -1840,7 +1939,57 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                     </div>
 
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '2rem', marginBottom: '2.5rem' }}>
-                                        <div className="avatar" style={{ width: '100px', height: '100px', fontSize: '2.5rem', background: 'var(--primary)', color: 'white' }}>{user.name.substring(0, 1).toUpperCase()}</div>
+                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+                                            <div className="avatar" style={{ width: '100px', height: '100px', fontSize: '2.5rem', background: 'var(--primary)', color: 'white' }}>
+                                                {user?.profilePicture ? (
+                                                    <img src={user.profilePicture} alt="Profile" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+                                                ) : (
+                                                    user.name.substring(0, 1).toUpperCase()
+                                                )}
+                                            </div>
+
+                                            {isProfileEditing && (
+                                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                    <input
+                                                        type="file"
+                                                        accept="image/*"
+                                                        ref={fileInputRef}
+                                                        style={{ display: 'none' }}
+                                                        onChange={handleProfilePictureUpload}
+                                                    />
+                                                    <button
+                                                        className="btn btn-sm"
+                                                        style={{
+                                                            background: 'rgba(255, 255, 255, 0.1)',
+                                                            border: '1px solid rgba(255, 255, 255, 0.2)',
+                                                            color: 'var(--text-main)',
+                                                            fontSize: '0.75rem',
+                                                            opacity: uploadingPic ? 0.5 : 1
+                                                        }}
+                                                        disabled={uploadingPic}
+                                                        onClick={() => fileInputRef.current.click()}
+                                                    >
+                                                        {uploadingPic ? 'Uploading...' : 'Change'}
+                                                    </button>
+                                                    {user?.profilePicture && (
+                                                        <button
+                                                            className="btn btn-sm"
+                                                            style={{
+                                                                background: 'rgba(255, 71, 87, 0.1)',
+                                                                color: '#ff4757',
+                                                                border: '1px solid rgba(255, 71, 87, 0.2)',
+                                                                fontSize: '0.75rem',
+                                                                opacity: uploadingPic ? 0.5 : 1
+                                                            }}
+                                                            disabled={uploadingPic}
+                                                            onClick={handleRemoveProfilePicture}
+                                                        >
+                                                            Remove
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
                                         <div>
                                             {isProfileEditing ? (
                                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
@@ -3203,48 +3352,148 @@ export default function Dashboard({ user, onLogout, setUser }) {
                             {isLightMode ? <Moon size={20} /> : <Sun size={20} />}
                         </button>
 
-                        <Bell size={20} style={{ cursor: 'pointer', color: 'var(--text-topbar)' }} />
-                        <div
-                            className="avatar"
-                            style={{ cursor: 'pointer', background: '#00ff88', color: '#0a0e17' }}
-                            onClick={() => setShowProfileMenu(!showProfileMenu)}
-                        >
-                            {user?.name?.substring(0, 2).toUpperCase() || 'ME'}
-                        </div>
-
-                        {showProfileMenu && (
-                            <div className="panel" style={{
-                                position: 'absolute',
-                                top: '100%',
-                                right: '0',
-                                marginTop: '0.5rem',
-                                minWidth: '180px',
-                                zIndex: 100,
-                                padding: '0.5rem 0',
-                                boxShadow: '0 10px 25px rgba(0,0,0,0.3)',
-                                border: '1px solid var(--border-dark)'
-                            }}>
-                                <div
-                                    style={{ padding: '0.75rem 1.25rem', borderBottom: '1px solid var(--border-dark)' }}
-                                >
-                                    <div style={{ fontWeight: '600', color: 'var(--text-main)', fontSize: '0.85rem' }}>{user?.name}</div>
-                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{user?.role}</div>
-                                </div>
-                                <div
-                                    className="dropdown-item"
-                                    onClick={() => { setActiveSidebar('Me'); setActiveSubTab('Profile'); setShowProfileMenu(false); }}
-                                >
-                                    My Profile
-                                </div>
-                                <div
-                                    className="dropdown-item danger"
-                                    style={{ color: '#ffab00' }}
-                                    onClick={handleLogout}
-                                >
-                                    Log Out
-                                </div>
+                        <div ref={notificationRef} style={{ position: 'relative' }}>
+                            <div
+                                style={{ position: 'relative', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                                onClick={() => { setShowNotifications(!showNotifications); if (!showNotifications) fetchNotifications(); }}
+                            >
+                                <Bell size={20} style={{ color: 'var(--text-topbar)' }} />
+                                {unreadCount > 0 && (
+                                    <span style={{
+                                        position: 'absolute', top: '-6px', right: '-6px',
+                                        background: '#ef4444', color: 'white', fontSize: '0.65rem',
+                                        width: '16px', height: '16px', borderRadius: '50%',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        fontWeight: '700'
+                                    }}>{unreadCount > 9 ? '9+' : unreadCount}</span>
+                                )}
                             </div>
-                        )}
+
+                            {showNotifications && (
+                                <div className="panel" style={{
+                                    position: 'fixed', top: 0, right: 0,
+                                    width: '25vw', minWidth: '320px', height: '100vh', zIndex: 1000,
+                                    boxShadow: '-4px 0 30px rgba(0,0,0,0.4)',
+                                    border: 'none', borderLeft: '1px solid var(--border-dark)',
+                                    display: 'flex', flexDirection: 'column',
+                                    borderRadius: 0,
+                                    overflow: 'hidden',
+                                    animation: 'slideInRight 0.25s ease'
+                                }}>
+                                    <div style={{
+                                        padding: '1rem 1.25rem',
+                                        borderBottom: '1px solid var(--border-dark)',
+                                        display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                                    }}>
+                                        <span style={{ fontWeight: '600', fontSize: '0.95rem', color: 'var(--text-main)' }}>Notifications</span>
+                                        {unreadCount > 0 && (
+                                            <span
+                                                style={{ fontSize: '0.75rem', color: 'var(--primary)', cursor: 'pointer', fontWeight: '500' }}
+                                                onClick={markAllNotificationsRead}
+                                            >
+                                                Mark all read
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div style={{ overflowY: 'auto', flex: 1 }}>
+                                        {notifications.length > 0 ? notifications.map(n => {
+                                            const iconMap = {
+                                                leave_applied: '📋', leave_approved: '✅', leave_rejected: '❌',
+                                                clock_in_reminder: '⏰', request_received: '📩',
+                                                request_approved: '✅', request_rejected: '❌',
+                                                announcement: '📢', general: '🔔'
+                                            };
+                                            const timeAgo = (date) => {
+                                                const mins = Math.floor((Date.now() - new Date(date)) / 60000);
+                                                if (mins < 1) return 'Just now';
+                                                if (mins < 60) return `${mins}m ago`;
+                                                const hrs = Math.floor(mins / 60);
+                                                if (hrs < 24) return `${hrs}h ago`;
+                                                const days = Math.floor(hrs / 24);
+                                                return `${days}d ago`;
+                                            };
+                                            return (
+                                                <div
+                                                    key={n._id}
+                                                    onClick={() => { if (!n.isRead) markNotificationRead(n._id); }}
+                                                    style={{
+                                                        padding: '0.85rem 1.25rem',
+                                                        borderBottom: '1px solid var(--border-dark)',
+                                                        cursor: 'pointer',
+                                                        background: n.isRead ? 'transparent' : 'rgba(59, 130, 246, 0.06)',
+                                                        transition: 'background 0.2s'
+                                                    }}
+                                                >
+                                                    <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
+                                                        <span style={{ fontSize: '1.2rem', flexShrink: 0, marginTop: '2px' }}>{iconMap[n.type] || '🔔'}</span>
+                                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem' }}>
+                                                                <span style={{ fontWeight: n.isRead ? '400' : '600', fontSize: '0.82rem', color: 'var(--text-main)' }}>{n.title}</span>
+                                                                <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', flexShrink: 0 }}>{timeAgo(n.createdAt)}</span>
+                                                            </div>
+                                                            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.2rem', lineHeight: 1.35 }}>{n.message}</div>
+                                                            {!n.isRead && <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--primary)', marginTop: '0.4rem' }}></div>}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        }) : (
+                                            <div style={{ padding: '2.5rem 1.25rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                                                <Bell size={32} style={{ marginBottom: '0.75rem', opacity: 0.3 }} />
+                                                <div style={{ fontSize: '0.85rem' }}>No notifications yet</div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                        <div ref={profileDropdownRef} style={{ position: 'relative' }}>
+                            <div
+                                className="avatar"
+                                style={{ cursor: 'pointer', background: '#00ff88', color: '#0a0e17' }}
+                                onClick={() => setShowProfileMenu(!showProfileMenu)}
+                            >
+                                {user?.profilePicture ? (
+                                    <img src={user.profilePicture} alt="Profile" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+                                ) : (
+                                    user?.name?.substring(0, 2).toUpperCase() || 'ME'
+                                )}
+                            </div>
+
+                            {showProfileMenu && (
+                                <div className="panel" style={{
+                                    position: 'absolute',
+                                    top: '100%',
+                                    right: '0',
+                                    marginTop: '0.5rem',
+                                    minWidth: '180px',
+                                    zIndex: 100,
+                                    padding: '0.5rem 0',
+                                    boxShadow: '0 10px 25px rgba(0,0,0,0.3)',
+                                    border: '1px solid var(--border-dark)'
+                                }}>
+                                    <div
+                                        style={{ padding: '0.75rem 1.25rem', borderBottom: '1px solid var(--border-dark)' }}
+                                    >
+                                        <div style={{ fontWeight: '600', color: 'var(--text-main)', fontSize: '0.85rem' }}>{user?.name}</div>
+                                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{user?.role}</div>
+                                    </div>
+                                    <div
+                                        className="dropdown-item"
+                                        onClick={() => { setActiveSidebar('Me'); setActiveSubTab('Profile'); setShowProfileMenu(false); }}
+                                    >
+                                        My Profile
+                                    </div>
+                                    <div
+                                        className="dropdown-item danger"
+                                        style={{ color: '#ffab00' }}
+                                        onClick={handleLogout}
+                                    >
+                                        Log Out
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </header>
                 <div className="dashboard-content">

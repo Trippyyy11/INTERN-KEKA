@@ -55,7 +55,8 @@ const userSchema = new mongoose.Schema(
             bankName: { type: String, default: '' },
             branchName: { type: String, default: '' },
             upiId: { type: String, default: '' }
-        }
+        },
+        profilePicture: { type: String, default: '' }
     },
     { timestamps: true }
 );

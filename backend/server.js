@@ -15,8 +15,8 @@ app.use(cors({
     origin: process.env.FRONTEND_URL || 'http://localhost:5173',
     credentials: true
 }));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
 import authRoutes from './routes/authRoutes.js';
@@ -27,6 +27,7 @@ import payslipRoutes from './routes/payslipRoutes.js';
 import dashboardRoutes from './routes/dashboardRoutes.js';
 import socialRoutes from './routes/socialRoutes.js';
 import requestRoutes from './routes/requestRoutes.js';
+import notificationRoutes from './routes/notificationRoutes.js';
 
 // Testing Route
 app.get('/', (req, res) => {
@@ -42,6 +43,7 @@ app.use('/api/payslips', payslipRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/social', socialRoutes);
 app.use('/api/requests', requestRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Default Error handling middleware
 app.use((err, req, res, next) => {

@@ -1,4 +1,6 @@
 import Leave from '../models/Leave.js';
+import User from '../models/User.js';
+import { createNotification } from './notificationController.js';
 
 // @desc    Request a Leave
 // @route   POST /api/leaves
@@ -21,6 +23,19 @@ export const requestLeave = async (req, res) => {
         });
 
         res.status(201).json(leave);
+
+        // Notify admins about new leave request
+        const admins = await User.find({ role: { $in: ['Admin', 'Super Admin'] } }).select('_id');
+        for (const admin of admins) {
+            await createNotification(
+                admin._id,
+                'leave_applied',
+                'New Leave Request',
+                `${req.user.name} has applied for ${type} leave from ${new Date(startDate).toLocaleDateString()} to ${new Date(endDate).toLocaleDateString()}.`,
+                leave._id,
+                'Leave'
+            );
+        }
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -51,6 +66,17 @@ export const updateLeaveStatus = async (req, res) => {
             leave.approvedBy = req.user._id;
             const updatedLeave = await leave.save();
             res.json(updatedLeave);
+
+            // Notify the leave applicant about status change
+            const notifType = status === 'Approved' ? 'leave_approved' : 'leave_rejected';
+            await createNotification(
+                leave.user,
+                notifType,
+                `Leave ${status}`,
+                `Your ${leave.type} leave request has been ${status.toLowerCase()} by ${req.user.name}.`,
+                leave._id,
+                'Leave'
+            );
         } else {
             res.status(404).json({ message: 'Leave request not found' });
         }

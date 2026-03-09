@@ -764,3 +764,15 @@ body.light-theme .holiday-card {
   margin-right: 8px;
   box-shadow: 0 0 10px var(--primary);
 }
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}

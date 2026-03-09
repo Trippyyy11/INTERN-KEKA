@@ -275,3 +275,21 @@ export const updateBankDetails = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+
+// @desc    Update user profile picture
+// @route   PUT /api/auth/profile-picture
+export const updateProfilePicture = async (req, res) => {
+    try {
+        const { profilePicture } = req.body;
+        const user = await User.findById(req.user._id);
+
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        user.profilePicture = profilePicture !== undefined ? profilePicture : user.profilePicture;
+
+        await user.save();
+        res.status(200).json({ profilePicture: user.profilePicture });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
