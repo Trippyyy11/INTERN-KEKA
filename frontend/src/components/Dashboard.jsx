@@ -2,39 +2,23 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import api from '../api/axios';
 import {
     Home,
-    User,
-    Mail,
-    Users,
-    Briefcase,
-    Building2,
-    Award,
-    TrendingUp,
     Search,
     Bell,
-    Clock,
-    Calendar,
-    MoreVertical,
-    ThumbsUp,
-    MessageSquare,
-    FileText,
-    Sun,
-    Moon,
-    HelpCircle,
-    Info,
-    Network,
-    Trash2,
-    Send,
-    X,
-    ChevronDown,
-    CheckCircle,
-    XCircle,
-    Settings,
-    DollarSign
 } from 'lucide-react';
 
-import OrganizationTree from './OrganizationTree';
+import VantaBackground from './layout/VantaBackground';
+import Sidebar from './layout/Sidebar';
 import HomeTab from './dashboard-tabs/HomeTab';
+import AttendanceTab from './dashboard-tabs/AttendanceTab';
+import LeaveTab from './dashboard-tabs/LeaveTab';
+import RequestTab from './dashboard-tabs/RequestTab';
+import ProfileTab from './dashboard-tabs/ProfileTab';
+import MyTeamTab from './dashboard-tabs/MyTeamTab';
+import FinancesTab from './dashboard-tabs/FinancesTab';
+import InboxTab from './dashboard-tabs/InboxTab';
+import AdminTab from './dashboard-tabs/AdminTab';
 import EngageTab from './dashboard-tabs/EngageTab';
+import OrganizationTree from './OrganizationTree';
 
 export default function Dashboard({ user, onLogout, setUser }) {
     // Persistence helper
