@@ -2,8 +2,24 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import api from '../api/axios';
 import {
     Home,
-    Search,
     Bell,
+    User,
+    Users,
+    Mail,
+    Briefcase,
+    Building2,
+    Award,
+    Settings,
+    MoreVertical,
+    Info,
+    Moon,
+    Sun,
+    Clock,
+    Calendar,
+    ChevronDown,
+    FileText,
+    Send,
+    HelpCircle
 } from 'lucide-react';
 
 import VantaBackground from './layout/VantaBackground';
