@@ -544,7 +544,19 @@ body.light-theme .panel-actions {
   justify-content: center;
 }
 
+.input {
+  height: 44px;
+  padding: 0 14px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  letter-spacing: 0.3px;
+}
 
+.input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.2);
+}
 
 .welcome-banner h1 {
   position: relative;

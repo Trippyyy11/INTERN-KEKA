@@ -134,7 +134,7 @@ const FinancesTab = ({
     );
 
     const renderBankInfo = () => (
-        <div className="panel" style={{ maxWidth: '800px', margin: '0 auto' }}>
+        <div className="panel" style={{ maxWidth: '930px', margin: '0 auto' }}>
             <div className="panel-header">Bank Account Details</div>
             <div style={{ padding: '2rem' }}>
                 <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '2rem' }}>
@@ -156,9 +156,12 @@ const FinancesTab = ({
                 )}
 
                 <form onSubmit={handleBankSubmit}>
-                    <div className="grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                    <div className="grid" style={{ gridTemplateColumns: '1fr 1fr', rowGap: '2rem', columnGap: '2.5rem' }}>
                         <div className="form-group">
-                            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '500', marginBottom: '0.5rem' }}>Account Holder Name</label>
+                            <label style={{
+                                display: 'block', fontSize: '0.85rem',
+                                letterSpacing: '0.3px', fontWeight: '500', marginBottom: '0.5rem'
+                            }}>Account Holder Name</label>
                             <input
                                 type="text"
                                 className="input"
@@ -168,7 +171,10 @@ const FinancesTab = ({
                             />
                         </div>
                         <div className="form-group">
-                            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '500', marginBottom: '0.5rem' }}>Bank Name</label>
+                            <label style={{
+                                display: 'block', fontSize: '0.85rem',
+                                letterSpacing: '0.3px', fontWeight: '500', marginBottom: '0.5rem'
+                            }}>Bank Name</label>
                             <input
                                 type="text"
                                 className="input"
@@ -178,9 +184,14 @@ const FinancesTab = ({
                             />
                         </div>
                         <div className="form-group">
-                            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '500', marginBottom: '0.5rem' }}>Account Number</label>
+                            <label style={{
+                                display: 'block', fontSize: '0.85rem',
+                                letterSpacing: '0.3px', fontWeight: '500', marginBottom: '0.5rem'
+                            }}>Account Number</label>
                             <input
                                 type="text"
+                                inputMode='numeric'
+                                maxLength="11"
                                 className="input"
                                 value={bankData.accountNumber}
                                 onChange={(e) => setBankData({ ...bankData, accountNumber: e.target.value })}
@@ -188,17 +199,24 @@ const FinancesTab = ({
                             />
                         </div>
                         <div className="form-group">
-                            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '500', marginBottom: '0.5rem' }}>IFSC Code</label>
+                            <label style={{
+                                display: 'block', fontSize: '0.85rem',
+                                letterSpacing: '0.3px', fontWeight: '500', marginBottom: '0.5rem'
+                            }}>IFSC Code</label>
                             <input
                                 type="text"
                                 className="input"
+                                placeholder='eg.SBIN01234567'
                                 value={bankData.ifscCode}
                                 onChange={(e) => setBankData({ ...bankData, ifscCode: e.target.value })}
                                 required
                             />
                         </div>
                         <div className="form-group">
-                            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '500', marginBottom: '0.5rem' }}>Branch Name</label>
+                            <label style={{
+                                display: 'block', fontSize: '0.85rem',
+                                letterSpacing: '0.3px', fontWeight: '500', marginBottom: '0.5rem'
+                            }}>Branch Name</label>
                             <input
                                 type="text"
                                 className="input"
@@ -207,9 +225,13 @@ const FinancesTab = ({
                             />
                         </div>
                         <div className="form-group">
-                            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '500', marginBottom: '0.5rem' }}>UPI ID (Optional)</label>
+                            <label style={{
+                                display: 'block', fontSize: '0.85rem',
+                                letterSpacing: '0.3px', fontWeight: '500', marginBottom: '0.5rem'
+                            }}>UPI ID </label>
                             <input
                                 type="text"
+                                required
                                 className="input"
                                 placeholder="example@upi"
                                 value={bankData.upiId}

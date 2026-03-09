@@ -264,7 +264,11 @@ const MyTeamTab = ({
             <div className="sub-nav"><div className="sub-nav-item active">SUMMARY</div></div>
 
             {/* Top Summaries Row */}
-            <div className="grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+            <div className="grid" style={{
+                gridTemplateColumns: '1fr 1fr',
+                columnGap: '2.5rem',
+                rowGap: '2rem', marginBottom: '1.5rem'
+            }}>
                 <div className="panel" style={{ padding: '1.25rem' }}>
                     <div className="panel-header" style={{ borderBottom: 'none', marginBottom: '1rem', fontSize: '0.9rem' }}>Who is off today</div>
                     <div style={{ display: 'flex', gap: '0.75rem' }}>
