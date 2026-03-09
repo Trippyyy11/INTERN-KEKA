@@ -250,3 +250,28 @@ export const updateWelcomeProfile = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+
+// @desc    Update user bank details
+// @route   PUT /api/auth/bank-details
+export const updateBankDetails = async (req, res) => {
+    try {
+        const { accountHolderName, accountNumber, ifscCode, bankName, branchName, upiId } = req.body;
+        const user = await User.findById(req.user._id);
+
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        user.bankDetails = {
+            accountHolderName: accountHolderName || user.bankDetails.accountHolderName,
+            accountNumber: accountNumber || user.bankDetails.accountNumber,
+            ifscCode: ifscCode || user.bankDetails.ifscCode,
+            bankName: bankName || user.bankDetails.bankName,
+            branchName: branchName || user.bankDetails.branchName,
+            upiId: upiId !== undefined ? upiId : user.bankDetails.upiId
+        };
+
+        await user.save();
+        res.status(200).json(user.bankDetails);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};

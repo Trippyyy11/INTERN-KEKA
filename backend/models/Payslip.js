@@ -17,7 +17,10 @@ const payslipSchema = new mongoose.Schema(
             professionalTax: { type: Number, default: 0 }
         },
         netPay: { type: Number, required: true },
-        pdfUrl: { type: String } // Optional: S3 link or local path to downloaded PDF
+        status: { type: String, enum: ['Paid', 'Unpaid', 'Processing'], default: 'Unpaid' },
+        paidAt: { type: Date },
+        paymentMethod: { type: String, enum: ['Bank Transfer', 'UPI', 'Cash', 'Check'], default: 'Bank Transfer' },
+        pdfUrl: { type: String }
     },
     { timestamps: true }
 );

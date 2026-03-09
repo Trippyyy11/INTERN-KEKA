@@ -47,6 +47,14 @@ const userSchema = new mongoose.Schema(
             about: { type: String, default: '' },
             loveJob: { type: String, default: '' },
             interests: { type: String, default: '' }
+        },
+        bankDetails: {
+            accountHolderName: { type: String, default: '' },
+            accountNumber: { type: String, default: '' },
+            ifscCode: { type: String, default: '' },
+            bankName: { type: String, default: '' },
+            branchName: { type: String, default: '' },
+            upiId: { type: String, default: '' }
         }
     },
     { timestamps: true }

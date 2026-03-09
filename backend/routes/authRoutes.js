@@ -1,5 +1,5 @@
 import express from 'express';
-import { registerInit, verifyOTP, completeRegistration, loginUser, getMe, promoteToSuperAdmin, getOrgOptions, resendOTP, updateWelcomeProfile, updateProfile } from '../controllers/authController.js';
+import { registerInit, verifyOTP, completeRegistration, loginUser, getMe, promoteToSuperAdmin, getOrgOptions, resendOTP, updateWelcomeProfile, updateProfile, updateBankDetails } from '../controllers/authController.js';
 import { protect, authorize } from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
@@ -14,6 +14,7 @@ router.get('/options', getOrgOptions); // For registration dropdowns
 router.get('/me', protect, getMe);
 router.put('/profile', protect, updateProfile);
 router.put('/welcome-profile', protect, updateWelcomeProfile);
+router.put('/bank-details', protect, updateBankDetails);
 router.put('/promote/:id', protect, authorize(['Super Admin']), promoteToSuperAdmin);
 
 export default router;
