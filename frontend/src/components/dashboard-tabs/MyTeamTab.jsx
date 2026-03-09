@@ -5,7 +5,6 @@ import {
     ChevronRight,
     Search,
     Download,
-    MoreVertical,
     X
 } from 'lucide-react';
 import api from '../../api/axios';
@@ -380,28 +379,6 @@ const MyTeamTab = ({
                                 />
                             </div>
                             <button className="btn-icon" style={{ color: '#4a5568' }} title="Download" onClick={handleDownloadCSV}><Download size={20} /></button>
-                            <div style={{ position: 'relative' }}>
-                                <button className="btn-icon" style={{ color: '#4a5568' }} onClick={() => setActiveMenu(activeMenu === 'header' ? null : 'header')}><MoreVertical size={20} /></button>
-                                {activeMenu === 'header' && (
-                                    <div style={{
-                                        position: 'absolute',
-                                        right: 0,
-                                        top: '100%',
-                                        background: 'white',
-                                        border: '1px solid #e2e8f0',
-                                        borderRadius: '8px',
-                                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                                        zIndex: 2100,
-                                        width: '180px',
-                                        padding: '0.5rem 0',
-                                        color: '#2d3748'
-                                    }}>
-                                        <div className="menu-item" onClick={() => { setActiveMenu(null); handleDownloadCSV(); }} style={{ padding: '0.5rem 1rem', fontSize: '0.75rem', cursor: 'pointer' }}>Export to CSV (Excel)</div>
-                                        <div className="menu-item" onClick={() => { setActiveMenu(null); triggerAlert('Bulk message sent to team'); }} style={{ padding: '0.5rem 1rem', fontSize: '0.75rem', cursor: 'pointer' }}>Message All</div>
-                                        <div className="menu-item" onClick={() => { setActiveMenu(null); triggerAlert('Opening settings...'); }} style={{ padding: '0.5rem 1rem', fontSize: '0.75rem', cursor: 'pointer' }}>Panel Settings</div>
-                                    </div>
-                                )}
-                            </div>
                         </div>
 
                         {/* Status Filters - NEW FEATURE */}
@@ -504,40 +481,6 @@ const MyTeamTab = ({
                                                         <div>
                                                             <div style={{ color: '#4a5568', fontWeight: '500' }}>{clockInDisplay}</div>
                                                             {statusLabel && <div style={{ fontSize: '0.65rem', color: statusColor, fontWeight: '600' }}>{statusLabel}</div>}
-                                                        </div>
-                                                        <div style={{ position: 'relative' }}>
-                                                            <button
-                                                                className="btn-icon"
-                                                                style={{ color: '#a0aec0', padding: '4px' }}
-                                                                onClick={(event) => {
-                                                                    event.stopPropagation();
-                                                                    setActiveMenu(activeMenu === e._id ? null : e._id);
-                                                                }}
-                                                            >
-                                                                <MoreVertical size={16} />
-                                                            </button>
-
-                                                            {/* Dropdown Menu - NEW FEATURE */}
-                                                            {activeMenu === e._id && (
-                                                                <div style={{
-                                                                    position: 'absolute',
-                                                                    right: 0,
-                                                                    top: '100%',
-                                                                    background: 'white',
-                                                                    border: '1px solid #e2e8f0',
-                                                                    borderRadius: '8px',
-                                                                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                                                                    zIndex: 2100,
-                                                                    width: '180px',
-                                                                    padding: '0.5rem 0'
-                                                                }}>
-                                                                    <div className="menu-item" onClick={() => { setActiveMenu(null); setShowPublicProfile(e); }} style={{ padding: '0.5rem 1rem', fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>View Profile</div>
-                                                                    <div className="menu-item" onClick={() => { setActiveMenu(null); triggerAlert(`Opening chat with ${e.name}...`); }} style={{ padding: '0.5rem 1rem', fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>Send Message</div>
-                                                                    <div className="menu-item" onClick={() => { setActiveMenu(null); triggerAlert(`Requesting correction for ${e.name}...`); }} style={{ padding: '0.5rem 1rem', fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>Attendance Correction</div>
-                                                                    <div style={{ borderTop: '1px solid #f7fafc', margin: '4px 0' }}></div>
-                                                                    <div className="menu-item" onClick={() => { setActiveMenu(null); triggerAlert(`Task assigned to ${e.name}`); }} style={{ padding: '0.5rem 1rem', fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)' }}>Assign Task</div>
-                                                                </div>
-                                                            )}
                                                         </div>
                                                     </div>
                                                 </td>
