@@ -676,6 +676,16 @@ export default function Dashboard({ user, onLogout, setUser }) {
         } catch (err) { showAlert('Approval failed', 'info'); }
     };
 
+    const handleDenyUser = async (id) => {
+        showAlert('Are you sure you want to deny this user request?', 'confirm', async () => {
+            try {
+                await api.put(`/admin/users/${id}/deny`);
+                fetchAdminData();
+                showAlert('User request denied.', 'info');
+            } catch (err) { showAlert('Denial failed', 'info'); }
+        });
+    };
+
     const handleUpdateUser = async (e) => {
         e.preventDefault();
         try {
@@ -2519,7 +2529,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
     const renderAlertModal = () => {
         if (!customAlert) return null;
         return (
-            <div style={modalOverlay}>
+            <div style={alertOverlay}>
                 <div style={{ ...modalContent, maxWidth: '450px', textAlign: 'center' }}>
                     <div style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '1rem', color: 'var(--text-main)' }}>
                         {customAlert.type === 'confirm' ? 'Confirmation' : 'Update'}
@@ -3591,4 +3601,6 @@ export default function Dashboard({ user, onLogout, setUser }) {
 const inputStyle = { background: 'var(--bg-panel)', color: 'var(--text-main)', border: '1px solid var(--border-dark)', padding: '0.5rem', borderRadius: '4px', outline: 'none', width: '100%', boxSizing: 'border-box' };
 const labelStyle = { fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.3rem', display: 'block' };
 const modalOverlay = { position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', justifyContent: 'center', alignItems: 'center' };
+const alertOverlay = { position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.8)', zIndex: 9999, display: 'flex', justifyContent: 'center', alignItems: 'center' };
 const modalContent = { background: 'var(--bg-panel)', padding: '2rem', borderRadius: 'var(--radius-lg)', width: '90%', maxWidth: '700px', boxShadow: '0 20px 50px rgba(0,0,0,0.5)', border: '1px solid var(--border-dark)' };
+

@@ -23,6 +23,17 @@ export const approveUser = async (req, res) => {
     } catch (error) { res.status(500).json({ message: error.message }); }
 };
 
+// @desc    Deny/Reject a user
+export const denyUser = async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id);
+        if (user) {
+            await User.findByIdAndDelete(req.params.id);
+            res.json({ message: 'User denied and removed successfully' });
+        } else { res.status(404).json({ message: 'User not found' }); }
+    } catch (error) { res.status(500).json({ message: error.message }); }
+};
+
 // @desc    Update user specific data (Salary, Designation etc by Admin)
 export const updateUserDetails = async (req, res) => {
     try {

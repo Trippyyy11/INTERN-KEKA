@@ -139,7 +139,7 @@ export default function OrganizationTree({ user: currentUser }) {
 
     const fetchUsers = async () => {
         try {
-            const res = await api.get('/admin/users');
+            const res = await api.get('/admin/org-users');
             setUsers(res.data);
             processHierarchy(res.data);
         } catch (error) { console.error('Error fetching users:', error); }

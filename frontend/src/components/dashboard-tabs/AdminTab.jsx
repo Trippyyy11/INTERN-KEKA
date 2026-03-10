@@ -10,6 +10,7 @@ const AdminTab = ({
     handleSaveSettings,
     allUsers,
     handleApproveUser,
+    handleDenyUser,
     orgConfigs,
     handleAddConfig,
     handleDeleteConfig,
@@ -194,7 +195,10 @@ const AdminTab = ({
                                     <tr key={u._id}>
                                         <td>{u.name}</td><td>{u.email}</td><td>{u.designation}</td><td>{u.department}</td><td>{u.phoneNumber}</td>
                                         <td>
-                                            <button className="btn btn-sm btn-primary" onClick={() => handleApproveUser(u._id)}>Approve</button>
+                                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                <button className="btn btn-sm btn-primary" onClick={() => handleApproveUser(u._id)}>Approve</button>
+                                                <button className="btn btn-sm btn-danger" onClick={() => handleDenyUser(u._id)}>Deny</button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}
