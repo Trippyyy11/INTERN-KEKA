@@ -28,6 +28,7 @@ import dashboardRoutes from './routes/dashboardRoutes.js';
 import socialRoutes from './routes/socialRoutes.js';
 import requestRoutes from './routes/requestRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
+import slackRoutes from './routes/slackRoutes.js';
 
 // Testing Route
 app.get('/', (req, res) => {
@@ -44,6 +45,7 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/social', socialRoutes);
 app.use('/api/requests', requestRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/slack', slackRoutes);
 
 // Default Error handling middleware
 app.use((err, req, res, next) => {

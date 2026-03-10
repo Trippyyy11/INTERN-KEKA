@@ -56,7 +56,8 @@ const userSchema = new mongoose.Schema(
             branchName: { type: String, default: '' },
             upiId: { type: String, default: '' }
         },
-        profilePicture: { type: String, default: '' }
+        profilePicture: { type: String, default: '' },
+        slackBotToken: { type: String, default: '' }
     },
     { timestamps: true }
 );

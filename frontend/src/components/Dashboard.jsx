@@ -43,6 +43,7 @@ import FinancesTab from './dashboard-tabs/FinancesTab';
 import InboxTab from './dashboard-tabs/InboxTab';
 import AdminTab from './dashboard-tabs/AdminTab';
 import EngageTab from './dashboard-tabs/EngageTab';
+import SlackTab from './dashboard-tabs/SlackTab';
 import OrganizationTree from './OrganizationTree';
 
 export default function Dashboard({ user, onLogout, setUser }) {
@@ -854,7 +855,8 @@ export default function Dashboard({ user, onLogout, setUser }) {
         { name: 'My Finances', icon: <Briefcase size={20} /> },
         { name: 'Org', icon: <Building2 size={20} /> },
         { name: 'Engage', icon: <Award size={20} /> },
-        { name: 'Admin', icon: <Settings size={20} /> }
+        { name: 'Admin', icon: <Settings size={20} /> },
+        { name: 'Slack', icon: <MessageSquare size={20} /> }
     ];
 
     /* ---------------- MOCK DATA HELPERS ---------------- */
@@ -2517,6 +2519,10 @@ export default function Dashboard({ user, onLogout, setUser }) {
             );
         }
 
+        if (activeSidebar === 'Slack') {
+            return <SlackTab user={user} />;
+        }
+
         return null;
     };
 
@@ -3350,6 +3356,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
                     {sidebarItems.filter(item => {
                         if (item.name === 'My Team' && teammates.length === 0) return false;
                         if (item.name === 'Admin' && !(user?.role === 'Admin' || user?.role === 'Super Admin')) return false;
+                        if (item.name === 'Slack' && !(user?.role === 'Admin' || user?.role === 'Super Admin')) return false;
                         return true;
                     }).map(item => (
                         <div
