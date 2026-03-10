@@ -150,7 +150,6 @@ const LeaveTab = ({
                                 <th>Action Taken On</th>
                                 <th>Leave Note</th>
                                 <th>Reject/Cancellation Reason</th>
-                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -188,10 +187,9 @@ const LeaveTab = ({
                                     <td style={{ fontSize: '0.8rem' }}>{h.status !== 'Pending' && h.actionDate ? new Date(h.actionDate).toLocaleDateString() : '-'}</td>
                                     <td style={{ fontSize: '0.75rem', color: 'var(--text-muted)', maxWidth: '150px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{h.message || '-'}</td>
                                     <td style={{ fontSize: '0.75rem', color: 'var(--text-muted)', maxWidth: '150px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{h.actionNote || '-'}</td>
-                                    <td><Info size={14} color="var(--primary)" style={{ cursor: 'pointer' }} /></td>
                                 </tr>
                             )) : (
-                                <tr><td colSpan="8" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>No leave history found.</td></tr>
+                                <tr><td colSpan="7" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>No leave history found.</td></tr>
                             )}
                         </tbody>
                     </table>

@@ -1,5 +1,6 @@
 import Attendance from '../models/Attendance.js';
 import User from '../models/User.js';
+import Request from '../models/Request.js';
 
 // @desc    Clock In
 // @route   POST /api/attendance/clock-in
@@ -14,6 +15,23 @@ export const clockIn = async (req, res) => {
 
         if (record && record.clockInTime) {
             return res.status(400).json({ message: 'Already clocked in today.' });
+        }
+
+        if (workingMode === 'Remote') {
+            const endOfDay = new Date(today);
+            endOfDay.setHours(23, 59, 59, 999);
+
+            const approvedWfh = await Request.findOne({
+                user: req.user._id,
+                type: 'Work From Home',
+                status: 'Approved',
+                startDate: { $lte: endOfDay },
+                endDate: { $gte: today }
+            });
+
+            if (!approvedWfh) {
+                return res.status(403).json({ message: 'You cannot clock in remotely without an approved Work From Home request for today.' });
+            }
         }
 
         if (!record) {

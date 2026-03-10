@@ -187,7 +187,7 @@ const AdminTab = ({
                     {pendingUsers.length > 0 ? (
                         <table className="data-table">
                             <thead>
-                                <tr><th>NAME</th><th>EMAIL</th><th>DESIGNATION</th><th>DEPT</th><th>PHONE</th><th>ACTIONS</th></tr>
+                                <tr><th>NAME</th><th>EMAIL</th><th>DESIGNATION</th><th>DEPT</th><th>PHONE</th><th></th></tr>
                             </thead>
                             <tbody>
                                 {pendingUsers.map(u => (
@@ -224,7 +224,7 @@ const AdminTab = ({
                     <div className="panel">
                         <div className="panel-header">Existing Configurations</div>
                         <table className="data-table">
-                            <thead><tr><th>TYPE</th><th>NAME</th><th>DATE</th><th>ACTIONS</th></tr></thead>
+                            <thead><tr><th>TYPE</th><th>NAME</th><th>DATE</th><th></th></tr></thead>
                             <tbody>
                                 {orgConfigs.map(c => (
                                     <tr key={c._id}>

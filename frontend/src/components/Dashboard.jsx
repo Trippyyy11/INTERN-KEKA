@@ -1230,7 +1230,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                                                 <th>Action Taken On</th>
                                                                 <th>Message</th>
                                                                 <th>Reject/Cancel Reason</th>
-                                                                <th>Actions</th>
+
                                                             </tr>
                                                         </thead>
                                                         <tbody>
@@ -1268,10 +1268,9 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                                                     <td style={{ fontSize: '0.8rem' }}>{r.status !== 'Pending' && r.actionDate ? new Date(r.actionDate).toLocaleDateString() : '-'}</td>
                                                                     <td style={{ fontSize: '0.75rem', color: 'var(--text-muted)', maxWidth: '150px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.message || '-'}</td>
                                                                     <td style={{ fontSize: '0.75rem', color: 'var(--text-muted)', maxWidth: '150px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.actionNote || '-'}</td>
-                                                                    <td><Info size={14} color="var(--primary)" style={{ cursor: 'pointer' }} /></td>
                                                                 </tr>
                                                             )) : (
-                                                                <tr><td colSpan="8" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>No WFH requests found.</td></tr>
+                                                                <tr><td colSpan="7" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>No WFH requests found.</td></tr>
                                                             )}
                                                         </tbody>
                                                     </table>
@@ -1474,7 +1473,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                                     <th>Action Taken On</th>
                                                     <th>Leave Note</th>
                                                     <th>Reject/Cancellation Reason</th>
-                                                    <th>Actions</th>
+
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -1512,10 +1511,9 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                                         <td style={{ fontSize: '0.8rem' }}>{h.status !== 'Pending' && h.actionDate ? new Date(h.actionDate).toLocaleDateString() : '-'}</td>
                                                         <td style={{ fontSize: '0.75rem', color: 'var(--text-muted)', maxWidth: '150px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{h.message || '-'}</td>
                                                         <td style={{ fontSize: '0.75rem', color: 'var(--text-muted)', maxWidth: '150px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{h.actionNote || '-'}</td>
-                                                        <td><Info size={14} color="var(--primary)" style={{ cursor: 'pointer' }} /></td>
                                                     </tr>
                                                 )) : (
-                                                    <tr><td colSpan="8" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>No leave history found.</td></tr>
+                                                    <tr><td colSpan="7" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>No leave history found.</td></tr>
                                                 )}
                                             </tbody>
                                         </table>
@@ -2355,7 +2353,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
                             {pendingUsers.length > 0 ? (
                                 <table className="data-table">
                                     <thead>
-                                        <tr><th>NAME</th><th>EMAIL</th><th>DESIGNATION</th><th>DEPT</th><th>PHONE</th><th>ACTIONS</th></tr>
+                                        <tr><th>NAME</th><th>EMAIL</th><th>DESIGNATION</th><th>DEPT</th><th>PHONE</th><th></th></tr>
                                     </thead>
                                     <tbody>
                                         {pendingUsers.map(u => (
@@ -2392,7 +2390,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
                             <div className="panel">
                                 <div className="panel-header">Existing Configurations</div>
                                 <table className="data-table">
-                                    <thead><tr><th>TYPE</th><th>NAME</th><th>DATE</th><th>ACTIONS</th></tr></thead>
+                                    <thead><tr><th>TYPE</th><th>NAME</th><th>DATE</th><th></th></tr></thead>
                                     <tbody>
                                         {orgConfigs.map(c => (
                                             <tr key={c._id}>
@@ -2429,7 +2427,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                     <th>Action Taken On</th>
                                     <th>Leave / WFH Note</th>
                                     <th>Action Note</th>
-                                    <th>Actions</th>
+                                    <th></th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -2482,9 +2480,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                                     <button className="btn btn-primary btn-sm" style={{ padding: '0.4rem 0.6rem', fontSize: '0.7rem' }} onClick={() => handleRequestAction(r._id, 'Approved')}>Approve</button>
                                                     <button className="btn btn-danger btn-sm" style={{ padding: '0.4rem 0.6rem', fontSize: '0.7rem' }} onClick={() => handleRequestAction(r._id, 'Rejected')}>Deny</button>
                                                 </div>
-                                            ) : (
-                                                <Info size={14} color="var(--primary)" style={{ cursor: 'pointer' }} />
-                                            )}
+                                            ) : null}
                                         </td>
                                     </tr>
                                 )) : (
