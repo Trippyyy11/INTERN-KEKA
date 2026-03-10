@@ -101,6 +101,25 @@ export default function Dashboard({ user, onLogout, setUser }) {
         } catch (err) { console.error('Failed to mark notifications read'); }
     };
 
+    const deleteNotificationById = async (id) => {
+        try {
+            await api.delete(`/notifications/${id}`);
+            setNotifications(prev => prev.filter(n => n._id !== id));
+            setUnreadCount(prev => {
+                const wasUnread = notifications.find(n => n._id === id && !n.isRead);
+                return wasUnread ? Math.max(0, prev - 1) : prev;
+            });
+        } catch (err) { console.error('Failed to delete notification'); }
+    };
+
+    const deleteAllNotifications = async () => {
+        try {
+            await api.delete('/notifications/all');
+            setNotifications([]);
+            setUnreadCount(0);
+        } catch (err) { console.error('Failed to delete all notifications'); }
+    };
+
     const markNotificationRead = async (id) => {
         try {
             await api.put(`/notifications/${id}/read`);
@@ -3437,6 +3456,14 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                                 Mark all read
                                             </span>
                                         )}
+                                        {notifications.length > 0 && (
+                                            <span
+                                                style={{ fontSize: '0.75rem', color: '#f43f5e', cursor: 'pointer', fontWeight: '500' }}
+                                                onClick={deleteAllNotifications}
+                                            >
+                                                Clear all
+                                            </span>
+                                        )}
                                     </div>
                                     <div style={{ overflowY: 'auto', flex: 1 }}>
                                         {notifications.length > 0 ? notifications.map(n => {
@@ -3464,7 +3491,8 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                                         borderBottom: '1px solid var(--border-dark)',
                                                         cursor: 'pointer',
                                                         background: n.isRead ? 'transparent' : 'rgba(59, 130, 246, 0.06)',
-                                                        transition: 'background 0.2s'
+                                                        transition: 'background 0.2s',
+                                                        position: 'relative'
                                                     }}
                                                 >
                                                     <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
@@ -3472,7 +3500,22 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                                         <div style={{ flex: 1, minWidth: 0 }}>
                                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem' }}>
                                                                 <span style={{ fontWeight: n.isRead ? '400' : '600', fontSize: '0.82rem', color: 'var(--text-main)' }}>{n.title}</span>
-                                                                <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', flexShrink: 0 }}>{timeAgo(n.createdAt)}</span>
+                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
+                                                                    <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{timeAgo(n.createdAt)}</span>
+                                                                    <span
+                                                                        onClick={(e) => { e.stopPropagation(); deleteNotificationById(n._id); }}
+                                                                        style={{
+                                                                            width: '18px', height: '18px', borderRadius: '50%',
+                                                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                                            fontSize: '0.7rem', color: 'var(--text-muted)',
+                                                                            cursor: 'pointer', transition: 'all 0.2s',
+                                                                            flexShrink: 0
+                                                                        }}
+                                                                        onMouseEnter={(e) => { e.target.style.background = 'rgba(244,63,94,0.15)'; e.target.style.color = '#f43f5e'; }}
+                                                                        onMouseLeave={(e) => { e.target.style.background = 'transparent'; e.target.style.color = 'var(--text-muted)'; }}
+                                                                        title="Delete notification"
+                                                                    >✕</span>
+                                                                </div>
                                                             </div>
                                                             <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.2rem', lineHeight: 1.35 }}>{n.message}</div>
                                                             {!n.isRead && <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--primary)', marginTop: '0.4rem' }}></div>}
