@@ -188,6 +188,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
 
     // Admin states
     const [allUsers, setAllUsers] = useState([]);
+    const pendingUsers = useMemo(() => allUsers.filter(u => u.status === 'Pending'), [allUsers]);
     const [systemSettings, setSystemSettings] = useState({ workingHoursPerDay: 8, defaultLeaveQuota: 12, companyName: 'Teaching Pariksha' });
     const [customAlert, setCustomAlert] = useState(null); // { message: '', type: 'info' | 'confirm', onConfirm: fn }
 
@@ -985,340 +986,41 @@ export default function Dashboard({ user, onLogout, setUser }) {
                     <div className="page-content">
 
                         {activeSubTab === 'Attendance' && (
-                            <>
-                                <div className="grid" style={{ gridTemplateColumns: 'minmax(300px, 1fr) minmax(300px, 1fr) minmax(300px, 1fr)', gap: '1.25rem', marginBottom: '1.25rem' }}>
-                                    {/* Attendance Stats Panel */}
-                                    <div className="panel" style={{ padding: '1.25rem' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-                                            <span style={{ fontSize: '0.9rem', fontWeight: '500' }}>Attendance Stats</span>
-                                            <select
-                                                value={statsPeriod}
-                                                onChange={(e) => {
-                                                    setStatsPeriod(e.target.value);
-                                                    fetchTeamStats(e.target.value);
-                                                }}
-                                                style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: '0.75rem', outline: 'none', cursor: 'pointer' }}
-                                            >
-                                                <option value="Last Week">Last Week</option>
-                                                <option value="Last Month">Last Month</option>
-                                            </select>
-                                        </div>
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                                            {(meStats.hasData || teammateIndividualStats.length > 0) ? (
-                                                <>
-                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                                            <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(var(--primary-rgb), 0.2)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem' }}>ME</div>
-                                                            <span style={{ fontSize: '0.85rem' }}>Me</span>
-                                                        </div>
-                                                        <div style={{ textAlign: 'right' }}>
-                                                            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', letterSpacing: '0.3px' }}>Avg Hrs / Day</div>
-                                                            <div style={{ fontSize: '0.9rem', fontWeight: '500' }}>{meStats.avgHours}</div>
-                                                        </div>
-                                                        <div style={{ textAlign: 'right' }}>
-                                                            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', letterSpacing: '0.3px' }}>On Time Arrival</div>
-                                                            <div style={{ fontSize: '0.9rem', fontWeight: '500' }}>{meStats.onTime}</div>
-                                                        </div>
-                                                    </div>
-                                                    {teammateIndividualStats.map(ts => (
-                                                        <div key={ts._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                                                <div className="avatar" style={{ width: '32px', height: '32px', fontSize: '0.7rem', background: 'rgba(var(--primary-rgb), 0.1)', color: 'var(--text-muted)' }}>
-                                                                    {ts.name.substring(0, 2).toUpperCase()}
-                                                                </div>
-                                                                <span style={{ fontSize: '0.85rem' }}>{ts.name}</span>
-                                                            </div>
-                                                            <div style={{ textAlign: 'right' }}>
-                                                                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', letterSpacing: '0.3px' }}>Avg Hrs / Day</div>
-                                                                <div style={{ fontSize: '0.9rem', fontWeight: '500' }}>{Math.floor(ts.avgHours)}h {Math.round((ts.avgHours % 1) * 60)}m</div>
-                                                            </div>
-                                                            <div style={{ textAlign: 'right' }}>
-                                                                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', letterSpacing: '0.3px' }}>On Time Arrival</div>
-                                                                <div style={{ fontSize: '0.9rem', fontWeight: '500' }}>{ts.onTimePercentage}%</div>
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                </>
-                                            ) : (
-                                                <div style={{ textAlign: 'center', padding: '2rem 0', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                                                    No data available to show for this period.
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    {/* Work Schedule Panel */}
-                                    <div className="panel" style={{ padding: '1.25rem' }}>
-                                        <div className="panel-header" style={{ marginBottom: '1rem' }}>Work Schedule</div>
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                                            <div style={{ background: 'rgba(var(--primary-rgb), 0.05)', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-dark)' }}>
-                                                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'capitalize', letterSpacing: '0.3px', marginBottom: '0.5rem' }}>Daily Shift Requirement</div>
-                                                <div style={{ fontSize: '0.95rem', fontWeight: '500', color: 'var(--text-main)' }}>{user?.workingSchedule?.shiftStart || '11:00'} - {user?.workingSchedule?.shiftEnd || '07:00 PM'}</div>
-                                                <div style={{ fontSize: '0.75rem', color: 'var(--primary)', marginTop: '0.25rem', fontWeight: '500' }}>Target: {user?.workingSchedule?.minHours || 7.0} Effective Hours</div>
-                                            </div>
-
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', padding: '0.2rem 0' }}>
-                                                    <span style={{ color: 'var(--text-muted)' }}>Status Window:</span>
-                                                    <span style={{ color: 'var(--text-main)', fontWeight: '500' }}>{user?.workingSchedule?.shiftStart || '11:00'} to {(() => {
-                                                        const [h, m] = (user?.workingSchedule?.shiftStart || '11:00').split(':').map(Number);
-                                                        return `${(h + 1) % 12 || 12}:${m.toString().padStart(2, '0')} ${h + 1 >= 12 ? 'PM' : 'AM'}`;
-                                                    })()}</span>
-                                                </div>
-                                                <div style={{ height: '1px', background: 'var(--border-dark)' }}></div>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                                                    <Calendar size={12} /> Next week-off: {user?.workingSchedule?.weekOffs?.[0] || 'Sunday'}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-
-                                    {/* Actions Panel */}
-                                    <div className="panel panel-actions" style={{ padding: '1.25rem' }}>
-                                        <div className="panel-header" style={{ marginBottom: '0.75rem' }}>Actions</div>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                            <div style={{ display: 'flex', alignItems: 'center' }}>
-                                                <div>
-                                                    <div style={{ fontSize: '1.25rem', fontWeight: '400', marginBottom: '0.25rem' }}>
-                                                        <span className={isClockedIn ? 'timer-pulse' : ''} style={{ display: 'inline-block' }}>{currentTime}</span>
-                                                    </div>
-                                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>{new Date().toDateString()}</div>
-                                                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'capitalize', letterSpacing: '0.3px', marginBottom: '0.25rem' }}>Total Hours <HelpCircle size={10} /></div>
-                                                    <div style={{ fontSize: '0.85rem' }}>
-                                                        Effective: <span style={{ fontWeight: '500' }}>{isClockedIn ? calculateElapsedTime(activeLog?.clockInTime).text : '0h 0m'}</span>
-                                                    </div>
-                                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                                                        Gross: {isClockedIn ? calculateElapsedTime(activeLog?.clockInTime).text : '0h 0m'}
-                                                    </div>
-                                                </div>
-                                                {isClockedIn && renderHourglass()}
-                                            </div>
-                                            <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem' }}>
-                                                {isAttendanceFinished && !isClockedIn ? (
-                                                    <div style={{ textAlign: 'right', color: '#00ff88', fontSize: '0.85rem', fontWeight: '500', maxWidth: '180px', lineHeight: '1.4' }}>
-                                                        Your attendance for today is completed. See you tomorrow!
-                                                    </div>
-                                                ) : (
-                                                    <>
-                                                        <button
-                                                            className={`btn ${isClockedIn ? 'btn-danger' : 'btn-primary'}`}
-                                                            onClick={handleClockToggle}
-                                                            style={{ width: '120px', fontSize: '0.8rem', padding: '0.5rem 0' }}
-                                                        >
-                                                            {isClockedIn ? 'Web Clock-out' : 'Web Clock-in'}
-                                                        </button>
-                                                        <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center' }}>
-                                                            {isClockedIn ? (
-                                                                <>
-                                                                    <span className="action-timer-dot timer-pulse"></span>
-                                                                    <Clock size={10} className="timer-pulse" style={{ marginRight: '4px' }} />
-                                                                    {calculateElapsedTime(activeLog?.clockInTime).text} Since Last Login
-                                                                </>
-                                                            ) : 'Currently offline'}
-                                                        </div>
-                                                    </>
-                                                )}
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', color: 'var(--primary)', cursor: 'pointer' }}>
-                                                    <Home size={12} /> {isClockedIn ? (isWFH ? 'Work From Home' : 'Work On-Site') : (selectedWorkingMode === 'Remote' ? 'Work From Home' : 'Work On-Site')}
-                                                </div>
-                                                <div
-                                                    style={{ fontSize: '0.75rem', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
-                                                    onClick={() => setShowAttendancePolicyModal(true)}
-                                                >
-                                                    <FileText size={12} /> Attendance Policy
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="panel" style={{ padding: 0 }}>
-                                    <div style={{ padding: '0 1.25rem', borderBottom: '1px solid var(--border-dark)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <div style={{ display: 'flex', gap: '0.5rem', fontSize: '0.9rem', padding: '0.75rem 0' }}>
-                                            {['Attendance Log', 'Calendar', 'Attendance Requests'].map(tab => (
-                                                <span
-                                                    key={tab}
-                                                    onClick={() => setAttendanceTab(tab)}
-                                                    style={{
-                                                        padding: '0.4rem 1rem',
-                                                        cursor: 'pointer',
-                                                        color: attendanceTab === tab ? '#ffffff' : 'var(--text-muted)',
-                                                        backgroundColor: attendanceTab === tab ? 'var(--primary)' : 'transparent',
-                                                        borderRadius: '6px',
-                                                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                                                        fontWeight: '500'
-                                                    }}
-                                                >
-                                                    {tab}
-                                                </span>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    <div style={{ padding: '1.25rem' }}>
-                                        {attendanceTab === 'Attendance Log' && (
-                                            <>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-                                                    <span style={{ fontSize: '1rem', fontWeight: '500' }}>Attendance: {attendancePeriod}</span>
-                                                    <div style={{ display: 'flex', borderRadius: '4px', border: '1px solid var(--border-dark)', overflow: 'hidden' }}>
-                                                        {(() => {
-                                                            const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
-                                                            const currentMonth = new Date().getMonth(); // 0-11
-                                                            const displayMonths = ['30 DAYS'];
-                                                            for (let i = currentMonth; i >= 0; i--) {
-                                                                displayMonths.push(months[i]);
-                                                            }
-                                                            return displayMonths.map((m, i) => (
-                                                                <div
-                                                                    key={m}
-                                                                    onClick={() => setAttendancePeriod(m)}
-                                                                    style={{
-                                                                        padding: '0.4rem 0.75rem', fontSize: '0.7rem', cursor: 'pointer',
-                                                                        background: attendancePeriod === m ? 'var(--primary)' : 'transparent',
-                                                                        color: attendancePeriod === m ? 'white' : 'var(--text-muted)',
-                                                                        borderRight: i === displayMonths.length - 1 ? 'none' : '1px solid var(--border-dark)'
-                                                                    }}
-                                                                >
-                                                                    {m}
-                                                                </div>
-                                                            ));
-                                                        })()}
-                                                    </div>
-                                                </div>
-                                                <table className="data-table">
-                                                    <thead>
-                                                        <tr style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-                                                            <th>Date</th>
-                                                            <th>Attendance Visual</th>
-                                                            <th>Effective Hours</th>
-                                                            <th>Gross Hours</th>
-                                                            <th>Arrival</th>
-                                                            <th>Log</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        {filteredAttendanceLogs.length > 0 ? filteredAttendanceLogs.map(log => (
-                                                            <tr key={log._id}>
-                                                                <td style={{ fontSize: '0.8rem' }}>{new Date(log.date).toLocaleDateString('en-US', { weekday: 'short', day: '2-digit', month: 'short' })}</td>
-                                                                <td>
-                                                                    <div style={{ width: '120px', height: '6px', background: 'var(--border-dark)', borderRadius: '3px' }}>
-                                                                        <div style={{ width: log.clockOutTime ? '100%' : '50%', height: '100%', background: 'var(--primary)', borderRadius: '3px' }}></div>
-                                                                    </div>
-                                                                </td>
-                                                                <td style={{ fontSize: '0.85rem' }}>
-                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                                        <div style={{ width: '8px', height: '8px', borderRadius: '50%', border: '2px solid var(--primary)' }}></div>
-                                                                        {log.totalHours ? `${Math.floor(log.totalHours)}h ${Math.round((log.totalHours % 1) * 60)}m` : (log.clockInTime ? 'Ongoing' : '0h 0m')}
-                                                                    </div>
-                                                                </td>
-                                                                <td style={{ fontSize: '0.85rem' }}>{log.totalHours ? `${Math.floor(log.totalHours)}h ${Math.round((log.totalHours % 1) * 60)}m` : (log.clockInTime ? 'Ongoing' : '0h 0m')}</td>
-                                                                <td style={{ fontSize: '0.8rem' }}>
-                                                                    {(() => {
-                                                                        if (!log.clockInTime) return '-';
-                                                                        const clockInDate = new Date(log.clockInTime);
-                                                                        const hours = clockInDate.getHours();
-                                                                        const mins = clockInDate.getMinutes();
-                                                                        const totalMins = hours * 60 + mins;
-
-                                                                        const [shiftH, shiftM] = (user?.workingSchedule?.shiftStart || '11:00').split(':').map(Number);
-                                                                        const shiftStartMins = shiftH * 60 + shiftM;
-
-                                                                        if (totalMins < shiftStartMins) {
-                                                                            return <span style={{ color: 'var(--success)', fontWeight: '500' }}>Early</span>;
-                                                                        } else if (totalMins <= shiftStartMins + 60) {
-                                                                            return <span style={{ color: 'var(--primary)', fontWeight: '500' }}>On Time</span>;
-                                                                        } else {
-                                                                            return <span style={{ color: 'var(--danger)', fontWeight: '500' }}>Late</span>;
-                                                                        }
-                                                                    })()}
-                                                                </td>
-                                                                <td><Info size={14} color="var(--primary)" style={{ cursor: 'pointer' }} onClick={() => setShowLogInfo(log)} /></td>
-                                                            </tr>
-                                                        )) : (
-                                                            <tr style={{ border: 'none' }}><td colSpan="6" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>No logs found for {attendancePeriod}</td></tr>
-                                                        )}
-                                                    </tbody>
-                                                </table>
-                                            </>
-                                        )}
-                                        {attendanceTab === 'Calendar' && (
-                                            <div style={{ padding: '1.25rem' }}>
-                                                {renderAttendanceCalendar()}
-                                            </div>
-                                        )}
-                                        {attendanceTab === 'Attendance Requests' && (
-                                            <div>
-                                                <div style={{ fontSize: '0.9rem', fontWeight: '500', marginBottom: '1rem', color: 'var(--text-main)' }}>Work From Home Requests</div>
-                                                <div className="panel" style={{ padding: 0 }}>
-                                                    <table className="data-table">
-                                                        <thead>
-                                                            <tr style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-                                                                <th>Request Dates</th>
-                                                                <th>Request Type</th>
-                                                                <th>Status</th>
-                                                                <th>Requested By</th>
-                                                                <th>Action Taken On</th>
-                                                                <th>Message</th>
-                                                                <th>Reject/Cancel Reason</th>
-
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody>
-                                                            {myRequests.filter(r => r.type === 'Work From Home').length > 0 ? myRequests.filter(r => r.type === 'Work From Home').map(r => (
-                                                                <tr key={r._id}>
-                                                                    <td style={{ fontSize: '0.8rem' }}>
-                                                                        {new Date(r.startDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
-                                                                        {r.startDate !== r.endDate && ` - ${new Date(r.endDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}`}
-                                                                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '2px' }}>
-                                                                            {Math.ceil((new Date(r.endDate) - new Date(r.startDate)) / (1000 * 60 * 60 * 24)) + 1} day(s)
-                                                                        </div>
-                                                                    </td>
-                                                                    <td style={{ fontSize: '0.85rem' }}>
-                                                                        {r.type}
-                                                                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Requested on {new Date(r.createdAt).toLocaleDateString()}</div>
-                                                                    </td>
-                                                                    <td>
-                                                                        <span style={{
-                                                                            padding: '0.2rem 0.6rem',
-                                                                            borderRadius: '20px',
-                                                                            fontSize: '0.7rem',
-                                                                            fontWeight: '700',
-                                                                            textTransform: 'uppercase',
-                                                                            letterSpacing: '0.5px',
-                                                                            ...getStatusStyle(r.status)
-                                                                        }}>
-                                                                            {r.status}
-                                                                        </span>
-                                                                        {r.status !== 'Pending' && r.actionBy && (
-                                                                            <div style={{ fontSize: '0.65rem', color: isLightMode ? 'rgba(0,0,0,0.6)' : 'var(--text-muted)', marginTop: '4px', fontWeight: '500' }}>by {r.actionBy.name}</div>
-                                                                        )}
-                                                                    </td>
-
-                                                                    <td style={{ fontSize: '0.8rem' }}>{user.name}</td>
-                                                                    <td style={{ fontSize: '0.8rem' }}>{r.status !== 'Pending' && r.actionDate ? new Date(r.actionDate).toLocaleDateString() : '-'}</td>
-                                                                    <td style={{ fontSize: '0.75rem', color: 'var(--text-muted)', maxWidth: '150px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.message || '-'}</td>
-                                                                    <td style={{ fontSize: '0.75rem', color: 'var(--text-muted)', maxWidth: '150px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.actionNote || '-'}</td>
-                                                                </tr>
-                                                            )) : (
-                                                                <tr><td colSpan="7" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>No WFH requests found.</td></tr>
-                                                            )}
-                                                        </tbody>
-                                                    </table>
-                                                </div>
-                                            </div>
-                                        )}
-                                        {['Overtime Requests'].includes(attendanceTab) && (
-                                            <div style={{ padding: '4rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-                                                <div style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>{attendanceTab} Content</div>
-                                                <p style={{ fontSize: '0.85rem' }}>This section is currently being updated with real-time data.</p>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            </>
-                        )
-                        }
+                            <AttendanceTab
+                                user={user}
+                                activeLog={activeLog}
+                                isClockedIn={isClockedIn}
+                                currentTime={currentTime}
+                                attendanceLogs={attendanceLogs}
+                                myLeaves={myLeaves}
+                                dashData={dashData}
+                                statsPeriod={statsPeriod}
+                                setStatsPeriod={setStatsPeriod}
+                                meStats={meStats}
+                                teammateIndividualStats={teammateIndividualStats}
+                                fetchTeamStats={fetchTeamStats}
+                                calculateElapsedTime={calculateElapsedTime}
+                                handleClockToggle={handleClockToggle}
+                                isAttendanceFinished={isAttendanceFinished}
+                                isWFH={isWFH}
+                                selectedWorkingMode={selectedWorkingMode}
+                                setShowAttendancePolicyModal={setShowAttendancePolicyModal}
+                                attendanceTab={attendanceTab}
+                                setAttendanceTab={setAttendanceTab}
+                                attendancePeriod={attendancePeriod}
+                                setAttendancePeriod={setAttendancePeriod}
+                                filteredAttendanceLogs={filteredAttendanceLogs}
+                                setShowLogInfo={setShowLogInfo}
+                                currentCalendarMonth={currentCalendarMonth}
+                                setCurrentCalendarMonth={setCurrentCalendarMonth}
+                                currentCalendarYear={currentCalendarYear}
+                                setCurrentCalendarYear={setCurrentCalendarYear}
+                                myRequests={myRequests}
+                                getStatusStyle={getStatusStyle}
+                                isLightMode={isLightMode}
+                                systemSettings={systemSettings}
+                            />
+                        )}
 
                         {
                             activeSubTab === 'Performance' && (
@@ -1362,811 +1064,64 @@ export default function Dashboard({ user, onLogout, setUser }) {
                         }
 
                         {activeSubTab === 'Leave' && (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-                                {/* My Leave Stats */}
-                                <div>
-                                    <div style={{ fontSize: '0.9rem', fontWeight: '500', marginBottom: '1rem', color: 'var(--text-main)' }}>My Leave Stats</div>
-                                    <div className="grid" style={{ gridTemplateColumns: '1fr 1fr 1fr', gap: '1.5rem' }}>
-                                        {/* Weekly Pattern */}
-                                        <div className="panel" style={{ padding: '1.25rem' }}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-                                                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Weekly Pattern</span>
-                                                <Info size={14} color="var(--text-muted)" />
-                                            </div>
-                                            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', height: '100px', padding: '0 0.5rem' }}>
-                                                {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, i) => (
-                                                    <div key={day} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', flex: 1 }}>
-                                                        <div style={{ width: '12px', height: `${(leaveStats.weeklyPattern?.[i] || 0) * 20 + 2}px`, minHeight: '4px', background: 'var(--primary)', borderRadius: '2px', opacity: 0.8 }}></div>
-                                                        <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>{day[0]}</span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                        {/* Consumed Leave Types */}
-                                        <div className="panel" style={{ padding: '1.25rem', textAlign: 'center' }}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                                                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Consumed Leave Types</span>
-                                                <Info size={14} color="var(--text-muted)" />
-                                            </div>
-                                            <div style={{ position: 'relative', width: '80px', height: '80px', margin: '0 auto' }}>
-                                                <svg viewBox="0 0 36 36" style={{ transform: 'rotate(-90deg)' }}>
-                                                    <circle cx="18" cy="18" r="15.915" fill="transparent" stroke="var(--border-dark)" strokeWidth="4"></circle>
-                                                    {Object.entries(leaveStats.balances || {}).map(([type, data], i, arr) => {
-                                                        const totalConsumed = arr.reduce((acc, [_, d]) => acc + d.consumed, 0);
-                                                        if (totalConsumed === 0) return null;
-                                                        const colors = ['#ff00cc', '#ccff00', '#ffab00', '#00ffa2'];
-                                                        let offset = 0;
-                                                        for (let j = 0; j < i; j++) offset += (arr[j][1].consumed / totalConsumed) * 100;
-                                                        const dash = (data.consumed / totalConsumed) * 100;
-                                                        return (
-                                                            <circle
-                                                                key={type}
-                                                                cx="18" cy="18" r="15.915"
-                                                                fill="transparent"
-                                                                stroke={colors[i % colors.length]}
-                                                                strokeWidth="4"
-                                                                strokeDasharray={`${dash} ${100 - dash}`}
-                                                                strokeDashoffset={100 - offset + 25}
-                                                            ></circle>
-                                                        );
-                                                    })}
-                                                </svg>
-                                                <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', fontSize: '0.65rem', fontWeight: '600' }}>
-                                                    Leave<br />Types
-                                                </div>
-                                            </div>
-                                        </div>
-                                        {/* Monthly Stats */}
-                                        <div className="panel" style={{ padding: '1.25rem' }}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-                                                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Monthly Stats</span>
-                                                <Info size={14} color="var(--text-muted)" />
-                                            </div>
-                                            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', height: '100px', padding: '0 0.5rem', gap: '2px' }}>
-                                                {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((m, i) => (
-                                                    <div key={m} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', flex: 1 }}>
-                                                        <div style={{ width: '100%', height: `${(leaveStats.monthlyStats?.[i] || 0) * 10 + 2}px`, minHeight: '2px', background: 'var(--primary)', borderRadius: '1px', opacity: i < new Date().getMonth() + 1 ? 0.8 : 0.2 }}></div>
-                                                        <span style={{ fontSize: '0.55rem', color: 'var(--text-muted)' }}>{m[0]}</span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Leave Balances */}
-                                <div>
-                                    <div style={{ fontSize: '0.9rem', fontWeight: '500', marginBottom: '1rem', color: 'var(--text-main)' }}>Leave Balances</div>
-                                    <div className="grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.5rem' }}>
-                                        {[
-                                            { type: 'Casual Leave', key: 'Casual', color: '#ff00cc' },
-                                            { type: 'Paid Leave', key: 'Paid', color: '#ffab00' },
-                                            { type: 'Sick Leave', key: 'Sick', color: '#ccff00' },
-                                            { type: 'Comp Off', key: 'Comp Off', color: '#00ffa2' }
-                                        ].map(item => {
-                                            const data = leaveStats.balances?.[item.key] || { total: 0, consumed: 0 };
-                                            const available = Math.max(0, data.total - data.consumed);
-                                            const percentage = data.total > 0 ? (available / data.total) * 100 : 0;
-                                            return (
-                                                <div key={item.key} className="panel" style={{ padding: '1.5rem' }}>
-                                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-                                                        <span style={{ fontSize: '0.85rem', fontWeight: '500' }}>{item.type}</span>
-                                                        <span style={{ fontSize: '0.7rem', color: 'var(--primary)', cursor: 'pointer' }}>View details</span>
-                                                    </div>
-                                                    <div style={{ position: 'relative', width: '100px', height: '100px', margin: '0 auto 1.5rem' }}>
-                                                        <svg viewBox="0 0 36 36" style={{ transform: 'rotate(-90deg)', width: '100%', height: '100%' }}>
-                                                            <circle cx="18" cy="18" r="15.915" fill="transparent" stroke={`${item.color}20`} strokeWidth="3"></circle>
-                                                            <circle
-                                                                cx="18" cy="18" r="15.915"
-                                                                fill="transparent"
-                                                                stroke={item.color}
-                                                                strokeWidth="3"
-                                                                strokeDasharray={`${percentage} ${100 - percentage}`}
-                                                                strokeDashoffset="25"
-                                                            ></circle>
-                                                        </svg>
-                                                        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center' }}>
-                                                            <div style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>{available === Infinity ? '∞' : available} Days</div>
-                                                            <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>Available</div>
-                                                        </div>
-                                                    </div>
-                                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', borderTop: '1px solid var(--border-dark)', paddingTop: '1rem', marginTop: 'auto' }}>
-                                                        <div>
-                                                            <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Available</div>
-                                                            <div style={{ fontSize: '0.8rem', fontWeight: '500' }}>{available === Infinity ? '∞' : `${available} days`}</div>
-                                                        </div>
-                                                        <div style={{ textAlign: 'right' }}>
-                                                            <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Consumed</div>
-                                                            <div style={{ fontSize: '0.8rem', fontWeight: '500' }}>{data.consumed} days</div>
-                                                        </div>
-                                                        <div style={{ marginTop: '0.5rem' }}>
-                                                            <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Annual Quota</div>
-                                                            <div style={{ fontSize: '0.8rem', fontWeight: '500' }}>{data.total === Infinity ? '∞' : `${data.total} days`}</div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-
-                                {/* Leave History */}
-                                <div>
-                                    <div style={{ fontSize: '0.9rem', fontWeight: '500', marginBottom: '1rem', color: 'var(--text-main)' }}>Leave History</div>
-                                    <div className="panel" style={{ padding: 0 }}>
-                                        <table className="data-table">
-                                            <thead>
-                                                <tr style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-                                                    <th>Leave Dates</th>
-                                                    <th>Leave Type</th>
-                                                    <th>Status</th>
-                                                    <th>Requested By</th>
-                                                    <th>Action Taken On</th>
-                                                    <th>Leave Note</th>
-                                                    <th>Reject/Cancellation Reason</th>
-
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {myRequests.filter(r => ['Leave Application', 'Half Day'].includes(r.type)).length > 0 ? myRequests.filter(r => ['Leave Application', 'Half Day'].includes(r.type)).map(h => (
-                                                    <tr key={h._id}>
-                                                        <td style={{ fontSize: '0.8rem' }}>
-                                                            {new Date(h.startDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
-                                                            {h.startDate !== h.endDate && ` - ${new Date(h.endDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}`}
-                                                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '2px' }}>
-                                                                {Math.ceil((new Date(h.endDate) - new Date(h.startDate)) / (1000 * 60 * 60 * 24)) + 1} day(s)
-                                                            </div>
-                                                        </td>
-                                                        <td style={{ fontSize: '0.85rem' }}>
-                                                            {h.type}
-                                                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Requested on {new Date(h.createdAt).toLocaleDateString()}</div>
-                                                        </td>
-                                                        <td>
-                                                            <span style={{
-                                                                padding: '0.2rem 0.6rem',
-                                                                borderRadius: '20px',
-                                                                fontSize: '0.7rem',
-                                                                fontWeight: '700',
-                                                                textTransform: 'uppercase',
-                                                                letterSpacing: '0.5px',
-                                                                ...getStatusStyle(h.status)
-                                                            }}>
-                                                                {h.status}
-                                                            </span>
-                                                            {h.status !== 'Pending' && h.actionBy && (
-                                                                <div style={{ fontSize: '0.65rem', color: isLightMode ? 'rgba(0,0,0,0.6)' : 'var(--text-muted)', marginTop: '4px', fontWeight: '500' }}>by {h.actionBy.name}</div>
-                                                            )}
-                                                        </td>
-
-                                                        <td style={{ fontSize: '0.8rem' }}>{user.name}</td>
-                                                        <td style={{ fontSize: '0.8rem' }}>{h.status !== 'Pending' && h.actionDate ? new Date(h.actionDate).toLocaleDateString() : '-'}</td>
-                                                        <td style={{ fontSize: '0.75rem', color: 'var(--text-muted)', maxWidth: '150px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{h.message || '-'}</td>
-                                                        <td style={{ fontSize: '0.75rem', color: 'var(--text-muted)', maxWidth: '150px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{h.actionNote || '-'}</td>
-                                                    </tr>
-                                                )) : (
-                                                    <tr><td colSpan="7" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>No leave history found.</td></tr>
-                                                )}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
+                            <LeaveTab
+                                leaveStats={leaveStats}
+                                myRequests={myRequests}
+                                user={user}
+                                getStatusStyle={getStatusStyle}
+                                isLightMode={isLightMode}
+                            />
                         )}
 
                         {activeSubTab === 'Request' && (
-                            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '2rem', alignItems: 'start' }}>
-                                {/* Request Form */}
-                                <div className="panel" style={{ padding: '2rem', borderRadius: '20px' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '2rem' }}>
-                                        <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(var(--primary-rgb, 155, 89, 182), 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                            <Send size={18} color="var(--primary)" />
-                                        </div>
-                                        <div>
-                                            <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '700', color: 'var(--text-main)' }}>New Request</h3>
-                                            <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)' }}>Submit a leave, WFH, or half-day request</p>
-                                        </div>
-                                    </div>
-
-                                    {/* Request Type */}
-                                    <div style={{ marginBottom: '1.5rem' }}>
-                                        <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Request Type *</label>
-                                        <div style={{ position: 'relative' }}>
-                                            <select
-                                                value={requestType}
-                                                onChange={e => setRequestType(e.target.value)}
-                                                style={{
-                                                    width: '100%',
-                                                    padding: '0.85rem 1rem',
-                                                    borderRadius: '12px',
-                                                    border: '1px solid var(--border-dark)',
-                                                    background: 'var(--bg-main)',
-                                                    color: 'var(--text-main)',
-                                                    fontSize: '0.9rem',
-                                                    fontWeight: '500',
-                                                    appearance: 'none',
-                                                    cursor: 'pointer',
-                                                    outline: 'none',
-                                                    transition: 'border-color 0.2s'
-                                                }}
-                                            >
-                                                <option value="">Select request type...</option>
-                                                <option value="Leave Application">🏖️ Leave Application</option>
-                                                <option value="Work From Home">🏠 Work From Home</option>
-                                                <option value="Half Day">⏰ Half Day</option>
-                                                <option value="Comp Off">🔄 Comp Off</option>
-                                                <option value="Leave Cancellation">🚫 Leave Cancellation</option>
-                                            </select>
-                                            <ChevronDown size={16} color="var(--text-muted)" style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
-                                        </div>
-                                    </div>
-
-                                    {requestType === 'Leave Application' && (
-                                        <div style={{ marginBottom: '1.5rem' }}>
-                                            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Leave Type *</label>
-                                            <div style={{ position: 'relative' }}>
-                                                <select
-                                                    value={requestLeaveType}
-                                                    onChange={e => setRequestLeaveType(e.target.value)}
-                                                    style={{
-                                                        width: '100%',
-                                                        padding: '0.85rem 1rem',
-                                                        borderRadius: '12px',
-                                                        border: '1px solid var(--border-dark)',
-                                                        background: 'var(--bg-main)',
-                                                        color: 'var(--text-main)',
-                                                        fontSize: '0.9rem',
-                                                        fontWeight: '500',
-                                                        appearance: 'none',
-                                                        cursor: 'pointer',
-                                                        outline: 'none',
-                                                        transition: 'border-color 0.2s'
-                                                    }}
-                                                >
-                                                    <option value="">Select leave type...</option>
-                                                    <option value="Paid">Paid</option>
-                                                    <option value="Sick">Sick</option>
-                                                    <option value="Casual">Casual</option>
-                                                    <option value="Unpaid">Unpaid</option>
-                                                </select>
-                                                <ChevronDown size={16} color="var(--text-muted)" style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {requestType === 'Leave Cancellation' && (
-                                        <div style={{ marginBottom: '1.5rem' }}>
-                                            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Select Approved Leave *</label>
-                                            <select
-                                                value={selectedLeaveForCancel?._id || ''}
-                                                onChange={e => {
-                                                    const leave = myLeaves.find(l => l._id === e.target.value);
-                                                    setSelectedLeaveForCancel(leave);
-                                                    setDatesToCancel([]);
-                                                }}
-                                                style={{ width: '100%', padding: '0.85rem 1rem', borderRadius: '12px', border: '1px solid var(--border-dark)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '0.9rem', marginBottom: '1rem' }}
-                                            >
-                                                <option value="">Select leave to cancel...</option>
-                                                {myLeaves.filter(l => l.status === 'Approved' && new Date(l.endDate) >= new Date()).map(l => (
-                                                    <option key={l._id} value={l._id}>
-                                                        {l.type} ({new Date(l.startDate).toLocaleDateString()} - {new Date(l.endDate).toLocaleDateString()})
-                                                    </option>
-                                                ))}
-                                            </select>
-
-                                            {selectedLeaveForCancel && (
-                                                <div>
-                                                    <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Select dates to cancel:</label>
-                                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '0.5rem' }}>
-                                                        {(() => {
-                                                            const dates = [];
-                                                            let curr = new Date(selectedLeaveForCancel.startDate);
-                                                            const end = new Date(selectedLeaveForCancel.endDate);
-                                                            while (curr <= end) {
-                                                                dates.push(new Date(curr));
-                                                                curr.setDate(curr.getDate() + 1);
-                                                            }
-                                                            return dates.map(date => {
-                                                                const dateStr = date.toISOString().split('T')[0];
-                                                                const isAlreadyCancelled = selectedLeaveForCancel.cancelledDates?.some(d => new Date(d).toISOString().split('T')[0] === dateStr);
-                                                                return (
-                                                                    <label key={dateStr} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: isAlreadyCancelled ? 'var(--text-muted)' : 'var(--text-main)', cursor: isAlreadyCancelled ? 'not-allowed' : 'pointer' }}>
-                                                                        <input
-                                                                            type="checkbox"
-                                                                            disabled={isAlreadyCancelled}
-                                                                            checked={datesToCancel.includes(dateStr) || isAlreadyCancelled}
-                                                                            onChange={() => {
-                                                                                if (datesToCancel.includes(dateStr)) {
-                                                                                    setDatesToCancel(datesToCancel.filter(d => d !== dateStr));
-                                                                                } else {
-                                                                                    setDatesToCancel([...datesToCancel, dateStr]);
-                                                                                }
-                                                                            }}
-                                                                        />
-                                                                        {date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                                                                        {isAlreadyCancelled && <span style={{ fontSize: '0.7rem', color: 'var(--danger)' }}>(Cancelled)</span>}
-                                                                    </label>
-                                                                );
-                                                            });
-                                                        })()}
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-
-                                    {/* Recipients */}
-                                    <div style={{ marginBottom: '1.5rem' }}>
-                                        <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Recipients *</label>
-                                        <div style={{
-                                            border: '1px solid var(--border-dark)',
-                                            borderRadius: '12px',
-                                            padding: '0.5rem',
-                                            background: 'var(--bg-main)',
-                                            minHeight: '50px'
-                                        }}>
-                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: requestRecipients.length > 0 ? '0.5rem' : 0 }}>
-                                                {requestRecipients.map(r => (
-                                                    <div key={r._id} style={{
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        gap: '0.4rem',
-                                                        background: 'rgba(var(--primary-rgb, 155, 89, 182), 0.1)',
-                                                        border: '1px solid rgba(var(--primary-rgb, 155, 89, 182), 0.2)',
-                                                        padding: '0.35rem 0.6rem 0.35rem 0.75rem',
-                                                        borderRadius: '20px',
-                                                        fontSize: '0.8rem',
-                                                        fontWeight: '600',
-                                                        color: 'var(--primary)'
-                                                    }}>
-                                                        <span>{r.name}</span>
-                                                        <X size={14} style={{ cursor: 'pointer', opacity: 0.7 }} onClick={() => setRequestRecipients(requestRecipients.filter(x => x._id !== r._id))} />
-                                                    </div>
-                                                ))}
-                                            </div>
-                                            <input
-                                                type="text"
-                                                placeholder="Search for a person..."
-                                                value={recipientSearch}
-                                                onChange={e => searchRecipients(e.target.value)}
-                                                style={{
-                                                    width: '100%',
-                                                    border: 'none',
-                                                    outline: 'none',
-                                                    padding: '0.4rem 0.5rem',
-                                                    background: 'transparent',
-                                                    color: 'var(--text-main)',
-                                                    fontSize: '0.85rem'
-                                                }}
-                                            />
-                                        </div>
-                                        {recipientSuggestions.length > 0 && (
-                                            <div style={{
-                                                border: '1px solid var(--border-dark)',
-                                                borderRadius: '12px',
-                                                marginTop: '0.5rem',
-                                                background: 'var(--bg-panel)',
-                                                boxShadow: '0 10px 30px rgba(0,0,0,0.15)',
-                                                overflow: 'hidden',
-                                                maxHeight: '200px',
-                                                overflowY: 'auto'
-                                            }}>
-                                                {recipientSuggestions.map(u => (
-                                                    <div key={u._id} onClick={() => {
-                                                        setRequestRecipients([...requestRecipients, u]);
-                                                        setRecipientSearch('');
-                                                        setRecipientSuggestions([]);
-                                                    }} style={{
-                                                        padding: '0.75rem 1rem',
-                                                        cursor: 'pointer',
-                                                        borderBottom: '1px solid var(--border-dark)',
-                                                        transition: 'background 0.15s',
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        gap: '0.75rem'
-                                                    }}
-                                                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(var(--primary-rgb, 155, 89, 182), 0.08)'}
-                                                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                                                    >
-                                                        <div style={{
-                                                            width: '32px', height: '32px', borderRadius: '50%',
-                                                            background: 'linear-gradient(135deg, var(--primary), #e74c3c)',
-                                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                            color: 'white', fontSize: '0.7rem', fontWeight: '700'
-                                                        }}>{u.name?.charAt(0)?.toUpperCase()}</div>
-                                                        <div>
-                                                            <div style={{ fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-main)' }}>{u.name}</div>
-                                                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{u.designation || u.email}</div>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Date Range */}
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
-                                        <div>
-                                            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>From Date *</label>
-                                            <input
-                                                type="date"
-                                                value={requestStartDate}
-                                                onChange={e => setRequestStartDate(e.target.value)}
-                                                style={{
-                                                    width: '100%',
-                                                    padding: '0.85rem 1rem',
-                                                    borderRadius: '12px',
-                                                    border: '1px solid var(--border-dark)',
-                                                    background: 'var(--bg-main)',
-                                                    color: 'var(--text-main)',
-                                                    fontSize: '0.9rem',
-                                                    outline: 'none'
-                                                }}
-                                            />
-                                        </div>
-                                        <div>
-                                            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>To Date *</label>
-                                            <input
-                                                type="date"
-                                                value={requestEndDate}
-                                                onChange={e => setRequestEndDate(e.target.value)}
-                                                min={requestStartDate}
-                                                style={{
-                                                    width: '100%',
-                                                    padding: '0.85rem 1rem',
-                                                    borderRadius: '12px',
-                                                    border: '1px solid var(--border-dark)',
-                                                    background: 'var(--bg-main)',
-                                                    color: 'var(--text-main)',
-                                                    fontSize: '0.9rem',
-                                                    outline: 'none'
-                                                }}
-                                            />
-                                        </div>
-                                    </div>
-
-                                    {/* Message */}
-                                    <div style={{ marginBottom: '2rem' }}>
-                                        <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Message</label>
-                                        <textarea
-                                            value={requestMessage}
-                                            onChange={e => setRequestMessage(e.target.value)}
-                                            placeholder="Add a reason or additional details for your request..."
-                                            rows={4}
-                                            style={{
-                                                width: '100%',
-                                                padding: '0.85rem 1rem',
-                                                borderRadius: '12px',
-                                                border: '1px solid var(--border-dark)',
-                                                background: 'var(--bg-main)',
-                                                color: 'var(--text-main)',
-                                                fontSize: '0.85rem',
-                                                resize: 'vertical',
-                                                outline: 'none',
-                                                fontFamily: 'inherit',
-                                                lineHeight: '1.5'
-                                            }}
-                                        />
-                                    </div>
-
-                                    {/* Submit */}
-                                    <button
-                                        className="btn btn-primary"
-                                        onClick={submitRequest}
-                                        disabled={requestSubmitting}
-                                        style={{
-                                            width: '100%',
-                                            padding: '0.9rem',
-                                            borderRadius: '12px',
-                                            fontSize: '0.9rem',
-                                            fontWeight: '700',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            gap: '0.5rem',
-                                            opacity: requestSubmitting ? 0.7 : 1,
-                                            letterSpacing: '0.5px'
-                                        }}
-                                    >
-                                        <Send size={16} />
-                                        {requestSubmitting ? 'Submitting...' : 'Submit Request'}
-                                    </button>
-                                </div>
-
-                                {/* Request History */}
-                                <div className="panel" style={{ padding: '2rem', borderRadius: '20px', height: 'fit-content' }}>
-                                    <h3 style={{ margin: '0 0 1.5rem 0', fontSize: '1rem', fontWeight: '700', color: 'var(--text-main)' }}>My Requests</h3>
-                                    {myRequests.length > 0 ? (
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                                            {myRequests.map(req => {
-                                                const isExpanded = expandedRequests.includes(req._id);
-                                                return (
-                                                    <div key={req._id} style={{
-                                                        padding: '1rem 1.25rem',
-                                                        borderRadius: '14px',
-                                                        border: '1px solid var(--border-dark)',
-                                                        background: 'var(--bg-main)',
-                                                        transition: 'all 0.2s'
-                                                    }}>
-                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                                <span style={{ fontSize: '0.9rem', fontWeight: '700', color: 'var(--text-main)' }}>{req.type}</span>
-                                                            </div>
-                                                            <span style={{
-                                                                fontSize: '0.7rem',
-                                                                fontWeight: '700',
-                                                                padding: '0.25rem 0.75rem',
-                                                                borderRadius: '20px',
-                                                                textTransform: 'uppercase',
-                                                                letterSpacing: '0.5px',
-                                                                ...getStatusStyle(req.status)
-                                                            }}>{req.status}</span>
-
-                                                        </div>
-                                                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.35rem' }}>
-                                                            📅 {new Date(req.startDate).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' })} — {new Date(req.endDate).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' })}
-                                                        </div>
-
-                                                        {req.message && (
-                                                            <div style={{ marginTop: '0.5rem' }}>
-                                                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                                                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontStyle: 'italic', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                                        💬 Message
-                                                                    </div>
-                                                                    <button
-                                                                        onClick={() => {
-                                                                            if (isExpanded) {
-                                                                                setExpandedRequests(expandedRequests.filter(id => id !== req._id));
-                                                                            } else {
-                                                                                setExpandedRequests([...expandedRequests, req._id]);
-                                                                            }
-                                                                        }}
-                                                                        style={{
-                                                                            background: 'transparent',
-                                                                            border: 'none',
-                                                                            color: 'var(--primary)',
-                                                                            fontSize: '0.75rem',
-                                                                            fontWeight: '600',
-                                                                            cursor: 'pointer',
-                                                                            display: 'flex',
-                                                                            alignItems: 'center',
-                                                                            gap: '2px'
-                                                                        }}
-                                                                    >
-                                                                        {isExpanded ? 'Collapse' : 'Expand'}
-                                                                        <ChevronDown size={14} style={{ transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
-                                                                    </button>
-                                                                </div>
-                                                                {isExpanded && (
-                                                                    <div style={{
-                                                                        fontSize: '0.8rem',
-                                                                        color: 'var(--text-muted)',
-                                                                        marginTop: '0.5rem',
-                                                                        padding: '0.75rem',
-                                                                        background: 'rgba(var(--primary-rgb, 155, 89, 182), 0.05)',
-                                                                        borderRadius: '8px',
-                                                                        lineHeight: '1.4',
-                                                                        border: '1px solid rgba(var(--primary-rgb, 155, 89, 182), 0.1)'
-                                                                    }}>
-                                                                        {req.message}
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        )}
-
-                                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
-                                                            To: {req.recipients?.map(r => r.name).join(', ')}
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    ) : (
-                                        <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
-                                            <FileText size={40} style={{ marginBottom: '0.75rem', opacity: 0.5 }} />
-                                            <p style={{ fontSize: '0.85rem', margin: 0 }}>No requests submitted yet.</p>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
+                            <RequestTab
+                                requestType={requestType}
+                                setRequestType={setRequestType}
+                                requestLeaveType={requestLeaveType}
+                                setRequestLeaveType={setRequestLeaveType}
+                                myLeaves={myLeaves}
+                                selectedLeaveForCancel={selectedLeaveForCancel}
+                                setSelectedLeaveForCancel={setSelectedLeaveForCancel}
+                                datesToCancel={datesToCancel}
+                                setDatesToCancel={setDatesToCancel}
+                                requestRecipients={requestRecipients}
+                                setRequestRecipients={setRequestRecipients}
+                                recipientSearch={recipientSearch}
+                                searchRecipients={searchRecipients}
+                                recipientSuggestions={recipientSuggestions}
+                                setRecipientSuggestions={setRecipientSuggestions}
+                                setRecipientSearch={setRecipientSearch}
+                                requestStartDate={requestStartDate}
+                                setRequestStartDate={setRequestStartDate}
+                                requestEndDate={requestEndDate}
+                                setRequestEndDate={setRequestEndDate}
+                                requestMessage={requestMessage}
+                                setRequestMessage={setRequestMessage}
+                                submitRequest={submitRequest}
+                                requestSubmitting={requestSubmitting}
+                                myRequests={myRequests}
+                                getStatusStyle={getStatusStyle}
+                                expandedRequests={expandedRequests}
+                                setExpandedRequests={setExpandedRequests}
+                            />
                         )}
 
 
                         {activeSubTab === 'Profile' && (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                                <div className="panel" style={{ padding: '2rem', position: 'relative' }}>
-                                    <div style={{ position: 'absolute', top: '2rem', right: '2rem' }}>
-                                        {!isProfileEditing ? (
-                                            <button
-                                                className="btn btn-sm"
-                                                style={{ background: 'var(--primary)', color: 'white' }}
-                                                onClick={() => {
-                                                    setTempProfile({
-                                                        name: user.name,
-                                                        dob: user.dob ? user.dob.split('T')[0] : '',
-                                                        joiningDate: user.joiningDate ? user.joiningDate.split('T')[0] : '',
-                                                        phoneNumber: user.phoneNumber || '',
-                                                        bloodGroup: user.bloodGroup || '',
-                                                        gender: user.gender || '',
-                                                        place: user.place || '',
-                                                        department: user.department || '',
-                                                        designation: user.designation || ''
-                                                    });
-                                                    setIsProfileEditing(true);
-                                                }}
-                                            >
-                                                Edit Profile
-                                            </button>
-                                        ) : (
-                                            <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                <button className="btn btn-sm" onClick={() => setIsProfileEditing(false)}>Cancel</button>
-                                                <button className="btn btn-sm btn-primary" onClick={handleUpdateProfile}>Save Changes</button>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '2rem', marginBottom: '2.5rem' }}>
-                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
-                                            <div className="avatar" style={{ width: '100px', height: '100px', fontSize: '2.5rem', background: 'var(--primary)', color: 'white' }}>
-                                                {user?.profilePicture ? (
-                                                    <img src={user.profilePicture} alt="Profile" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
-                                                ) : (
-                                                    user.name.substring(0, 1).toUpperCase()
-                                                )}
-                                            </div>
-
-                                            {isProfileEditing && (
-                                                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                    <input
-                                                        type="file"
-                                                        accept="image/*"
-                                                        ref={fileInputRef}
-                                                        style={{ display: 'none' }}
-                                                        onChange={handleProfilePictureUpload}
-                                                    />
-                                                    <button
-                                                        className="btn btn-sm"
-                                                        style={{
-                                                            background: 'rgba(255, 255, 255, 0.1)',
-                                                            border: '1px solid rgba(255, 255, 255, 0.2)',
-                                                            color: 'var(--text-main)',
-                                                            fontSize: '0.75rem',
-                                                            opacity: uploadingPic ? 0.5 : 1
-                                                        }}
-                                                        disabled={uploadingPic}
-                                                        onClick={() => fileInputRef.current.click()}
-                                                    >
-                                                        {uploadingPic ? 'Uploading...' : 'Change'}
-                                                    </button>
-                                                    {user?.profilePicture && (
-                                                        <button
-                                                            className="btn btn-sm"
-                                                            style={{
-                                                                background: 'rgba(255, 71, 87, 0.1)',
-                                                                color: '#ff4757',
-                                                                border: '1px solid rgba(255, 71, 87, 0.2)',
-                                                                fontSize: '0.75rem',
-                                                                opacity: uploadingPic ? 0.5 : 1
-                                                            }}
-                                                            disabled={uploadingPic}
-                                                            onClick={handleRemoveProfilePicture}
-                                                        >
-                                                            Remove
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            )}
-                                        </div>
-                                        <div>
-                                            {isProfileEditing ? (
-                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                                    <input type="text" value={tempProfile.name} onChange={e => setTempProfile({ ...tempProfile, name: e.target.value })} style={{ ...inputStyle, fontSize: '1.5rem', fontWeight: 'bold', width: '300px' }} />
-                                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                        <input type="text" value={tempProfile.designation} placeholder="Designation" onChange={e => setTempProfile({ ...tempProfile, designation: e.target.value })} style={{ ...inputStyle, width: '145px' }} />
-                                                        <input type="text" value={tempProfile.department} placeholder="Department" onChange={e => setTempProfile({ ...tempProfile, department: e.target.value })} style={{ ...inputStyle, width: '145px' }} />
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                <>
-                                                    <h2 style={{ fontSize: '1.75rem', fontWeight: '600', marginBottom: '0.25rem' }}>{user.name}</h2>
-                                                    <p style={{ color: 'var(--text-muted)', fontSize: '1rem' }}>{user.designation} | {user.department}</p>
-                                                </>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '2rem' }}>
-                                        <div>
-                                            <label style={labelStyle}>Email</label>
-                                            <div style={{ fontSize: '0.95rem', fontWeight: '500' }}>{user.email}</div>
-                                        </div>
-                                        <div>
-                                            <label style={labelStyle}>Phone Number</label>
-                                            {isProfileEditing ? (
-                                                <input type="text" value={tempProfile.phoneNumber} onChange={e => setTempProfile({ ...tempProfile, phoneNumber: e.target.value })} style={inputStyle} />
-                                            ) : (
-                                                <div style={{ fontSize: '0.95rem', fontWeight: '500' }}>{user.phoneNumber || 'N/A'}</div>
-                                            )}
-                                        </div>
-                                        <div>
-                                            <label style={labelStyle}>Employee ID</label>
-                                            <div style={{ fontSize: '0.95rem', fontWeight: '500' }}>KEKA-{user._id.substring(user._id.length - 6).toUpperCase()}</div>
-                                        </div>
-
-                                        <div>
-                                            <label style={labelStyle}>Date of Birth</label>
-                                            {isProfileEditing ? (
-                                                <input type="date" value={tempProfile.dob} onChange={e => setTempProfile({ ...tempProfile, dob: e.target.value })} style={inputStyle} />
-                                            ) : (
-                                                <div style={{ fontSize: '0.95rem', fontWeight: '500' }}>{user.dob ? new Date(user.dob).toLocaleDateString() : 'N/A'}</div>
-                                            )}
-                                        </div>
-                                        <div>
-                                            <label style={labelStyle}>Date of Joining</label>
-                                            {isProfileEditing ? (
-                                                <input type="date" value={tempProfile.joiningDate} onChange={e => setTempProfile({ ...tempProfile, joiningDate: e.target.value })} style={inputStyle} />
-                                            ) : (
-                                                <div style={{ fontSize: '0.95rem', fontWeight: '500' }}>{user.joiningDate ? new Date(user.joiningDate).toLocaleDateString() : 'N/A'}</div>
-                                            )}
-                                        </div>
-                                        <div>
-                                            <label style={labelStyle}>Gender</label>
-                                            {isProfileEditing ? (
-                                                <select value={tempProfile.gender} onChange={e => setTempProfile({ ...tempProfile, gender: e.target.value })} style={inputStyle}>
-                                                    <option value="">Select Gender</option>
-                                                    <option value="Male">Male</option>
-                                                    <option value="Female">Female</option>
-                                                    <option value="Other">Other</option>
-                                                </select>
-                                            ) : (
-                                                <div style={{ fontSize: '0.95rem', fontWeight: '500' }}>{user.gender || 'N/A'}</div>
-                                            )}
-                                        </div>
-
-                                        <div>
-                                            <label style={labelStyle}>Blood Group</label>
-                                            {isProfileEditing ? (
-                                                <input type="text" value={tempProfile.bloodGroup} placeholder="e.g. O+" onChange={e => setTempProfile({ ...tempProfile, bloodGroup: e.target.value })} style={inputStyle} />
-                                            ) : (
-                                                <div style={{ fontSize: '0.95rem', fontWeight: '500' }}>{user.bloodGroup || 'N/A'}</div>
-                                            )}
-                                        </div>
-                                        <div>
-                                            <label style={labelStyle}>Role</label>
-                                            <div style={{ fontSize: '0.95rem', fontWeight: '500' }}>{user.role}</div>
-                                        </div>
-                                        <div>
-                                            <label style={labelStyle}>Location (Place)</label>
-                                            {isProfileEditing ? (
-                                                <input type="text" value={tempProfile.place} onChange={e => setTempProfile({ ...tempProfile, place: e.target.value })} style={inputStyle} />
-                                            ) : (
-                                                <div style={{ fontSize: '0.95rem', fontWeight: '500' }}>{user.place || 'N/A'}</div>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="panel" style={{ padding: '2rem' }}>
-                                    <div className="panel-header" style={{ marginBottom: '1.5rem', fontSize: '1.1rem' }}>Admin Configured Work Details</div>
-                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '2rem' }}>
-                                        <div>
-                                            <label style={labelStyle}>Shift Timings</label>
-                                            <div style={{ fontSize: '0.95rem', fontWeight: '600', color: 'var(--primary)' }}>{user?.workingSchedule?.shiftStart} to {user?.workingSchedule?.shiftEnd}</div>
-                                        </div>
-                                        <div>
-                                            <label style={labelStyle}>Min. Working Hours</label>
-                                            <div style={{ fontSize: '0.95rem', fontWeight: '600' }}>{user?.workingSchedule?.minHours} Hours/Day</div>
-                                        </div>
-                                        <div>
-                                            <label style={labelStyle}>Weekly Offs</label>
-                                            <div style={{ fontSize: '0.95rem', fontWeight: '600' }}>{user?.workingSchedule?.weekOffs?.join(', ') || 'Sunday'}</div>
-                                        </div>
-                                        <div>
-                                            <label style={labelStyle}>Salary Type</label>
-                                            <div style={{ fontSize: '0.95rem', fontWeight: '600', color: 'var(--neon-green)' }}>{user?.salaryDetails?.type || 'Fixed'}</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                            <ProfileTab
+                                user={user}
+                                isProfileEditing={isProfileEditing}
+                                setIsProfileEditing={setIsProfileEditing}
+                                tempProfile={tempProfile}
+                                setTempProfile={setTempProfile}
+                                handleUpdateProfile={handleUpdateProfile}
+                                fileInputRef={fileInputRef}
+                                handleProfilePictureUpload={handleProfilePictureUpload}
+                                uploadingPic={uploadingPic}
+                                handleRemoveProfilePicture={handleRemoveProfilePicture}
+                                labelStyle={labelStyle}
+                                inputStyle={inputStyle}
+                            />
                         )}
 
                     </div >
@@ -2218,222 +1173,33 @@ export default function Dashboard({ user, onLogout, setUser }) {
 
         if (activeSidebar === 'Admin') {
             const isAdminOrSuper = user?.role === 'Admin' || user?.role === 'Super Admin';
-            if (!isAdminOrSuper) return null;
-
-            const pendingUsers = allUsers.filter(u => !u.isApproved);
-            const pagedUsers = allUsers.filter(u => u.isApproved);
+            if (!isAdminOrSuper) return <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>Access Denied. Admin privileges required.</div>;
 
             return (
                 <div className="page-content">
-                    <div className="sub-nav" style={{ marginTop: '-1.5rem', marginBottom: '1.5rem' }}>
-                        <div className={`sub-nav-item ${activeSubTab === 'Leave' ? 'active' : ''}`} onClick={() => setActiveSubTab('Leave')}>USERS</div>
-                        <div className={`sub-nav-item ${activeSubTab === 'Approvals' ? 'active' : ''}`} onClick={() => setActiveSubTab('Approvals')}>APPROVALS ({pendingUsers.length})</div>
-                        <div className={`sub-nav-item ${activeSubTab === 'Configs' ? 'active' : ''}`} onClick={() => setActiveSubTab('Configs')}>ORG CONFIGS</div>
-                        <div className={`sub-nav-item ${activeSubTab === 'Settings' ? 'active' : ''}`} onClick={() => setActiveSubTab('Settings')}>SYSTEM SETTINGS</div>
-                    </div>
-
-                    {activeSubTab === 'Settings' && (
-                        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-start', padding: '1rem 0' }}>
-                            <div className="panel" style={{ maxWidth: '850px', width: '100%', padding: '2.5rem', borderRadius: '12px', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.1)' }}>
-                                <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: 'var(--text-main)', marginBottom: '2rem', borderBottom: '1px solid var(--border-dark)', paddingBottom: '1rem' }}>Company Settings</div>
-
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-                                    <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
-                                        <div style={{ flex: '1 1 300px' }}>
-                                            <label style={{ display: 'block', fontSize: '0.95rem', color: 'var(--text-muted)', marginBottom: '0.6rem', fontWeight: '500' }}>Company Name</label>
-                                            <input
-                                                type="text"
-                                                value={systemSettings.companyName || ''}
-                                                onChange={e => setSystemSettings({ ...systemSettings, companyName: e.target.value })}
-                                                style={{ ...inputStyle, width: '100%', padding: '0.8rem 1rem', background: 'rgba(255,255,255,0.03)', fontSize: '1rem', border: '1px solid var(--border-dark)' }}
-                                            />
-                                        </div>
-                                        <div style={{ flex: '1 1 200px' }}>
-                                            <label style={{ display: 'block', fontSize: '0.95rem', color: 'var(--text-muted)', marginBottom: '0.6rem', fontWeight: '500' }}>Working Hours / Day</label>
-                                            <input
-                                                type="number"
-                                                value={systemSettings.workingHoursPerDay || ''}
-                                                onChange={e => setSystemSettings({ ...systemSettings, workingHoursPerDay: e.target.value })}
-                                                style={{ ...inputStyle, width: '100%', padding: '0.8rem 1rem', background: 'rgba(255,255,255,0.03)', fontSize: '1rem', border: '1px solid var(--border-dark)' }}
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div style={{ borderTop: '1px solid var(--border-dark)', margin: '0.5rem 0', paddingTop: '2rem' }}>
-                                        <div style={{ fontSize: '1.15rem', fontWeight: '600', color: 'var(--text-main)', marginBottom: '1.5rem' }}>Default Leave Quotas <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 'normal', marginLeft: '0.5rem' }}>(Applies to All Users)</span></div>
-                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
-                                            {[
-                                                { label: 'Paid Leave', key: 'paid' },
-                                                { label: 'Sick Leave', key: 'sick' },
-                                                { label: 'Casual Leave', key: 'casual' },
-                                                { label: 'Comp Off', key: 'compOff' }
-                                            ].map(q => (
-                                                <div key={q.key} style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-dark)', borderRadius: '8px', padding: '1.2rem', display: 'flex', flexDirection: 'column', gap: '0.8rem', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)' }}>
-                                                    <label style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: '500' }}>{q.label}</label>
-                                                    <input
-                                                        type="number"
-                                                        value={systemSettings.defaultLeaveQuotas?.[q.key] ?? 0}
-                                                        onChange={e => setSystemSettings({
-                                                            ...systemSettings,
-                                                            defaultLeaveQuotas: { ...systemSettings.defaultLeaveQuotas, [q.key]: parseInt(e.target.value) || 0 }
-                                                        })}
-                                                        style={{ ...inputStyle, width: '100%', padding: '0.6rem 1rem', background: 'rgba(255,255,255,0.05)', fontSize: '1.1rem', fontWeight: '600', border: '1px solid rgba(255,255,255,0.1)' }}
-                                                    />
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
-                                        <button
-                                            className="btn btn-primary"
-                                            onClick={handleSaveSettings}
-                                            style={{
-                                                padding: '0.8rem 3rem',
-                                                fontSize: '1rem',
-                                                fontWeight: 'bold',
-                                                borderRadius: '8px',
-                                                boxShadow: '0 4px 14px rgba(59, 130, 246, 0.4)',
-                                                background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-                                                border: 'none',
-                                                color: 'white',
-                                                cursor: 'pointer',
-                                                transition: 'all 0.2s ease-in-out'
-                                            }}
-                                            onMouseOver={(e) => e.target.style.transform = 'translateY(-2px)'}
-                                            onMouseOut={(e) => e.target.style.transform = 'translateY(0)'}
-                                        >
-                                            Save Settings
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {activeSubTab === 'Leave' && (
-                        <div className="panel">
-                            <div className="panel-header">Active Employees</div>
-                            <table className="data-table">
-                                <thead>
-                                    <tr><th>NAME</th><th>EMAIL</th><th>DESIGNATION</th><th>DEPT</th><th>ROLE</th><th style={{ textAlign: 'center' }}>ACTIONS</th></tr>
-                                </thead>
-                                <tbody>
-                                    {pagedUsers.map(u => (
-                                        <tr key={u._id}>
-                                            <td>{u.name}</td><td>{u.email}</td><td>{u.designation}</td><td>{u.department}</td>
-                                            <td><span className={`badge ${u.role.replace(' ', '-').toLowerCase()}`}>{u.role}</span></td>
-                                            <td style={{ position: 'relative', textAlign: 'center' }}>
-                                                <button
-                                                    className="btn-icon"
-                                                    style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
-                                                    onClick={() => setActiveActionMenu(activeActionMenu === u._id ? null : u._id)}
-                                                >
-                                                    <MoreVertical size={20} />
-                                                </button>
-
-                                                {activeActionMenu === u._id && (
-                                                    <div className="panel" style={{
-                                                        position: 'absolute',
-                                                        top: '100%',
-                                                        right: '0',
-                                                        zIndex: 10,
-                                                        minWidth: '120px',
-                                                        boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
-                                                        padding: '0.5rem 0'
-                                                    }}>
-                                                        <div
-                                                            className="dropdown-item"
-                                                            onClick={() => {
-                                                                setSelectedUser(u);
-                                                                setShowEditModal(true);
-                                                                setEditMode(false);
-                                                                setModalTab('Personal');
-                                                                setActiveActionMenu(null);
-                                                            }}
-                                                            style={{ padding: '0.5rem 1rem', cursor: 'pointer', fontSize: '0.85rem' }}
-                                                        >
-                                                            View
-                                                        </div>
-                                                        <div
-                                                            className="dropdown-item"
-                                                            onClick={() => {
-                                                                setSelectedUser(u);
-                                                                setShowEditModal(true);
-                                                                setEditMode(true);
-                                                                setModalTab('Personal');
-                                                                setActiveActionMenu(null);
-                                                            }}
-                                                            style={{ padding: '0.5rem 1rem', cursor: 'pointer', fontSize: '0.85rem' }}
-                                                        >
-                                                            Edit
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
-
-                    {activeSubTab === 'Approvals' && (
-                        <div className="panel">
-                            <div className="panel-header">Pending Approval Requests</div>
-                            {pendingUsers.length > 0 ? (
-                                <table className="data-table">
-                                    <thead>
-                                        <tr><th>NAME</th><th>EMAIL</th><th>DESIGNATION</th><th>DEPT</th><th>PHONE</th><th></th></tr>
-                                    </thead>
-                                    <tbody>
-                                        {pendingUsers.map(u => (
-                                            <tr key={u._id}>
-                                                <td>{u.name}</td><td>{u.email}</td><td>{u.designation}</td><td>{u.department}</td><td>{u.phoneNumber}</td>
-                                                <td>
-                                                    <button className="btn btn-sm btn-primary" onClick={() => handleApproveUser(u._id)}>Approve</button>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            ) : <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>No pending requests.</div>}
-                        </div>
-                    )}
-
-                    {activeSubTab === 'Configs' && (
-                        <div className="grid" style={{ gridTemplateColumns: '1fr 2fr', gap: '2rem' }}>
-                            <div className="panel">
-                                <div className="panel-header">Add New Config</div>
-                                <form onSubmit={handleAddConfig} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                                    <select value={newConfig.type} onChange={e => setNewConfig({ ...newConfig, type: e.target.value })} style={inputStyle}>
-                                        <option value="Department">Department</option>
-                                        <option value="Designation">Designation</option>
-                                        <option value="Holiday">Holiday</option>
-                                    </select>
-                                    <input required type="text" placeholder="Name / Title" value={newConfig.name} onChange={e => setNewConfig({ ...newConfig, name: e.target.value })} style={inputStyle} />
-                                    {newConfig.type === 'Holiday' && (
-                                        <input required type="date" value={newConfig.date} onChange={e => setNewConfig({ ...newConfig, date: e.target.value })} style={inputStyle} />
-                                    )}
-                                    <button type="submit" className="btn btn-primary">Add Config</button>
-                                </form>
-                            </div>
-                            <div className="panel">
-                                <div className="panel-header">Existing Configurations</div>
-                                <table className="data-table">
-                                    <thead><tr><th>TYPE</th><th>NAME</th><th>DATE</th><th></th></tr></thead>
-                                    <tbody>
-                                        {orgConfigs.map(c => (
-                                            <tr key={c._id}>
-                                                <td>{c.type}</td><td>{c.name}</td><td>{c.date ? new Date(c.date).toLocaleDateString() : '-'}</td>
-                                                <td><button className="btn btn-sm btn-danger" onClick={() => handleDeleteConfig(c._id)}>Delete</button></td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    )}
+                    <AdminTab
+                        activeSubTab={activeSubTab}
+                        setActiveSubTab={setActiveSubTab}
+                        pendingUsers={pendingUsers}
+                        systemSettings={systemSettings}
+                        setSystemSettings={setSystemSettings}
+                        handleSaveSettings={handleSaveSettings}
+                        allUsers={allUsers}
+                        handleApproveUser={handleApproveUser}
+                        handleDenyUser={handleDenyUser}
+                        orgConfigs={orgConfigs}
+                        handleAddConfig={handleAddConfig}
+                        handleDeleteConfig={handleDeleteConfig}
+                        inputStyle={inputStyle}
+                        newConfig={newConfig}
+                        setNewConfig={setNewConfig}
+                        activeActionMenu={activeActionMenu}
+                        setActiveActionMenu={setActiveActionMenu}
+                        setSelectedUser={setSelectedUser}
+                        setShowEditModal={setShowEditModal}
+                        setEditMode={setEditMode}
+                        setModalTab={setModalTab}
+                    />
                 </div>
             );
         }
@@ -2443,83 +1209,14 @@ export default function Dashboard({ user, onLogout, setUser }) {
         if (activeSidebar === 'Inbox') {
             return (
                 <div className="page-content">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                        <h2 style={{ fontSize: '1.25rem', margin: 0 }}>Inbox</h2>
-                    </div>
-
-                    <div className="panel" style={{ padding: 0 }}>
-                        <table className="data-table">
-                            <thead>
-                                <tr style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-                                    <th>Dates</th>
-                                    <th>Request Type</th>
-                                    <th>Status</th>
-                                    <th>Requested By</th>
-                                    <th>Action Taken On</th>
-                                    <th>Leave / WFH Note</th>
-                                    <th>Action Note</th>
-                                    <th></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {inboxRequests.length > 0 ? inboxRequests.map(r => (
-                                    <tr key={r._id}>
-                                        <td style={{ fontSize: '0.8rem' }}>
-                                            {new Date(r.startDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
-                                            {r.startDate !== r.endDate && ` - ${new Date(r.endDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}`}
-                                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '2px' }}>
-                                                {Math.ceil((new Date(r.endDate) - new Date(r.startDate)) / (1000 * 60 * 60 * 24)) + 1} day(s)
-                                            </div>
-                                        </td>
-                                        <td style={{ fontSize: '0.85rem' }}>
-                                            {r.type}
-                                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Requested on {new Date(r.createdAt).toLocaleDateString()}</div>
-                                        </td>
-                                        <td>
-                                            <span style={{
-                                                padding: '0.2rem 0.6rem',
-                                                borderRadius: '20px',
-                                                fontSize: '0.7rem',
-                                                fontWeight: '700',
-                                                textTransform: 'uppercase',
-                                                letterSpacing: '0.5px',
-                                                ...getStatusStyle(r.status)
-                                            }}>
-                                                {r.status}
-                                            </span>
-                                            {r.status !== 'Pending' && r.actionBy && (
-                                                <div style={{ fontSize: '0.65rem', color: isLightMode ? 'rgba(0,0,0,0.6)' : 'var(--text-muted)', marginTop: '4px', fontWeight: '500' }}>by {r.actionBy.name}</div>
-                                            )}
-                                        </td>
-
-                                        <td style={{ fontSize: '0.8rem' }}>{r.user?.name}</td>
-                                        <td style={{ fontSize: '0.8rem' }}>{r.status !== 'Pending' && r.actionDate ? new Date(r.actionDate).toLocaleDateString() : '-'}</td>
-                                        <td style={{ fontSize: '0.75rem', color: 'var(--text-muted)', maxWidth: '150px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.message || '-'}</td>
-                                        <td style={{ fontSize: '0.75rem', color: 'var(--text-muted)', maxWidth: '150px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.actionNote || '-'}</td>
-                                        <td>
-                                            {r.status === 'Pending' ? (
-                                                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                    <div style={{ position: 'relative' }}>
-                                                        <input
-                                                            type="text"
-                                                            placeholder="Optional Note"
-                                                            value={requestActionNote}
-                                                            onChange={(e) => setRequestActionNote(e.target.value)}
-                                                            style={{ padding: '0.4rem 0.5rem', fontSize: '0.7rem', borderRadius: '4px', border: '1px solid var(--border-dark)', background: 'var(--bg-main)', color: 'var(--text-main)', width: '100px' }}
-                                                        />
-                                                    </div>
-                                                    <button className="btn btn-primary btn-sm" style={{ padding: '0.4rem 0.6rem', fontSize: '0.7rem' }} onClick={() => handleRequestAction(r._id, 'Approved')}>Approve</button>
-                                                    <button className="btn btn-danger btn-sm" style={{ padding: '0.4rem 0.6rem', fontSize: '0.7rem' }} onClick={() => handleRequestAction(r._id, 'Rejected')}>Deny</button>
-                                                </div>
-                                            ) : null}
-                                        </td>
-                                    </tr>
-                                )) : (
-                                    <tr><td colSpan="8" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>No requests in your inbox.</td></tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
+                    <InboxTab
+                        inboxRequests={inboxRequests}
+                        requestActionNote={requestActionNote}
+                        setRequestActionNote={setRequestActionNote}
+                        handleRequestAction={handleRequestAction}
+                        getStatusStyle={getStatusStyle}
+                        isLightMode={isLightMode}
+                    />
                 </div>
             );
         }
