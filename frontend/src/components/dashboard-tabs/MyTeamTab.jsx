@@ -261,8 +261,6 @@ const MyTeamTab = ({
 
     return (
         <div className="page-content" style={{ position: 'relative' }}>
-            <div className="sub-nav"><div className="sub-nav-item active">SUMMARY</div></div>
-
             {/* Top Summaries Row */}
             <div className="grid" style={{
                 gridTemplateColumns: '1fr 1fr',
@@ -298,7 +296,7 @@ const MyTeamTab = ({
             </div>
 
             {/* Stats Cards Row */}
-            <div className="grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.5rem', marginBottom: '2rem' }}>
+            <div className="grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem', marginBottom: '2rem' }}>
                 <div className="panel" style={{ padding: '1.25rem', borderLeft: '3px solid var(--primary)' }}>
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Employees On Time today</div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
@@ -309,10 +307,6 @@ const MyTeamTab = ({
                 <div className="panel" style={{ padding: '1.25rem', borderLeft: '3px solid #ff4f8b' }}>
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Late Arrivals today</div>
                     <div style={{ fontSize: '1.5rem', fontWeight: '600' }}>{stats.lateCount}</div>
-                </div>
-                <div className="panel" style={{ padding: '1.25rem', borderLeft: '3px solid #b24fff' }}>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Work from Home / On Duty today</div>
-                    <div style={{ fontSize: '1.5rem', fontWeight: '600' }}>{stats.wfhCount}</div>
                 </div>
                 <div className="panel" style={{ padding: '1.25rem', borderLeft: '3px solid #00d1ff' }}>
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Remote Clock-ins today</div>

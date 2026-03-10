@@ -563,7 +563,6 @@ const AttendanceTab = ({
                                             <th>Action Taken On</th>
                                             <th>Message</th>
                                             <th>Reject/Cancel Reason</th>
-                                            <th>Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -601,10 +600,9 @@ const AttendanceTab = ({
                                                 <td style={{ fontSize: '0.8rem' }}>{r.status !== 'Pending' && r.actionDate ? new Date(r.actionDate).toLocaleDateString() : '-'}</td>
                                                 <td style={{ fontSize: '0.75rem', color: 'var(--text-muted)', maxWidth: '150px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.message || '-'}</td>
                                                 <td style={{ fontSize: '0.75rem', color: 'var(--text-muted)', maxWidth: '150px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.actionNote || '-'}</td>
-                                                <td><Info size={14} color="var(--primary)" style={{ cursor: 'pointer' }} /></td>
                                             </tr>
                                         )) : (
-                                            <tr><td colSpan="8" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>No WFH requests found.</td></tr>
+                                            <tr><td colSpan="7" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>No WFH requests found.</td></tr>
                                         )}
                                     </tbody>
                                 </table>

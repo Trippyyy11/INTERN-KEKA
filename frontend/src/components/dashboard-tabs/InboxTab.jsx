@@ -26,7 +26,7 @@ const InboxTab = ({
                             <th>Action Taken On</th>
                             <th>Leave / WFH Note</th>
                             <th>Action Note</th>
-                            <th>Actions</th>
+                            <th></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -65,7 +65,7 @@ const InboxTab = ({
                                 <td style={{ fontSize: '0.75rem', color: 'var(--text-muted)', maxWidth: '150px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.message || '-'}</td>
                                 <td style={{ fontSize: '0.75rem', color: 'var(--text-muted)', maxWidth: '150px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.actionNote || '-'}</td>
                                 <td>
-                                    {r.status === 'Pending' ? (
+                                    {r.status === 'Pending' && (
                                         <div style={{ display: 'flex', gap: '0.5rem' }}>
                                             <div style={{ position: 'relative' }}>
                                                 <input
@@ -79,8 +79,6 @@ const InboxTab = ({
                                             <button className="btn btn-primary btn-sm" style={{ padding: '0.4rem 0.6rem', fontSize: '0.7rem' }} onClick={() => handleRequestAction(r._id, 'Approved')}>Approve</button>
                                             <button className="btn btn-danger btn-sm" style={{ padding: '0.4rem 0.6rem', fontSize: '0.7rem' }} onClick={() => handleRequestAction(r._id, 'Rejected')}>Deny</button>
                                         </div>
-                                    ) : (
-                                        <Info size={14} color="var(--primary)" style={{ cursor: 'pointer' }} />
                                     )}
                                 </td>
                             </tr>

@@ -10,6 +10,7 @@ const AdminTab = ({
     handleSaveSettings,
     allUsers,
     handleApproveUser,
+    handleDenyUser,
     orgConfigs,
     handleAddConfig,
     handleDeleteConfig,
@@ -187,14 +188,17 @@ const AdminTab = ({
                     {pendingUsers.length > 0 ? (
                         <table className="data-table">
                             <thead>
-                                <tr><th>NAME</th><th>EMAIL</th><th>DESIGNATION</th><th>DEPT</th><th>PHONE</th><th>ACTIONS</th></tr>
+                                <tr><th>NAME</th><th>EMAIL</th><th>DESIGNATION</th><th>DEPT</th><th>PHONE</th><th></th></tr>
                             </thead>
                             <tbody>
                                 {pendingUsers.map(u => (
                                     <tr key={u._id}>
                                         <td>{u.name}</td><td>{u.email}</td><td>{u.designation}</td><td>{u.department}</td><td>{u.phoneNumber}</td>
                                         <td>
-                                            <button className="btn btn-sm btn-primary" onClick={() => handleApproveUser(u._id)}>Approve</button>
+                                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                <button className="btn btn-sm btn-primary" onClick={() => handleApproveUser(u._id)}>Approve</button>
+                                                <button className="btn btn-sm btn-danger" onClick={() => handleDenyUser(u._id)}>Deny</button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}
@@ -224,7 +228,7 @@ const AdminTab = ({
                     <div className="panel">
                         <div className="panel-header">Existing Configurations</div>
                         <table className="data-table">
-                            <thead><tr><th>TYPE</th><th>NAME</th><th>DATE</th><th>ACTIONS</th></tr></thead>
+                            <thead><tr><th>TYPE</th><th>NAME</th><th>DATE</th><th></th></tr></thead>
                             <tbody>
                                 {orgConfigs.map(c => (
                                     <tr key={c._id}>

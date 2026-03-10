@@ -49,6 +49,30 @@ export const markAllAsRead = async (req, res) => {
     }
 };
 
+// @desc    Delete a single notification
+// @route   DELETE /api/notifications/:id
+// @access  Private
+export const deleteNotification = async (req, res) => {
+    try {
+        await Notification.findOneAndDelete({ _id: req.params.id, user: req.user._id });
+        res.status(200).json({ message: 'Notification deleted' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Delete all notifications
+// @route   DELETE /api/notifications/all
+// @access  Private
+export const deleteAllNotifications = async (req, res) => {
+    try {
+        await Notification.deleteMany({ user: req.user._id });
+        res.status(200).json({ message: 'All notifications deleted' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 // @desc    Generate clock-in reminder notifications
 // @route   GET /api/notifications/check-clockin
 // @access  Private

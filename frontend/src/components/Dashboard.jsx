@@ -102,6 +102,25 @@ export default function Dashboard({ user, onLogout, setUser }) {
         } catch (err) { console.error('Failed to mark notifications read'); }
     };
 
+    const deleteNotificationById = async (id) => {
+        try {
+            await api.delete(`/notifications/${id}`);
+            setNotifications(prev => prev.filter(n => n._id !== id));
+            setUnreadCount(prev => {
+                const wasUnread = notifications.find(n => n._id === id && !n.isRead);
+                return wasUnread ? Math.max(0, prev - 1) : prev;
+            });
+        } catch (err) { console.error('Failed to delete notification'); }
+    };
+
+    const deleteAllNotifications = async () => {
+        try {
+            await api.delete('/notifications/all');
+            setNotifications([]);
+            setUnreadCount(0);
+        } catch (err) { console.error('Failed to delete all notifications'); }
+    };
+
     const markNotificationRead = async (id) => {
         try {
             await api.put(`/notifications/${id}/read`);
@@ -677,6 +696,16 @@ export default function Dashboard({ user, onLogout, setUser }) {
         } catch (err) { showAlert('Approval failed', 'info'); }
     };
 
+    const handleDenyUser = async (id) => {
+        showAlert('Are you sure you want to deny this user request?', 'confirm', async () => {
+            try {
+                await api.put(`/admin/users/${id}/deny`);
+                fetchAdminData();
+                showAlert('User request denied.', 'info');
+            } catch (err) { showAlert('Denial failed', 'info'); }
+        });
+    };
+
     const handleUpdateUser = async (e) => {
         e.preventDefault();
         try {
@@ -1232,7 +1261,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                                                 <th>Action Taken On</th>
                                                                 <th>Message</th>
                                                                 <th>Reject/Cancel Reason</th>
-                                                                <th>Actions</th>
+
                                                             </tr>
                                                         </thead>
                                                         <tbody>
@@ -1270,10 +1299,9 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                                                     <td style={{ fontSize: '0.8rem' }}>{r.status !== 'Pending' && r.actionDate ? new Date(r.actionDate).toLocaleDateString() : '-'}</td>
                                                                     <td style={{ fontSize: '0.75rem', color: 'var(--text-muted)', maxWidth: '150px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.message || '-'}</td>
                                                                     <td style={{ fontSize: '0.75rem', color: 'var(--text-muted)', maxWidth: '150px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.actionNote || '-'}</td>
-                                                                    <td><Info size={14} color="var(--primary)" style={{ cursor: 'pointer' }} /></td>
                                                                 </tr>
                                                             )) : (
-                                                                <tr><td colSpan="8" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>No WFH requests found.</td></tr>
+                                                                <tr><td colSpan="7" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>No WFH requests found.</td></tr>
                                                             )}
                                                         </tbody>
                                                     </table>
@@ -1476,7 +1504,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                                     <th>Action Taken On</th>
                                                     <th>Leave Note</th>
                                                     <th>Reject/Cancellation Reason</th>
-                                                    <th>Actions</th>
+
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -1514,10 +1542,9 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                                         <td style={{ fontSize: '0.8rem' }}>{h.status !== 'Pending' && h.actionDate ? new Date(h.actionDate).toLocaleDateString() : '-'}</td>
                                                         <td style={{ fontSize: '0.75rem', color: 'var(--text-muted)', maxWidth: '150px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{h.message || '-'}</td>
                                                         <td style={{ fontSize: '0.75rem', color: 'var(--text-muted)', maxWidth: '150px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{h.actionNote || '-'}</td>
-                                                        <td><Info size={14} color="var(--primary)" style={{ cursor: 'pointer' }} /></td>
                                                     </tr>
                                                 )) : (
-                                                    <tr><td colSpan="8" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>No leave history found.</td></tr>
+                                                    <tr><td colSpan="7" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>No leave history found.</td></tr>
                                                 )}
                                             </tbody>
                                         </table>
@@ -2357,7 +2384,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
                             {pendingUsers.length > 0 ? (
                                 <table className="data-table">
                                     <thead>
-                                        <tr><th>NAME</th><th>EMAIL</th><th>DESIGNATION</th><th>DEPT</th><th>PHONE</th><th>ACTIONS</th></tr>
+                                        <tr><th>NAME</th><th>EMAIL</th><th>DESIGNATION</th><th>DEPT</th><th>PHONE</th><th></th></tr>
                                     </thead>
                                     <tbody>
                                         {pendingUsers.map(u => (
@@ -2394,7 +2421,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
                             <div className="panel">
                                 <div className="panel-header">Existing Configurations</div>
                                 <table className="data-table">
-                                    <thead><tr><th>TYPE</th><th>NAME</th><th>DATE</th><th>ACTIONS</th></tr></thead>
+                                    <thead><tr><th>TYPE</th><th>NAME</th><th>DATE</th><th></th></tr></thead>
                                     <tbody>
                                         {orgConfigs.map(c => (
                                             <tr key={c._id}>
@@ -2431,7 +2458,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                     <th>Action Taken On</th>
                                     <th>Leave / WFH Note</th>
                                     <th>Action Note</th>
-                                    <th>Actions</th>
+                                    <th></th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -2484,9 +2511,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                                     <button className="btn btn-primary btn-sm" style={{ padding: '0.4rem 0.6rem', fontSize: '0.7rem' }} onClick={() => handleRequestAction(r._id, 'Approved')}>Approve</button>
                                                     <button className="btn btn-danger btn-sm" style={{ padding: '0.4rem 0.6rem', fontSize: '0.7rem' }} onClick={() => handleRequestAction(r._id, 'Rejected')}>Deny</button>
                                                 </div>
-                                            ) : (
-                                                <Info size={14} color="var(--primary)" style={{ cursor: 'pointer' }} />
-                                            )}
+                                            ) : null}
                                         </td>
                                     </tr>
                                 )) : (
@@ -2529,7 +2554,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
     const renderAlertModal = () => {
         if (!customAlert) return null;
         return (
-            <div style={modalOverlay}>
+            <div style={alertOverlay}>
                 <div style={{ ...modalContent, maxWidth: '450px', textAlign: 'center' }}>
                     <div style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '1rem', color: 'var(--text-main)' }}>
                         {customAlert.type === 'confirm' ? 'Confirmation' : 'Update'}
@@ -3438,6 +3463,14 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                                 Mark all read
                                             </span>
                                         )}
+                                        {notifications.length > 0 && (
+                                            <span
+                                                style={{ fontSize: '0.75rem', color: '#f43f5e', cursor: 'pointer', fontWeight: '500' }}
+                                                onClick={deleteAllNotifications}
+                                            >
+                                                Clear all
+                                            </span>
+                                        )}
                                     </div>
                                     <div style={{ overflowY: 'auto', flex: 1 }}>
                                         {notifications.length > 0 ? notifications.map(n => {
@@ -3465,7 +3498,8 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                                         borderBottom: '1px solid var(--border-dark)',
                                                         cursor: 'pointer',
                                                         background: n.isRead ? 'transparent' : 'rgba(59, 130, 246, 0.06)',
-                                                        transition: 'background 0.2s'
+                                                        transition: 'background 0.2s',
+                                                        position: 'relative'
                                                     }}
                                                 >
                                                     <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
@@ -3473,7 +3507,22 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                                         <div style={{ flex: 1, minWidth: 0 }}>
                                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem' }}>
                                                                 <span style={{ fontWeight: n.isRead ? '400' : '600', fontSize: '0.82rem', color: 'var(--text-main)' }}>{n.title}</span>
-                                                                <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', flexShrink: 0 }}>{timeAgo(n.createdAt)}</span>
+                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
+                                                                    <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{timeAgo(n.createdAt)}</span>
+                                                                    <span
+                                                                        onClick={(e) => { e.stopPropagation(); deleteNotificationById(n._id); }}
+                                                                        style={{
+                                                                            width: '18px', height: '18px', borderRadius: '50%',
+                                                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                                            fontSize: '0.7rem', color: 'var(--text-muted)',
+                                                                            cursor: 'pointer', transition: 'all 0.2s',
+                                                                            flexShrink: 0
+                                                                        }}
+                                                                        onMouseEnter={(e) => { e.target.style.background = 'rgba(244,63,94,0.15)'; e.target.style.color = '#f43f5e'; }}
+                                                                        onMouseLeave={(e) => { e.target.style.background = 'transparent'; e.target.style.color = 'var(--text-muted)'; }}
+                                                                        title="Delete notification"
+                                                                    >✕</span>
+                                                                </div>
                                                             </div>
                                                             <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.2rem', lineHeight: 1.35 }}>{n.message}</div>
                                                             {!n.isRead && <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--primary)', marginTop: '0.4rem' }}></div>}
@@ -3602,4 +3651,6 @@ export default function Dashboard({ user, onLogout, setUser }) {
 const inputStyle = { background: 'var(--bg-panel)', color: 'var(--text-main)', border: '1px solid var(--border-dark)', padding: '0.5rem', borderRadius: '4px', outline: 'none', width: '100%', boxSizing: 'border-box' };
 const labelStyle = { fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.3rem', display: 'block' };
 const modalOverlay = { position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', justifyContent: 'center', alignItems: 'center' };
+const alertOverlay = { position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.8)', zIndex: 9999, display: 'flex', justifyContent: 'center', alignItems: 'center' };
 const modalContent = { background: 'var(--bg-panel)', padding: '2rem', borderRadius: 'var(--radius-lg)', width: '90%', maxWidth: '700px', boxShadow: '0 20px 50px rgba(0,0,0,0.5)', border: '1px solid var(--border-dark)' };
+

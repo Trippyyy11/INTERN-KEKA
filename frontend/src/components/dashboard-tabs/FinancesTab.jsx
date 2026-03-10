@@ -304,119 +304,268 @@ const FinancesTab = ({
         );
     };
 
+    const bankInputStyle = {
+        width: '100%',
+        padding: '0.75rem 1rem 0.75rem 2.75rem',
+        background: isLightMode ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.04)',
+        border: `1.5px solid ${isLightMode ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.08)'}`,
+        borderRadius: '12px',
+        color: 'var(--text-main)',
+        fontSize: '0.9rem',
+        outline: 'none',
+        transition: 'all 0.25s ease',
+        boxSizing: 'border-box',
+        fontFamily: 'inherit'
+    };
+
+    const bankInputFocusStyle = {
+        borderColor: 'var(--primary)',
+        boxShadow: '0 0 0 3px rgba(var(--primary-rgb, 99, 102, 241), 0.15)',
+        background: isLightMode ? 'rgba(0,0,0,0.01)' : 'rgba(255,255,255,0.06)'
+    };
+
+    const bankLabelStyle = {
+        display: 'block',
+        fontSize: '0.75rem',
+        letterSpacing: '0.6px',
+        fontWeight: '600',
+        marginBottom: '0.6rem',
+        color: 'var(--text-muted)',
+        textTransform: 'uppercase'
+    };
+
+    const bankIconStyle = {
+        position: 'absolute',
+        left: '0.85rem',
+        top: '50%',
+        transform: 'translateY(-50%)',
+        color: 'var(--text-muted)',
+        opacity: 0.5,
+        pointerEvents: 'none'
+    };
+
+    const BankField = ({ label, icon, children }) => (
+        <div>
+            <label style={bankLabelStyle}>{label}</label>
+            <div style={{ position: 'relative' }}>
+                <span style={bankIconStyle}>{icon}</span>
+                {children}
+            </div>
+        </div>
+    );
+
     const renderBankInfo = () => (
-        <div className="panel" style={{ maxWidth: '930px', margin: '0 auto' }}>
-            <div className="panel-header">Bank Account Details</div>
-            <div style={{ padding: '2rem' }}>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '2rem' }}>
-                    Please provide your accurate bank details to ensure timely salary payments. These details will be used for both Bank Transfers and UPI payouts.
-                </p>
-
-                {message && (
+        <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+            {/* Header Card */}
+            <div style={{
+                background: `linear-gradient(135deg, ${isLightMode ? '#6366f1' : '#4f46e5'} 0%, ${isLightMode ? '#8b5cf6' : '#7c3aed'} 100%)`,
+                borderRadius: '20px',
+                padding: '2rem 2.5rem',
+                marginBottom: '1.5rem',
+                position: 'relative',
+                overflow: 'hidden'
+            }}>
+                <div style={{
+                    position: 'absolute', top: '-30px', right: '-20px', width: '120px', height: '120px',
+                    borderRadius: '50%', background: 'rgba(255,255,255,0.08)'
+                }} />
+                <div style={{
+                    position: 'absolute', bottom: '-40px', right: '60px', width: '80px', height: '80px',
+                    borderRadius: '50%', background: 'rgba(255,255,255,0.05)'
+                }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', position: 'relative', zIndex: 1 }}>
                     <div style={{
-                        padding: '1rem',
-                        borderRadius: '4px',
-                        marginBottom: '1.5rem',
-                        background: message.type === 'success' ? 'rgba(34, 197, 94, 0.1)' : 'rgba(244, 63, 94, 0.1)',
-                        color: message.type === 'success' ? '#166534' : '#991b1b',
-                        border: '1px solid',
-                        borderColor: message.type === 'success' ? '#bbf7d0' : '#fecaca'
+                        width: '48px', height: '48px', borderRadius: '14px',
+                        background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(10px)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center'
                     }}>
-                        {message.text}
+                        <Building2 size={24} color="#fff" />
                     </div>
-                )}
+                    <div>
+                        <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: '700', color: '#fff' }}>Bank Account Details</h2>
+                        <p style={{ margin: '0.25rem 0 0', fontSize: '0.85rem', color: 'rgba(255,255,255,0.75)' }}>
+                            Manage your banking & payment information
+                        </p>
+                    </div>
+                </div>
+            </div>
 
-                <form onSubmit={handleBankSubmit}>
-                    <div className="grid" style={{ gridTemplateColumns: '1fr 1fr', rowGap: '2rem', columnGap: '2.5rem' }}>
-                        <div className="form-group">
-                            <label style={{
-                                display: 'block', fontSize: '0.85rem',
-                                letterSpacing: '0.3px', fontWeight: '500', marginBottom: '0.5rem'
-                            }}>Account Holder Name</label>
-                            <input
-                                type="text"
-                                className="input"
-                                value={bankData.accountHolderName}
-                                onChange={(e) => setBankData({ ...bankData, accountHolderName: e.target.value })}
-                                required
-                            />
+            {message && (
+                <div style={{
+                    padding: '1rem 1.25rem',
+                    borderRadius: '12px',
+                    marginBottom: '1.5rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.75rem',
+                    background: message.type === 'success'
+                        ? (isLightMode ? 'rgba(34, 197, 94, 0.08)' : 'rgba(34, 197, 94, 0.12)')
+                        : (isLightMode ? 'rgba(244, 63, 94, 0.08)' : 'rgba(244, 63, 94, 0.12)'),
+                    color: message.type === 'success' ? '#22c55e' : '#f43f5e',
+                    border: `1px solid ${message.type === 'success' ? 'rgba(34,197,94,0.2)' : 'rgba(244,63,94,0.2)'}`,
+                    fontSize: '0.85rem', fontWeight: '500'
+                }}>
+                    <span style={{ fontSize: '1.1rem' }}>{message.type === 'success' ? '✓' : '✕'}</span>
+                    {message.text}
+                </div>
+            )}
+
+            <form onSubmit={handleBankSubmit}>
+                {/* Bank Transfer Section */}
+                <div className="panel" style={{
+                    borderRadius: '16px',
+                    border: `1px solid ${isLightMode ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)'}`,
+                    overflow: 'hidden',
+                    marginBottom: '1.5rem'
+                }}>
+                    <div style={{
+                        padding: '1.25rem 1.75rem',
+                        borderBottom: `1px solid ${isLightMode ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)'}`,
+                        display: 'flex', alignItems: 'center', gap: '0.75rem'
+                    }}>
+                        <div style={{
+                            width: '32px', height: '32px', borderRadius: '8px',
+                            background: isLightMode ? 'rgba(99,102,241,0.1)' : 'rgba(99,102,241,0.15)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center'
+                        }}>
+                            <FileText size={16} color="var(--primary)" />
                         </div>
-                        <div className="form-group">
-                            <label style={{
-                                display: 'block', fontSize: '0.85rem',
-                                letterSpacing: '0.3px', fontWeight: '500', marginBottom: '0.5rem'
-                            }}>Bank Name</label>
-                            <input
-                                type="text"
-                                className="input"
-                                value={bankData.bankName}
-                                onChange={(e) => setBankData({ ...bankData, bankName: e.target.value })}
-                                required
-                            />
+                        <span style={{ fontSize: '0.95rem', fontWeight: '600', color: 'var(--text-main)' }}>Bank Transfer Details</span>
+                    </div>
+                    <div style={{ padding: '1.75rem' }}>
+                        <div className="grid" style={{ gridTemplateColumns: '1fr 1fr', rowGap: '1.75rem', columnGap: '2rem' }}>
+                            <BankField label="Account Holder Name" icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>}>
+                                <input
+                                    type="text"
+                                    style={bankInputStyle}
+                                    onFocus={(e) => Object.assign(e.target.style, bankInputFocusStyle)}
+                                    onBlur={(e) => Object.assign(e.target.style, { borderColor: isLightMode ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.08)', boxShadow: 'none', background: isLightMode ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.04)' })}
+                                    placeholder="Enter full name"
+                                    value={bankData.accountHolderName}
+                                    onChange={(e) => setBankData({ ...bankData, accountHolderName: e.target.value })}
+                                    required
+                                />
+                            </BankField>
+                            <BankField label="Bank Name" icon={<Building2 size={16} />}>
+                                <input
+                                    type="text"
+                                    style={bankInputStyle}
+                                    onFocus={(e) => Object.assign(e.target.style, bankInputFocusStyle)}
+                                    onBlur={(e) => Object.assign(e.target.style, { borderColor: isLightMode ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.08)', boxShadow: 'none', background: isLightMode ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.04)' })}
+                                    placeholder="e.g., State Bank of India"
+                                    value={bankData.bankName}
+                                    onChange={(e) => setBankData({ ...bankData, bankName: e.target.value })}
+                                    required
+                                />
+                            </BankField>
+                            <BankField label="Account Number" icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="5" width="20" height="14" rx="2" /><line x1="2" y1="10" x2="22" y2="10" /></svg>}>
+                                <input
+                                    type="text"
+                                    inputMode="numeric"
+                                    maxLength="18"
+                                    style={bankInputStyle}
+                                    onFocus={(e) => Object.assign(e.target.style, bankInputFocusStyle)}
+                                    onBlur={(e) => Object.assign(e.target.style, { borderColor: isLightMode ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.08)', boxShadow: 'none', background: isLightMode ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.04)' })}
+                                    placeholder="Enter account number"
+                                    value={bankData.accountNumber}
+                                    onChange={(e) => setBankData({ ...bankData, accountNumber: e.target.value })}
+                                    required
+                                />
+                            </BankField>
+                            <BankField label="IFSC Code" icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 21V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v16" /><path d="M2 21h20" /><path d="M9 7h6" /><path d="M9 11h6" /><path d="M9 15h6" /></svg>}>
+                                <input
+                                    type="text"
+                                    style={{ ...bankInputStyle, textTransform: 'uppercase', letterSpacing: '1px', fontFamily: 'monospace' }}
+                                    onFocus={(e) => Object.assign(e.target.style, bankInputFocusStyle)}
+                                    onBlur={(e) => Object.assign(e.target.style, { borderColor: isLightMode ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.08)', boxShadow: 'none', background: isLightMode ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.04)' })}
+                                    placeholder="e.g., SBIN0001234"
+                                    value={bankData.ifscCode}
+                                    onChange={(e) => setBankData({ ...bankData, ifscCode: e.target.value.toUpperCase() })}
+                                    required
+                                />
+                            </BankField>
+                            <BankField label="Branch Name" icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>}>
+                                <input
+                                    type="text"
+                                    style={bankInputStyle}
+                                    onFocus={(e) => Object.assign(e.target.style, bankInputFocusStyle)}
+                                    onBlur={(e) => Object.assign(e.target.style, { borderColor: isLightMode ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.08)', boxShadow: 'none', background: isLightMode ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.04)' })}
+                                    placeholder="Enter branch name"
+                                    value={bankData.branchName}
+                                    onChange={(e) => setBankData({ ...bankData, branchName: e.target.value })}
+                                />
+                            </BankField>
                         </div>
-                        <div className="form-group">
-                            <label style={{
-                                display: 'block', fontSize: '0.85rem',
-                                letterSpacing: '0.3px', fontWeight: '500', marginBottom: '0.5rem'
-                            }}>Account Number</label>
-                            <input
-                                type="text"
-                                inputMode='numeric'
-                                maxLength="11"
-                                className="input"
-                                value={bankData.accountNumber}
-                                onChange={(e) => setBankData({ ...bankData, accountNumber: e.target.value })}
-                                required
-                            />
+                    </div>
+                </div>
+
+                {/* UPI Section */}
+                <div className="panel" style={{
+                    borderRadius: '16px',
+                    border: `1px solid ${isLightMode ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)'}`,
+                    overflow: 'hidden',
+                    marginBottom: '2rem'
+                }}>
+                    <div style={{
+                        padding: '1.25rem 1.75rem',
+                        borderBottom: `1px solid ${isLightMode ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)'}`,
+                        display: 'flex', alignItems: 'center', gap: '0.75rem'
+                    }}>
+                        <div style={{
+                            width: '32px', height: '32px', borderRadius: '8px',
+                            background: isLightMode ? 'rgba(16,185,129,0.1)' : 'rgba(16,185,129,0.15)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center'
+                        }}>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>
                         </div>
-                        <div className="form-group">
-                            <label style={{
-                                display: 'block', fontSize: '0.85rem',
-                                letterSpacing: '0.3px', fontWeight: '500', marginBottom: '0.5rem'
-                            }}>IFSC Code</label>
+                        <span style={{ fontSize: '0.95rem', fontWeight: '600', color: 'var(--text-main)' }}>UPI Payment</span>
+                        <span style={{
+                            fontSize: '0.65rem', fontWeight: '600', padding: '0.2rem 0.6rem',
+                            borderRadius: '20px', background: 'rgba(16,185,129,0.12)', color: '#10b981',
+                            textTransform: 'uppercase', letterSpacing: '0.5px', marginLeft: 'auto'
+                        }}>Instant</span>
+                    </div>
+                    <div style={{ padding: '1.75rem' }}>
+                        <BankField label="UPI ID" icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="4" /><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-3.92 7.94" /></svg>}>
                             <input
                                 type="text"
-                                className="input"
-                                placeholder='eg.SBIN01234567'
-                                value={bankData.ifscCode}
-                                onChange={(e) => setBankData({ ...bankData, ifscCode: e.target.value })}
-                                required
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label style={{
-                                display: 'block', fontSize: '0.85rem',
-                                letterSpacing: '0.3px', fontWeight: '500', marginBottom: '0.5rem'
-                            }}>Branch Name</label>
-                            <input
-                                type="text"
-                                className="input"
-                                value={bankData.branchName}
-                                onChange={(e) => setBankData({ ...bankData, branchName: e.target.value })}
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label style={{
-                                display: 'block', fontSize: '0.85rem',
-                                letterSpacing: '0.3px', fontWeight: '500', marginBottom: '0.5rem'
-                            }}>UPI ID </label>
-                            <input
-                                type="text"
-                                required
-                                className="input"
-                                placeholder="example@upi"
+                                style={{ ...bankInputStyle, maxWidth: '420px' }}
+                                onFocus={(e) => Object.assign(e.target.style, bankInputFocusStyle)}
+                                onBlur={(e) => Object.assign(e.target.style, { borderColor: isLightMode ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.08)', boxShadow: 'none', background: isLightMode ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.04)' })}
+                                placeholder="yourname@upi"
                                 value={bankData.upiId}
                                 onChange={(e) => setBankData({ ...bankData, upiId: e.target.value })}
+                                required
                             />
-                        </div>
+                        </BankField>
                     </div>
-                    <div style={{ marginTop: '2.5rem', display: 'flex', justifyContent: 'flex-end' }}>
-                        <button type="submit" className="btn btn-primary" disabled={loading}>
-                            {loading ? 'Saving...' : 'Save Bank Details'}
-                        </button>
-                    </div>
-                </form>
-            </div>
+                </div>
+
+                {/* Submit */}
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+                    <button type="submit" className="btn btn-primary" disabled={loading} style={{
+                        padding: '0.75rem 2rem',
+                        borderRadius: '12px',
+                        fontSize: '0.9rem',
+                        fontWeight: '600',
+                        display: 'flex', alignItems: 'center', gap: '0.5rem',
+                        boxShadow: '0 4px 15px rgba(var(--primary-rgb, 99, 102, 241), 0.3)',
+                        transition: 'all 0.3s ease'
+                    }}>
+                        {loading ? (
+                            <>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ animation: 'spin 1s linear infinite' }}><path d="M21 12a9 9 0 11-6.219-8.56" /></svg>
+                                Saving...
+                            </>
+                        ) : (
+                            <>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" /><polyline points="17 21 17 13 7 13 7 21" /><polyline points="7 3 7 8 15 8" /></svg>
+                                Save Bank Details
+                            </>
+                        )}
+                    </button>
+                </div>
+            </form>
         </div>
     );
 
