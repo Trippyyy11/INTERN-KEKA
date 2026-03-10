@@ -4,6 +4,36 @@ import moment from 'moment';
 
 import { ChevronDown, FileText, Clock, Calendar, Building2, Award, Info } from 'lucide-react';
 
+const bankLabelStyle = {
+    display: 'block',
+    fontSize: '0.75rem',
+    letterSpacing: '0.6px',
+    fontWeight: '600',
+    marginBottom: '0.6rem',
+    color: 'var(--text-muted)',
+    textTransform: 'uppercase'
+};
+
+const bankIconStyle = {
+    position: 'absolute',
+    left: '0.85rem',
+    top: '50%',
+    transform: 'translateY(-50%)',
+    color: 'var(--text-muted)',
+    opacity: 0.5,
+    pointerEvents: 'none'
+};
+
+const BankField = ({ label, icon, children }) => (
+    <div>
+        <label style={bankLabelStyle}>{label}</label>
+        <div style={{ position: 'relative' }}>
+            <span style={bankIconStyle}>{icon}</span>
+            {children}
+        </div>
+    </div>
+);
+
 const FinancesTab = ({
     user,
     setUser,
@@ -306,53 +336,29 @@ const FinancesTab = ({
 
     const bankInputStyle = {
         width: '100%',
-        padding: '0.75rem 1rem 0.75rem 2.75rem',
-        background: isLightMode ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.04)',
-        border: `1.5px solid ${isLightMode ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.08)'}`,
-        borderRadius: '12px',
-        color: 'var(--text-main)',
-        fontSize: '0.9rem',
+        padding: '0.85rem 1.25rem 0.85rem 3rem',
+        background: isLightMode ? '#f8fafc' : '#0a0a0a',
+        border: `1.5px solid ${isLightMode ? '#e2e8f0' : 'rgba(255, 255, 255, 0.03)'}`,
+        borderRadius: '16px',
+        color: isLightMode ? '#1e293b' : '#f8f9fa',
+        fontSize: '0.95rem',
         outline: 'none',
-        transition: 'all 0.25s ease',
+        transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
         boxSizing: 'border-box',
-        fontFamily: 'inherit'
+        letterSpacing: '0.3px',
+        fontFamily: 'inherit',
+        WebkitBoxShadow: `0 0 0px 1000px ${isLightMode ? '#f8fafc' : '#0a0a0a'} inset`,
+        WebkitTextFillColor: isLightMode ? '#1e293b' : '#f8f9fa'
     };
 
     const bankInputFocusStyle = {
         borderColor: 'var(--primary)',
-        boxShadow: '0 0 0 3px rgba(var(--primary-rgb, 99, 102, 241), 0.15)',
-        background: isLightMode ? 'rgba(0,0,0,0.01)' : 'rgba(255,255,255,0.06)'
+        background: isLightMode ? '#ffffff' : '#050505',
+        boxShadow: isLightMode
+            ? '0 0 0 4px rgba(59, 130, 246, 0.08), 0 4px 12px rgba(0, 0, 0, 0.02)'
+            : '0 0 0 4px rgba(59, 130, 246, 0.12), 0 8px 24px rgba(0, 0, 0, 0.4)',
+        transform: 'translateY(-2px)'
     };
-
-    const bankLabelStyle = {
-        display: 'block',
-        fontSize: '0.75rem',
-        letterSpacing: '0.6px',
-        fontWeight: '600',
-        marginBottom: '0.6rem',
-        color: 'var(--text-muted)',
-        textTransform: 'uppercase'
-    };
-
-    const bankIconStyle = {
-        position: 'absolute',
-        left: '0.85rem',
-        top: '50%',
-        transform: 'translateY(-50%)',
-        color: 'var(--text-muted)',
-        opacity: 0.5,
-        pointerEvents: 'none'
-    };
-
-    const BankField = ({ label, icon, children }) => (
-        <div>
-            <label style={bankLabelStyle}>{label}</label>
-            <div style={{ position: 'relative' }}>
-                <span style={bankIconStyle}>{icon}</span>
-                {children}
-            </div>
-        </div>
-    );
 
     const renderBankInfo = () => (
         <div style={{ maxWidth: '900px', margin: '0 auto' }}>
@@ -439,7 +445,13 @@ const FinancesTab = ({
                                     type="text"
                                     style={bankInputStyle}
                                     onFocus={(e) => Object.assign(e.target.style, bankInputFocusStyle)}
-                                    onBlur={(e) => Object.assign(e.target.style, { borderColor: isLightMode ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.08)', boxShadow: 'none', background: isLightMode ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.04)' })}
+                                    onBlur={(e) => Object.assign(e.target.style, {
+                                        borderColor: isLightMode ? '#e2e8f0' : 'rgba(255, 255, 255, 0.03)',
+                                        boxShadow: 'none',
+                                        background: isLightMode ? '#f8fafc' : '#0a0a0a',
+                                        transform: 'none',
+                                        WebkitBoxShadow: `0 0 0px 1000px ${isLightMode ? '#f8fafc' : '#0a0a0a'} inset`
+                                    })}
                                     placeholder="Enter full name"
                                     value={bankData.accountHolderName}
                                     onChange={(e) => setBankData({ ...bankData, accountHolderName: e.target.value })}
@@ -451,7 +463,13 @@ const FinancesTab = ({
                                     type="text"
                                     style={bankInputStyle}
                                     onFocus={(e) => Object.assign(e.target.style, bankInputFocusStyle)}
-                                    onBlur={(e) => Object.assign(e.target.style, { borderColor: isLightMode ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.08)', boxShadow: 'none', background: isLightMode ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.04)' })}
+                                    onBlur={(e) => Object.assign(e.target.style, {
+                                        borderColor: isLightMode ? '#e2e8f0' : 'rgba(255, 255, 255, 0.03)',
+                                        boxShadow: 'none',
+                                        background: isLightMode ? '#f8fafc' : '#0a0a0a',
+                                        transform: 'none',
+                                        WebkitBoxShadow: `0 0 0px 1000px ${isLightMode ? '#f8fafc' : '#0a0a0a'} inset`
+                                    })}
                                     placeholder="e.g., State Bank of India"
                                     value={bankData.bankName}
                                     onChange={(e) => setBankData({ ...bankData, bankName: e.target.value })}
@@ -465,7 +483,13 @@ const FinancesTab = ({
                                     maxLength="18"
                                     style={bankInputStyle}
                                     onFocus={(e) => Object.assign(e.target.style, bankInputFocusStyle)}
-                                    onBlur={(e) => Object.assign(e.target.style, { borderColor: isLightMode ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.08)', boxShadow: 'none', background: isLightMode ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.04)' })}
+                                    onBlur={(e) => Object.assign(e.target.style, {
+                                        borderColor: isLightMode ? '#e2e8f0' : 'rgba(255, 255, 255, 0.03)',
+                                        boxShadow: 'none',
+                                        background: isLightMode ? '#f8fafc' : '#0a0a0a',
+                                        transform: 'none',
+                                        WebkitBoxShadow: `0 0 0px 1000px ${isLightMode ? '#f8fafc' : '#0a0a0a'} inset`
+                                    })}
                                     placeholder="Enter account number"
                                     value={bankData.accountNumber}
                                     onChange={(e) => setBankData({ ...bankData, accountNumber: e.target.value })}
@@ -477,7 +501,13 @@ const FinancesTab = ({
                                     type="text"
                                     style={{ ...bankInputStyle, textTransform: 'uppercase', letterSpacing: '1px', fontFamily: 'monospace' }}
                                     onFocus={(e) => Object.assign(e.target.style, bankInputFocusStyle)}
-                                    onBlur={(e) => Object.assign(e.target.style, { borderColor: isLightMode ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.08)', boxShadow: 'none', background: isLightMode ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.04)' })}
+                                    onBlur={(e) => Object.assign(e.target.style, {
+                                        borderColor: isLightMode ? '#e2e8f0' : 'rgba(255, 255, 255, 0.03)',
+                                        boxShadow: 'none',
+                                        background: isLightMode ? '#f8fafc' : '#0a0a0a',
+                                        transform: 'none',
+                                        WebkitBoxShadow: `0 0 0px 1000px ${isLightMode ? '#f8fafc' : '#0a0a0a'} inset`
+                                    })}
                                     placeholder="e.g., SBIN0001234"
                                     value={bankData.ifscCode}
                                     onChange={(e) => setBankData({ ...bankData, ifscCode: e.target.value.toUpperCase() })}
@@ -489,7 +519,13 @@ const FinancesTab = ({
                                     type="text"
                                     style={bankInputStyle}
                                     onFocus={(e) => Object.assign(e.target.style, bankInputFocusStyle)}
-                                    onBlur={(e) => Object.assign(e.target.style, { borderColor: isLightMode ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.08)', boxShadow: 'none', background: isLightMode ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.04)' })}
+                                    onBlur={(e) => Object.assign(e.target.style, {
+                                        borderColor: isLightMode ? '#e2e8f0' : 'rgba(255, 255, 255, 0.03)',
+                                        boxShadow: 'none',
+                                        background: isLightMode ? '#f8fafc' : '#0a0a0a',
+                                        transform: 'none',
+                                        WebkitBoxShadow: `0 0 0px 1000px ${isLightMode ? '#f8fafc' : '#0a0a0a'} inset`
+                                    })}
                                     placeholder="Enter branch name"
                                     value={bankData.branchName}
                                     onChange={(e) => setBankData({ ...bankData, branchName: e.target.value })}
@@ -531,7 +567,13 @@ const FinancesTab = ({
                                 type="text"
                                 style={{ ...bankInputStyle, maxWidth: '420px' }}
                                 onFocus={(e) => Object.assign(e.target.style, bankInputFocusStyle)}
-                                onBlur={(e) => Object.assign(e.target.style, { borderColor: isLightMode ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.08)', boxShadow: 'none', background: isLightMode ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.04)' })}
+                                onBlur={(e) => Object.assign(e.target.style, {
+                                    borderColor: isLightMode ? '#e2e8f0' : 'rgba(255, 255, 255, 0.03)',
+                                    boxShadow: 'none',
+                                    background: isLightMode ? '#f8fafc' : '#0a0a0a',
+                                    transform: 'none',
+                                    WebkitBoxShadow: `0 0 0px 1000px ${isLightMode ? '#f8fafc' : '#0a0a0a'} inset`
+                                })}
                                 placeholder="yourname@upi"
                                 value={bankData.upiId}
                                 onChange={(e) => setBankData({ ...bankData, upiId: e.target.value })}

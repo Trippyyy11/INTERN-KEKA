@@ -345,6 +345,12 @@ ul {
   border: 1px solid var(--border-dark);
 }
 
+.dashboard-content {
+  flex: 1;
+  position: relative;
+  overflow-y: auto;
+}
+
 /* Topbar */
 .topbar {
   height: 60px;
@@ -763,6 +769,36 @@ body.light-theme .holiday-card {
   display: inline-block;
   margin-right: 8px;
   box-shadow: 0 0 10px var(--primary);
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Global Autofill Overrides - Definitive Fix */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0px 1000px #0a0a0a inset !important;
+  -webkit-text-fill-color: #f8f9fa !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+body.light-theme input:-webkit-autofill,
+body.light-theme input:-webkit-autofill:hover,
+body.light-theme input:-webkit-autofill:focus,
+body.light-theme input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0px 1000px #f8fafc inset !important;
+  -webkit-text-fill-color: #0f172a !important;
 }
 
 @keyframes slideInRight {

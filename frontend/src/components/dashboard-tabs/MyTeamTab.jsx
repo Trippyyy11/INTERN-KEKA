@@ -15,6 +15,7 @@ const MyTeamTab = ({
     teammates,
     dashData,
     setShowPublicProfile,
+    isLightMode,
 }) => {
     const [showEmployeesPanel, setShowEmployeesPanel] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
@@ -352,31 +353,41 @@ const MyTeamTab = ({
                     right: 0,
                     width: '600px',
                     height: '100vh',
-                    background: '#ffffff', // White background
-                    boxShadow: '-10px 0 30px rgba(0,0,0,0.1)',
+                    background: 'var(--bg-panel)',
+                    boxShadow: 'var(--glow-panel)',
                     zIndex: 2000,
                     display: 'flex',
                     flexDirection: 'column',
                     animation: 'slideInRight 0.3s ease-out',
-                    color: '#2d3748'
+                    color: 'var(--text-main)',
+                    borderLeft: '1px solid var(--border-dark)'
                 }}>
-                    <div style={{ padding: '1.5rem', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <h2 style={{ fontSize: '1.25rem', margin: 0, fontWeight: '600', color: '#1a202c' }}>View Employees</h2>
-                        <button className="btn-icon" style={{ color: '#4a5568' }} onClick={() => setShowEmployeesPanel(false)}><X size={24} /></button>
+                    <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--border-dark)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <h2 style={{ fontSize: '1.25rem', margin: 0, fontWeight: '600', color: 'var(--text-main)' }}>View Employees</h2>
+                        <button className="btn-icon" style={{ color: 'var(--text-muted)' }} onClick={() => setShowEmployeesPanel(false)}><X size={24} /></button>
                     </div>
 
                     <div style={{ padding: '1.5rem', flex: 1, overflowY: 'auto' }}>
                         <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
                             <div style={{ flex: 1, position: 'relative' }}>
+                                <Search size={18} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                                 <input
                                     type="text"
                                     placeholder="Search"
-                                    style={{ width: '100%', padding: '0.6rem 1rem 0.6rem 2.5rem', background: '#f7fafc', border: '1px solid #e2e8f0', color: '#2d3748', borderRadius: '4px' }}
+                                    style={{
+                                        width: '100%',
+                                        padding: '0.6rem 1rem 0.6rem 2.5rem',
+                                        background: isLightMode ? '#f7fafc' : 'rgba(0,0,0,0.2)',
+                                        border: '1px solid var(--border-dark)',
+                                        color: 'var(--text-main)',
+                                        borderRadius: '8px',
+                                        outline: 'none'
+                                    }}
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                 />
                             </div>
-                            <button className="btn-icon" style={{ color: '#4a5568' }} title="Download" onClick={handleDownloadCSV}><Download size={20} /></button>
+                            <button className="btn-icon" style={{ color: 'var(--text-muted)' }} title="Download" onClick={handleDownloadCSV}><Download size={20} /></button>
                         </div>
 
                         {/* Status Filters - NEW FEATURE */}
@@ -391,9 +402,9 @@ const MyTeamTab = ({
                                         fontSize: '0.75rem',
                                         fontWeight: '500',
                                         border: '1px solid',
-                                        borderColor: filterStatus === status ? 'var(--primary)' : '#e2e8f0',
-                                        background: filterStatus === status ? 'var(--primary)' : 'white',
-                                        color: filterStatus === status ? 'white' : '#718096',
+                                        borderColor: filterStatus === status ? 'var(--primary)' : 'var(--border-dark)',
+                                        background: filterStatus === status ? 'var(--primary)' : 'transparent',
+                                        color: filterStatus === status ? 'white' : 'var(--text-muted)',
                                         cursor: 'pointer',
                                         transition: 'all 0.2s'
                                     }}
@@ -404,11 +415,11 @@ const MyTeamTab = ({
                         </div>
 
 
-                        <div style={{ fontSize: '0.75rem', color: '#718096', marginBottom: '1rem', textAlign: 'right' }}>Total: {[user, ...teammates].length}</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '1rem', textAlign: 'right' }}>Total: {[user, ...teammates].length}</div>
 
                         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
                             <thead>
-                                <tr style={{ borderBottom: '2px solid #edf2f7', color: '#718096' }}>
+                                <tr style={{ borderBottom: `2px solid ${isLightMode ? '#edf2f7' : '#2d3748'}`, color: 'var(--text-muted)' }}>
                                     <th style={{ textAlign: 'left', padding: '1rem 0.5rem', fontWeight: '600' }}>EMPLOYEE</th>
                                     <th style={{ textAlign: 'left', padding: '1rem 0.5rem', fontWeight: '600' }}>DEPARTMENT</th>
                                     <th style={{ textAlign: 'left', padding: '1rem 0.5rem', fontWeight: '600' }}>LOCATION</th>
@@ -466,18 +477,18 @@ const MyTeamTab = ({
                                         }
 
                                         return (
-                                            <tr key={e._id} style={{ borderBottom: '1px solid #edf2f7' }}>
+                                            <tr key={e._id} style={{ borderBottom: `1px solid ${isLightMode ? '#edf2f7' : 'rgba(255,255,255,0.05)'}` }}>
                                                 <td style={{ padding: '1.25rem 0.5rem' }}>
                                                     <div style={{ fontWeight: '600', color: 'var(--primary)' }}>{e.name}</div>
-                                                    <div style={{ fontSize: '0.7rem', color: '#718096' }}>{e._id.substring(0, 8)}</div>
+                                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{e._id.substring(0, 8)}</div>
                                                 </td>
-                                                <td style={{ padding: '1.25rem 0.5rem', color: '#4a5568' }}>{e.department}</td>
-                                                <td style={{ padding: '1.25rem 0.5rem', color: '#4a5568' }}>{e.place || 'Nagpur'}</td>
-                                                <td style={{ padding: '1.25rem 0.5rem', color: '#4a5568' }}>{e.designation}</td>
+                                                <td style={{ padding: '1.25rem 0.5rem', color: 'var(--text-main)' }}>{e.department}</td>
+                                                <td style={{ padding: '1.25rem 0.5rem', color: 'var(--text-main)' }}>{e.place || 'Nagpur'}</td>
+                                                <td style={{ padding: '1.25rem 0.5rem', color: 'var(--text-main)' }}>{e.designation}</td>
                                                 <td style={{ padding: '1.25rem 0.5rem', position: 'relative' }}>
                                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                         <div>
-                                                            <div style={{ color: '#4a5568', fontWeight: '500' }}>{clockInDisplay}</div>
+                                                            <div style={{ color: 'var(--text-main)', fontWeight: '500' }}>{clockInDisplay}</div>
                                                             {statusLabel && <div style={{ fontSize: '0.65rem', color: statusColor, fontWeight: '600' }}>{statusLabel}</div>}
                                                         </div>
                                                     </div>
@@ -498,11 +509,12 @@ const MyTeamTab = ({
                     top: '20px',
                     left: '50%',
                     transform: 'translateX(-50%)',
-                    background: '#2d3748',
-                    color: 'white',
+                    background: 'var(--bg-panel)',
+                    color: 'var(--text-main)',
                     padding: '0.75rem 1.5rem',
                     borderRadius: '8px',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                    border: '1px solid var(--border-dark)',
+                    boxShadow: 'var(--glow-panel)',
                     zIndex: 3000,
                     fontSize: '0.9rem',
                     fontWeight: '500',

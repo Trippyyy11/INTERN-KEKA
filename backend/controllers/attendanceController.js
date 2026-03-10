@@ -249,3 +249,15 @@ export const getTeammateIndividualStats = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+
+// @desc    Get Attendance Logs for a specific user (Admin only)
+// @route   GET /api/attendance/logs/:userId
+// @access  Private/Admin
+export const getUserLogs = async (req, res) => {
+    try {
+        const logs = await Attendance.find({ user: req.params.userId }).sort({ date: -1 });
+        res.status(200).json(logs);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};

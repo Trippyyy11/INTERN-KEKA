@@ -233,6 +233,8 @@ export default function Dashboard({ user, onLogout, setUser }) {
     const [socialFeed, setSocialFeed] = useState([]);
     const [showAttendancePolicyModal, setShowAttendancePolicyModal] = useState(false);
     const [attendancePolicyTab, setAttendancePolicyTab] = useState('Penalisation Policy');
+    const [showUserAttendanceModal, setShowUserAttendanceModal] = useState(false);
+    const [userAttendanceLogs, setUserAttendanceLogs] = useState([]);
 
     useEffect(() => {
         const timer = setInterval(() => setCurrentTime(new Date().toLocaleTimeString()), 1000);
@@ -599,6 +601,23 @@ export default function Dashboard({ user, onLogout, setUser }) {
         } catch (err) {
             console.error('Failed to fetch admin users data:', err);
         }
+    };
+
+    const fetchUserAttendanceLogs = async (userId) => {
+        try {
+            const res = await api.get(`/attendance/logs/${userId}`);
+            setUserAttendanceLogs(res.data);
+        } catch (err) {
+            console.error('Failed to fetch user attendance logs');
+            showAlert('Could not fetch attendance logs for this user.', 'info');
+        }
+    };
+
+    const handleShowAttendance = (userObj) => {
+        setSelectedUser(userObj);
+        setUserAttendanceLogs([]);
+        fetchUserAttendanceLogs(userObj._id);
+        setShowUserAttendanceModal(true);
     };
 
     const fetchSystemSettings = async () => {
@@ -1137,6 +1156,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
                     dashData={dashData}
                     setShowPublicProfile={setShowPublicProfile}
                     statsPeriod={statsPeriod}
+                    isLightMode={isLightMode}
                 />
             );
         }
@@ -1199,6 +1219,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
                         setShowEditModal={setShowEditModal}
                         setEditMode={setEditMode}
                         setModalTab={setModalTab}
+                        handleShowAttendance={handleShowAttendance}
                     />
                 </div>
             );
@@ -1568,6 +1589,138 @@ export default function Dashboard({ user, onLogout, setUser }) {
                     </div>
                     <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
                         <button className="btn btn-primary" style={{ width: '100%' }} onClick={() => setShowHolidayModal(false)}>Close</button>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+    const renderUserAttendanceModal = () => {
+        if (!showUserAttendanceModal || !selectedUser) return null;
+
+        return (
+            <div
+                style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    zIndex: 100,
+                    display: 'flex',
+                    justifyContent: 'flex-end',
+                    background: 'rgba(0,0,0,0.15)',
+                    backdropFilter: 'blur(2px)'
+                }}
+                onClick={() => setShowUserAttendanceModal(false)}
+            >
+                <div
+                    className="panel"
+                    style={{
+                        width: '750px',
+                        height: '100%',
+                        overflow: 'hidden',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        background: 'var(--bg-panel)',
+                        color: 'var(--text-main)',
+                        borderLeft: '1px solid var(--border-dark)',
+                        boxShadow: 'var(--glow-panel)',
+                        animation: 'slideInRight 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    }}
+                    onClick={e => e.stopPropagation()}
+                >
+                    <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.5rem 2rem', borderBottom: '1px solid var(--border-dark)', background: 'var(--bg-panel)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+                            <div className="avatar" style={{ width: '48px', height: '48px', fontSize: '1.1rem', background: 'var(--primary)', color: 'white', fontWeight: 'bold', boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)' }}>
+                                {selectedUser.name.substring(0, 2).toUpperCase()}
+                            </div>
+                            <div>
+                                <div style={{ fontSize: '1.25rem', fontWeight: '700', color: 'var(--text-main)', letterSpacing: '-0.5px' }}>{selectedUser.name}'s Attendance</div>
+                                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '500' }}>{selectedUser.email} • {selectedUser.department}</div>
+                            </div>
+                        </div>
+                        <button className="btn-icon" style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', transition: 'color 0.2s' }} onMouseOver={e => e.target.style.color = 'var(--text-main)'} onMouseOut={e => e.target.style.color = 'var(--text-muted)'} onClick={() => setShowUserAttendanceModal(false)}>
+                            <X size={24} />
+                        </button>
+                    </div>
+
+                    <div style={{ padding: '2rem', overflowY: 'auto', flex: 1, background: 'var(--bg-panel)' }}>
+                        {userAttendanceLogs.length > 0 ? (
+                            <div style={{ background: 'var(--bg-main)', borderRadius: '12px', border: '1px solid var(--border-dark)', overflow: 'hidden' }}>
+                                <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                    <thead>
+                                        <tr style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px', borderBottom: '1px solid var(--border-dark)', background: 'rgba(255,255,255,0.02)' }}>
+                                            <th style={{ padding: '1.25rem 1rem', textAlign: 'left' }}>Date</th>
+                                            <th style={{ padding: '1.25rem 1rem', textAlign: 'left' }}>Status</th>
+                                            <th style={{ padding: '1.25rem 1rem', textAlign: 'left' }}>Clock-In</th>
+                                            <th style={{ padding: '1.25rem 1rem', textAlign: 'left' }}>Clock-Out</th>
+                                            <th style={{ padding: '1.25rem 1rem', textAlign: 'left' }}>Hours</th>
+                                            <th style={{ padding: '1.25rem 1rem', textAlign: 'left' }}>Mode</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {userAttendanceLogs.map(log => (
+                                            <tr key={log._id} style={{ borderBottom: '1px solid var(--border-dark)', transition: 'background 0.2s' }} className="hover-row">
+                                                <td style={{ padding: '1.25rem 1rem', fontWeight: '600', color: 'var(--text-main)' }}>
+                                                    {new Date(log.date).toLocaleDateString('en-US', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}
+                                                </td>
+                                                <td style={{ padding: '1.25rem 1rem' }}>
+                                                    <span style={{
+                                                        padding: '0.3rem 0.75rem',
+                                                        borderRadius: '20px',
+                                                        fontSize: '0.65rem',
+                                                        fontWeight: '800',
+                                                        textTransform: 'uppercase',
+                                                        letterSpacing: '0.5px',
+                                                        background: log.status === 'WFH' ? 'rgba(96, 165, 250, 0.15)' : 'rgba(52, 211, 153, 0.15)',
+                                                        color: log.status === 'WFH' ? '#60a5fa' : '#34d399',
+                                                        border: `1px solid ${log.status === 'WFH' ? 'rgba(96, 165, 250, 0.2)' : 'rgba(52, 211, 153, 0.2)'}`
+                                                    }}>
+                                                        {log.status === 'WFH' ? 'Remote' : 'Present'}
+                                                    </span>
+                                                </td>
+                                                <td style={{ padding: '1.25rem 1rem', color: 'var(--text-main)', fontSize: '0.9rem' }}>{log.clockInTime ? new Date(log.clockInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}</td>
+                                                <td style={{ padding: '1.25rem 1rem', color: 'var(--text-main)', fontSize: '0.9rem' }}>{log.clockOutTime ? new Date(log.clockOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : (log.clockInTime ? <span style={{ color: 'var(--primary)', fontWeight: '600' }}>Ongoing</span> : '-')}</td>
+                                                <td style={{ padding: '1.25rem 1rem', fontWeight: '700', color: 'var(--primary)', fontSize: '0.95rem' }}>
+                                                    {log.totalHours ? `${Math.floor(log.totalHours)}h ${Math.round((log.totalHours % 1) * 60)}m` : '-'}
+                                                </td>
+                                                <td style={{ padding: '1.25rem 1rem', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '500' }}>{log.workingMode || 'On-site'}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        ) : (
+                            <div style={{ textAlign: 'center', padding: '6rem 2rem', color: 'var(--text-muted)' }}>
+                                <div style={{ display: 'inline-flex', padding: '1.5rem', background: 'var(--bg-main)', borderRadius: '50%', marginBottom: '1.5rem' }}>
+                                    <Clock size={48} style={{ opacity: 0.3 }} />
+                                </div>
+                                <div style={{ fontSize: '1.1rem', fontWeight: '600', color: 'var(--text-main)', marginBottom: '0.5rem' }}>No Attendance Found</div>
+                                <div style={{ fontSize: '0.9rem' }}>This user hasn't recorded any attendance logs yet.</div>
+                            </div>
+                        )}
+                    </div>
+
+                    <div style={{ padding: '1.5rem 2rem', borderTop: '1px solid var(--border-dark)', display: 'flex', justifyContent: 'flex-end', gap: '1rem', background: 'var(--bg-panel)' }}>
+                        <button
+                            className="btn"
+                            style={{
+                                background: 'transparent',
+                                border: '1px solid var(--border-dark)',
+                                color: 'var(--text-main)',
+                                padding: '0.75rem 2rem',
+                                borderRadius: '10px',
+                                cursor: 'pointer',
+                                fontWeight: '600',
+                                transition: 'all 0.2s'
+                            }}
+                            onMouseOver={e => e.target.style.background = 'var(--bg-main)'}
+                            onMouseOut={e => e.target.style.background = 'transparent'}
+                            onClick={() => setShowUserAttendanceModal(false)}
+                        >
+                            Close
+                        </button>
                     </div>
                 </div>
             </div>
@@ -2288,6 +2441,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
                 </header>
                 <div className="dashboard-content">
                     {renderContent()}
+                    {renderUserAttendanceModal()}
                 </div>
             </main>
             {showHolidayModal && renderHolidayModal()}

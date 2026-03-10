@@ -22,7 +22,8 @@ const AdminTab = ({
     setSelectedUser,
     setShowEditModal,
     setEditMode,
-    setModalTab
+    setModalTab,
+    handleShowAttendance
 }) => {
     // Filter out pending users for the active employees list
     const pagedUsers = allUsers.filter(u => u.status !== 'Pending');
@@ -163,14 +164,24 @@ const AdminTab = ({
                                                     className="dropdown-item"
                                                     onClick={() => {
                                                         setSelectedUser(u);
-                                                        setShowEditModal(true);
                                                         setEditMode(true);
+                                                        setShowEditModal(true);
                                                         setModalTab('Personal');
                                                         setActiveActionMenu(null);
                                                     }}
                                                     style={{ padding: '0.5rem 1rem', cursor: 'pointer', fontSize: '0.85rem' }}
                                                 >
                                                     Edit
+                                                </div>
+                                                <div
+                                                    className="dropdown-item"
+                                                    onClick={() => {
+                                                        handleShowAttendance(u);
+                                                        setActiveActionMenu(null);
+                                                    }}
+                                                    style={{ padding: '0.5rem 1rem', cursor: 'pointer', fontSize: '0.85rem' }}
+                                                >
+                                                    Show Attendance
                                                 </div>
                                             </div>
                                         )}
