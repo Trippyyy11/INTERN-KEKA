@@ -57,11 +57,11 @@ const ContextMenu = ({ x, y, node, onClose, onAction, allUsers, canEdit }) => {
     const roleWeights = { 'Super Admin': 3, 'Admin': 2, 'Employee': 1 };
     const nodeWeight = roleWeights[node.data.role] || 0;
 
-    // Users who can report TO this node (targetWeight <= nodeWeight)
-    const possibleSubordinates = allUsers.filter(u => {
+    // Users who can report TO this node — employees can't have subordinates
+    const possibleSubordinates = nodeWeight <= 1 ? [] : allUsers.filter(u => {
         if (u._id === node.id) return false; // Can't report to self
         const uWeight = roleWeights[u.role] || 0;
-        return uWeight <= nodeWeight;
+        return uWeight < nodeWeight; // Strictly less than, so employees can't manage employees
     });
 
     return (
