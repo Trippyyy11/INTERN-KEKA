@@ -1,5 +1,5 @@
 import express from 'express';
-import { getDashboardStats, createAnnouncement, getTeamCalendarStats } from '../controllers/dashboardController.js';
+import { getDashboardStats, createAnnouncement, getTeamCalendarStats, getAllHolidays } from '../controllers/dashboardController.js';
 import { protect } from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
@@ -7,5 +7,6 @@ const router = express.Router();
 router.get('/stats', protect, getDashboardStats);
 router.get('/team-calendar', protect, getTeamCalendarStats);
 router.post('/announcements', protect, createAnnouncement);
+router.get('/holidays', protect, getAllHolidays);
 
 export default router;

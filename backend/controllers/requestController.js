@@ -13,6 +13,20 @@ export const createRequest = async (req, res) => {
             return res.status(400).json({ message: 'Type, dates, and at least one recipient are required.' });
         }
 
+        if (type !== 'Leave Cancellation') {
+            const start = new Date(startDate);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            start.setHours(0, 0, 0, 0);
+
+            const diffTime = start.getTime() - today.getTime();
+            const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+            if (diffDays === 0 || diffDays === 1) {
+                return res.status(400).json({ message: "Requests cannot be made for today or tomorrow. Please apply at least 2 days in advance, or submit a backdated request for urgent leaves." });
+            }
+        }
+
         const request = await Request.create({
             user: req.user._id,
             type,

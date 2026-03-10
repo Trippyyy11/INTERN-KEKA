@@ -1,6 +1,7 @@
 import User from '../models/User.js';
 import Settings from '../models/Settings.js';
 import OrgConfig from '../models/OrgConfig.js';
+import Notification from '../models/Notification.js';
 
 // @desc    Get all users (with approval status)
 export const getUsers = async (req, res) => {
@@ -62,6 +63,35 @@ export const getOrgConfigs = async (req, res) => {
 export const createOrgConfig = async (req, res) => {
     try {
         const config = await OrgConfig.create(req.body);
+
+        // --- Push Notification Logic ---
+        // Exclude the user who created it (if req.user is available - wait, admin paths usually have req.user from protect middleware)
+        const creatorId = req.user ? req.user._id : null;
+        let query = {};
+        if (creatorId) {
+            query._id = { $ne: creatorId };
+        }
+        const allUsers = await User.find(query).select('_id');
+
+        let notifTitle = 'New ' + config.type + ' Added';
+        let notifMessage = config.name;
+        if (config.type === 'Holiday') {
+            notifMessage = `Holiday added: ${config.name}`;
+        }
+
+        const notifications = allUsers.map(u => ({
+            user: u._id,
+            type: 'config',
+            title: notifTitle,
+            message: notifMessage,
+            relatedId: config._id,
+            relatedModel: 'OrgConfig'
+        }));
+
+        if (notifications.length > 0) {
+            await Notification.insertMany(notifications);
+        }
+
         res.status(201).json(config);
     } catch (error) { res.status(500).json({ message: error.message }); }
 };

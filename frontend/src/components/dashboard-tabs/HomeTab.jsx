@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Trash2, FileText, Briefcase, Calendar, Clock, Mail } from 'lucide-react';
 import api from '../../api/axios';
 import ClockStand from './ClockStand';
+import HolidaysTab from './HolidaysTab';
+
 
 export default function HomeTab({
     user,
@@ -37,6 +39,16 @@ export default function HomeTab({
         color: 'var(--text-main)',
         outline: 'none'
     };
+
+    const [showHolidays, setShowHolidays] = useState(false);
+
+    if (showHolidays) {
+        return (
+            <div className="page-content">
+                <HolidaysTab onBack={() => setShowHolidays(false)} isLightMode={isLightMode} />
+            </div>
+        );
+    }
 
     return (
         <div className="page-content">
@@ -104,7 +116,7 @@ export default function HomeTab({
                             <div className="panel holiday-card" style={{ marginBottom: '1rem' }}>
                                 <div className="panel-header" style={{ marginBottom: '0.5rem', borderBottom: 'none' }}>
                                     <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)' }}>Holidays</span>
-                                    <span className="view-details" style={{ color: '#ffab00', cursor: 'pointer' }} onClick={() => setShowHolidayModal(true)}>View All</span>
+                                    <span className="view-details" style={{ color: '#ffab00', cursor: 'pointer' }} onClick={() => setShowHolidays(true)}>View All</span>
                                 </div>
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.5rem 0' }}>
                                     <div style={{ textAlign: 'center', width: '100%' }}>
@@ -117,6 +129,7 @@ export default function HomeTab({
                             <div className="panel holiday-card" style={{ marginBottom: '1rem' }}>
                                 <div className="panel-header" style={{ marginBottom: '0.5rem', borderBottom: 'none' }}>
                                     <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)' }}>Holidays</span>
+                                    <span className="view-details" style={{ color: '#ffab00', cursor: 'pointer' }} onClick={() => setShowHolidays(true)}>View All</span>
                                 </div>
                                 <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)', textAlign: 'center', padding: '1rem 0' }}>No upcoming holidays</div>
                             </div>

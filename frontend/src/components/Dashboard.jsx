@@ -19,7 +19,16 @@ import {
     ChevronDown,
     FileText,
     Send,
-    HelpCircle
+    HelpCircle,
+    X,
+    Search,
+    Plus,
+    Trash2,
+    Edit,
+    Check,
+    LogOut,
+    Menu,
+    MessageSquare
 } from 'lucide-react';
 
 import VantaBackground from './layout/VantaBackground';
@@ -359,6 +368,25 @@ export default function Dashboard({ user, onLogout, setUser }) {
             setCustomAlert({ message: 'Please fill in all required fields.', type: 'info' });
             return;
         }
+
+        // Rule Validation: Block today and tomorrow for non-cancellation requests. Past dates allowed.
+        if (requestType !== 'Leave Cancellation') {
+            const start = new Date(requestStartDate);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            start.setHours(0, 0, 0, 0);
+
+            const diffTime = start.getTime() - today.getTime();
+            const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+            if (diffDays === 0 || diffDays === 1) {
+                setCustomAlert({
+                    message: "Requests cannot be made for today or tomorrow. Please apply at least 2 days in advance, or submit a backdated request for urgent leaves.",
+                    type: 'info'
+                });
+                return;
+            }
+        }
         setRequestSubmitting(true);
         try {
             await api.post('/requests', {
@@ -664,6 +692,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
             await api.post('/admin/configs', newConfig);
             fetchOrgConfigs();
             setNewConfig({ name: '', type: 'Department', date: '', description: '' });
+            showAlert('Configuration added successfully!', 'info');
         } catch (err) { showAlert('Failed to add config', 'info'); }
     };
 
@@ -702,14 +731,22 @@ export default function Dashboard({ user, onLogout, setUser }) {
                 setIsClockedIn(false);
                 setActiveLog(null);
             }
+        } catch (error) {
+            console.error('Failed to fetch attendance logs:', error);
+        }
 
+        try {
             const payslipsRes = await api.get('/payslips');
             setPayslips(payslipsRes.data);
+        } catch (error) {
+            console.error('Failed to fetch payslips in Dashboard:', error);
+        }
 
+        try {
             const dashRes = await api.get('/dashboard/stats');
             setDashData(dashRes.data);
         } catch (error) {
-            console.error('Failed to fetch stats:', error);
+            console.error('Failed to fetch dashboard stats error:', error);
         }
     };
 

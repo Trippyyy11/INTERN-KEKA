@@ -1,5 +1,6 @@
 import SocialActivity from '../models/SocialActivity.js';
 import User from '../models/User.js';
+import Notification from '../models/Notification.js';
 
 // @desc    Get all social activities
 // @route   GET /api/social
@@ -35,6 +36,43 @@ export const createActivity = async (req, res) => {
         await activity.populate('author', 'name avatar designation');
         if (activity.praiseData?.recipient) {
             await activity.populate('praiseData.recipient', 'name avatar designation');
+        }
+
+        // --- Push Notification Logic ---
+        // Notify all users EXCEPT the author for Posts and Polls
+        // Notify the recipient (and maybe all users) for Praise
+        const allUsers = await User.find({ _id: { $ne: req.user._id } });
+
+        let notifTitle = '';
+        let notifMessage = '';
+        let notifType = 'general';
+
+        if (type === 'Post') {
+            notifType = 'post';
+            notifTitle = 'New Post';
+            notifMessage = `${req.user.name} shared a new post.`;
+        } else if (type === 'Poll') {
+            notifType = 'poll';
+            notifTitle = 'New Poll';
+            notifMessage = `${req.user.name} created a new poll.`;
+        } else if (type === 'Praise') {
+            notifType = 'praise';
+            notifTitle = 'New Recognition';
+            const recipientName = activity.praiseData.recipient.name;
+            notifMessage = `${req.user.name} just recognized ${recipientName}!`;
+        }
+
+        const notifications = allUsers.map(u => ({
+            user: u._id,
+            type: notifType,
+            title: notifTitle,
+            message: notifMessage,
+            relatedId: activity._id,
+            relatedModel: 'SocialActivity'
+        }));
+
+        if (notifications.length > 0) {
+            await Notification.insertMany(notifications);
         }
 
         res.status(201).json(activity);

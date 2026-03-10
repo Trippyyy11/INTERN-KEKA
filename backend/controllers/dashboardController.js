@@ -2,6 +2,7 @@ import User from '../models/User.js';
 import Leave from '../models/Leave.js';
 import Announcement from '../models/Announcement.js';
 import OrgConfig from '../models/OrgConfig.js';
+import Notification from '../models/Notification.js';
 import Attendance from '../models/Attendance.js';
 import moment from 'moment';
 
@@ -223,7 +224,34 @@ export const createAnnouncement = async (req, res) => {
             author: req.user._id
         });
 
+        // --- Push Notification Logic ---
+        const allUsers = await User.find({ _id: { $ne: req.user._id } }).select('_id');
+        const notifications = allUsers.map(u => ({
+            user: u._id,
+            type: 'announcement',
+            title: 'New Announcement: ' + title,
+            message: content.length > 50 ? content.substring(0, 47) + '...' : content,
+            relatedId: announcement._id,
+            relatedModel: 'Announcement'
+        }));
+
+        if (notifications.length > 0) {
+            await Notification.insertMany(notifications);
+        }
+
         res.status(201).json(announcement);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Get all holidays
+// @route   GET /api/dashboard/holidays
+// @access  Private
+export const getAllHolidays = async (req, res) => {
+    try {
+        const holidays = await OrgConfig.find({ type: 'Holiday' }).sort({ date: 1 });
+        res.json(holidays);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
