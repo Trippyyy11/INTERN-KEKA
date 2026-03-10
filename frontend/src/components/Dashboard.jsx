@@ -2144,7 +2144,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
                         <div className={`sub-nav-item active`}>ORGANIZATION TREE</div>
                     </div>
                     <div style={{ height: 'calc(100vh - 200px)' }}>
-                        <OrganizationTree />
+                        <OrganizationTree user={user} />
                     </div>
                 </div>
             );
@@ -3324,7 +3324,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                 if (item.name === 'Me') setActiveSubTab('Attendance');
                                 if (item.name === 'My Team') setActiveSubTab('TEAM MEMBERS');
                                 if (item.name === 'Org') setActiveSubTab('OrgTree');
-                                if (item.name === 'My Finances') setActiveSubTab('Leave');
+                                if (item.name === 'My Finances') setActiveSubTab('Payslips');
                                 if (item.name === 'Admin') setActiveSubTab('Leave');
                             }}
                         >

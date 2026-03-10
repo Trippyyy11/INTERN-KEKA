@@ -76,12 +76,45 @@ export const deleteOrgConfig = async (req, res) => {
 export const assignManager = async (req, res) => {
     try {
         const user = await User.findById(req.params.id);
-        if (user) {
-            user.reportingManager = req.body.managerId;
-            await user.save();
-            res.json(user);
-        } else { res.status(404).json({ message: 'User not found' }); }
-    } catch (error) { res.status(500).json({ message: error.message }); }
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        const { managerId } = req.body;
+
+        if (managerId) {
+            const manager = await User.findById(managerId);
+            if (!manager) {
+                return res.status(404).json({ message: 'Manager not found' });
+            }
+
+            // Define role weights
+            const roleWeights = {
+                'Super Admin': 3,
+                'Admin': 2,
+                'Employee': 1
+            };
+
+            const userWeight = roleWeights[user.role] || 0;
+            const managerWeight = roleWeights[manager.role] || 0;
+
+            // Rules:
+            // 1. Admins and Super Admins can't be under Employee
+            // 2. Super Admins can't be under Admin
+            // General Rule: managerWeight must be >= userWeight
+            if (managerWeight < userWeight) {
+                return res.status(400).json({
+                    message: `Invalid hierarchy: A ${user.role} cannot report to a ${manager.role}.`
+                });
+            }
+        }
+
+        user.reportingManager = managerId || null;
+        await user.save();
+        res.json(user);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
 };
 
 export const getSettings = async (req, res) => {

@@ -51,9 +51,18 @@ const getLayoutedElements = (nodes, edges, direction = 'TB') => {
     return { nodes, edges };
 };
 
-const ContextMenu = ({ x, y, node, onClose, onAction, unassignedUsers }) => {
-    const isManager = node.data.role === 'Admin' || node.data.role === 'Super Admin';
-    const isIntern = !isManager;
+const ContextMenu = ({ x, y, node, onClose, onAction, allUsers, canEdit }) => {
+    if (!canEdit) return null;
+
+    const roleWeights = { 'Super Admin': 3, 'Admin': 2, 'Employee': 1 };
+    const nodeWeight = roleWeights[node.data.role] || 0;
+
+    // Users who can report TO this node (targetWeight <= nodeWeight)
+    const possibleSubordinates = allUsers.filter(u => {
+        if (u._id === node.id) return false; // Can't report to self
+        const uWeight = roleWeights[u.role] || 0;
+        return uWeight <= nodeWeight;
+    });
 
     return (
         <div style={{
@@ -61,34 +70,32 @@ const ContextMenu = ({ x, y, node, onClose, onAction, unassignedUsers }) => {
             top: y,
             left: x,
             zIndex: 1000,
-            background: 'rgba(23, 23, 33, 0.9)',
+            background: 'rgba(23, 23, 33, 0.95)',
             backdropFilter: 'blur(10px)',
             border: '1px solid rgba(255, 255, 255, 0.1)',
             borderRadius: '12px',
             padding: '8px',
-            minWidth: '180px',
+            minWidth: '200px',
             boxShadow: '0 10px 40px rgba(0,0,0,0.5)'
         }}>
             <div style={{ padding: '8px 12px', fontSize: '0.7rem', color: 'var(--text-muted)', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: '4px' }}>
                 ACTIONS FOR {node.data.name.toUpperCase()}
             </div>
 
-            {isManager && (
-                <div className="menu-group">
-                    <div style={{ padding: '8px 12px', fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--primary)' }}>Add Intern</div>
-                    <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
-                        {unassignedUsers.length > 0 ? unassignedUsers.map(user => (
-                            <button key={user._id} onClick={() => onAction('assign', node.id, user)} className="menu-item-btn">
-                                + {user.name}
-                            </button>
-                        )) : <div style={{ padding: '8px 12px', fontSize: '0.7rem', color: 'gray' }}>No unassigned interns</div>}
-                    </div>
+            <div className="menu-group">
+                <div style={{ padding: '8px 12px', fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--primary)' }}>Assign Subordinate</div>
+                <div style={{ maxHeight: '150px', overflowY: 'auto', marginBottom: '8px' }}>
+                    {possibleSubordinates.length > 0 ? possibleSubordinates.map(user => (
+                        <button key={user._id} onClick={() => onAction('assign', node.id, user)} className="menu-item-btn">
+                            + {user.name} ({user.role})
+                        </button>
+                    )) : <div style={{ padding: '8px 12px', fontSize: '0.7rem', color: 'gray' }}>No valid subordinates</div>}
                 </div>
-            )}
+            </div>
 
-            {isIntern && (
+            {node.data.reportingManager && (
                 <button onClick={() => onAction('remove', node.id)} className="menu-item-btn danger">
-                    Remove from Tree
+                    Break Reporting Connection
                 </button>
             )}
 
@@ -98,19 +105,19 @@ const ContextMenu = ({ x, y, node, onClose, onAction, unassignedUsers }) => {
                 .menu-item-btn {
                     width: 100%;
                     text-align: left;
-                    padding: 10px 12px;
+                    padding: 8px 12px;
                     background: transparent;
                     border: none;
                     color: #fff;
-                    font-size: 0.85rem;
+                    font-size: 0.8rem;
                     cursor: pointer;
                     border-radius: 8px;
                     transition: all 0.2s;
                     display: flex;
-                    alignItems: center;
+                    align-items: center;
                 }
                 .menu-item-btn:hover { background: rgba(255,255,255,0.05); }
-                .menu-item-btn.danger { color: #ff4757; }
+                .menu-item-btn.danger { color: #ff4757; border-top: 1px solid rgba(255,255,255,0.05); margin-top: 4px; padding-top: 12px; }
                 .menu-item-btn.danger:hover { background: rgba(255, 71, 87, 0.1); }
                 .menu-item-btn.secondary { color: #888; border-top: 1px solid rgba(255,255,255,0.05); margin-top: 4px; }
             `}</style>
@@ -118,7 +125,7 @@ const ContextMenu = ({ x, y, node, onClose, onAction, unassignedUsers }) => {
     );
 };
 
-export default function OrganizationTree() {
+export default function OrganizationTree({ user: currentUser }) {
     const [users, setUsers] = useState([]);
     const [nodes, setNodes] = useState([]);
     const [edges, setEdges] = useState([]);
@@ -126,6 +133,9 @@ export default function OrganizationTree() {
     const [loading, setLoading] = useState(true);
     const [menu, setMenu] = useState(null);
     const reactFlowWrapper = useRef(null);
+
+    const canEdit = currentUser?.role === 'Admin' || currentUser?.role === 'Super Admin';
+    const roleWeights = { 'Super Admin': 3, 'Admin': 2, 'Employee': 1 };
 
     const fetchUsers = async () => {
         try {
@@ -143,13 +153,9 @@ export default function OrganizationTree() {
         const initialEdges = [];
         const unassigned = [];
 
-        const admins = allUsers.filter(u => u.role === 'Admin' || u.role === 'Super Admin');
-
         allUsers.forEach((user) => {
-            const isManager = admins.some(a => a._id === user._id);
-            if (!user.reportingManager && !isManager) {
+            if (!user.reportingManager) {
                 unassigned.push(user);
-                return;
             }
 
             initialNodes.push({
@@ -161,14 +167,17 @@ export default function OrganizationTree() {
 
             if (user.reportingManager) {
                 const managerId = typeof user.reportingManager === 'object' ? user.reportingManager._id : user.reportingManager;
+                const manager = allUsers.find(u => u._id === managerId);
+                const isManagerEntry = manager && (manager.role === 'Admin' || manager.role === 'Super Admin');
+
                 initialEdges.push({
                     id: `e-${managerId}-${user._id}`,
                     source: managerId,
                     target: user._id,
                     type: 'smoothstep',
                     animated: true,
-                    style: { stroke: isManager ? '#ffab00' : '#00ffa2', strokeWidth: 2, opacity: 0.6 },
-                    markerEnd: { type: MarkerType.ArrowClosed, color: isManager ? '#ffab00' : '#00ffa2' }
+                    style: { stroke: isManagerEntry ? '#ffab00' : '#00ffa2', strokeWidth: 2, opacity: 0.6 },
+                    markerEnd: { type: MarkerType.ArrowClosed, color: isManagerEntry ? '#ffab00' : '#00ffa2' }
                 });
             }
         });
@@ -179,64 +188,83 @@ export default function OrganizationTree() {
         setUnassignedUsers(unassigned);
     };
 
-    const onNodesChange = useCallback((changes) => setNodes((nds) => applyNodeChanges(changes, nds)), []);
-    const onEdgesChange = useCallback((changes) => setEdges((eds) => applyEdgeChanges(changes, eds)), []);
+    const onNodesChange = useCallback((changes) => {
+        if (!canEdit) return;
+        setNodes((nds) => applyNodeChanges(changes, nds));
+    }, [canEdit]);
+
+    const onEdgesChange = useCallback((changes) => {
+        if (!canEdit) return;
+        setEdges((eds) => applyEdgeChanges(changes, eds));
+    }, [canEdit]);
 
     const createsLoop = (source, target, edges) => {
         let current = source;
-
         while (current) {
             if (current === target) return true;
-
             const parentEdge = edges.find(e => e.target === current);
             if (!parentEdge) break;
-
             current = parentEdge.source;
         }
-
         return false;
     };
-    const onConnect = useCallback(async (params) => {
 
-        // prevent self connection
+    const onConnect = useCallback(async (params) => {
+        if (!canEdit) return;
+
         if (params.source === params.target) {
             alert("User cannot report to themselves.");
             return;
         }
 
-        // prevent cyclic hierarchy
+        const sourceUser = users.find(u => u._id === params.source);
+        const targetUser = users.find(u => u._id === params.target);
+
+        // Role hierarchy validation
+        const sourceWeight = roleWeights[sourceUser?.role] || 0;
+        const targetWeight = roleWeights[targetUser?.role] || 0;
+
+        if (targetWeight > sourceWeight) {
+            alert(`A ${targetUser.role} cannot report to a ${sourceUser.role}.`);
+            return;
+        }
+
         if (createsLoop(params.source, params.target, edges)) {
             alert("This connection would create a reporting loop.");
             return;
         }
-        const targetUser = users.find(u => u._id === params.target);
 
-        if (targetUser?.reportingManager === params.source) {
-            alert("This reporting relationship already exists.");
-            return;
-        }
         try {
             await api.put(`/admin/users/${params.target}/manager`, {
                 managerId: params.source
             });
-
             setTimeout(fetchUsers, 500);
         } catch (error) {
             alert("Failed to assign manager: " + error.response?.data?.message);
         }
-
-    }, [edges]);
+    }, [edges, users, canEdit]);
 
     const onNodeContextMenu = useCallback((event, node) => {
+        if (!canEdit) return;
         event.preventDefault();
         setMenu({ id: node.id, top: event.clientY, left: event.clientX, node });
-    }, []);
+    }, [canEdit]);
 
     const onPaneClick = useCallback(() => setMenu(null), []);
 
     const handleMenuAction = async (type, nodeId, data) => {
         try {
             if (type === 'assign') {
+                const sourceUser = users.find(u => u._id === nodeId);
+                const targetUser = data;
+                const sourceWeight = roleWeights[sourceUser?.role] || 0;
+                const targetWeight = roleWeights[targetUser?.role] || 0;
+
+                if (targetWeight > sourceWeight) {
+                    alert(`A ${targetUser.role} cannot report to a ${sourceUser.role}.`);
+                    return;
+                }
+
                 await api.put(`/admin/users/${data._id}/manager`, { managerId: nodeId });
             } else if (type === 'remove') {
                 await api.put(`/admin/users/${nodeId}/manager`, { managerId: null });
@@ -258,16 +286,19 @@ export default function OrganizationTree() {
         <div style={{ display: 'flex', height: '100%', width: '100%', gap: '1rem' }} ref={reactFlowWrapper}>
             <div style={{ width: '280px', background: 'var(--bg-panel)', padding: '1.5rem', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column' }}>
                 <h3 style={{ color: 'var(--text-main)', marginBottom: '0.5rem', fontSize: '1.1rem', fontWeight: '800' }}>Directory</h3>
-                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '1.5rem', lineHeight: '1.5' }}>Unassigned interns can be dragged onto the canvas or added via a manager's right-click menu.</p>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '1.5rem', lineHeight: '1.5' }}>
+                    {canEdit ? "All users are shown on the tree. Use the right-click menu or drag between nodes to manage reporting." : "Overview of the organization structure."}
+                </p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', overflowY: 'auto', flex: 1 }}>
                     {unassignedUsers.map((u) => (
-                        <div key={u._id} draggable onDragStart={(e) => { e.dataTransfer.setData('application/reactflow', JSON.stringify(u)); }}
-                            style={{ padding: '1rem', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '12px', cursor: 'grab', color: 'var(--text-main)' }}>
+                        <div key={u._id}
+                            style={{ padding: '1rem', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '12px', color: 'var(--text-main)' }}>
                             <div style={{ fontWeight: '700', fontSize: '0.85rem' }}>{u.name}</div>
-                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '2px' }}>{u.designation || 'Intern'}</div>
+                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '2px' }}>{u.designation || u.role}</div>
+                            <div style={{ fontSize: '0.6rem', color: 'var(--primary)', marginTop: '4px', fontWeight: 'bold' }}>UNASSIGNED</div>
                         </div>
                     ))}
-                    {unassignedUsers.length === 0 && <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textAlign: 'center', marginTop: '2rem' }}>All interns assigned.</div>}
+                    {unassignedUsers.length === 0 && <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textAlign: 'center', marginTop: '2rem' }}>All members assigned.</div>}
                 </div>
             </div>
 
@@ -278,6 +309,9 @@ export default function OrganizationTree() {
                     onConnect={onConnect} nodeTypes={nodeTypes}
                     onNodeContextMenu={onNodeContextMenu} onPaneClick={onPaneClick}
                     fitView colorMode="dark"
+                    nodesDraggable={canEdit}
+                    elementsSelectable={canEdit}
+                    panOnDrag={true}
                 >
                     <Background variant="lines" gap={50} size={1} color="rgba(255,255,255,0.02)" />
                     <Controls style={{ background: 'var(--bg-panel)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '8px' }} />
@@ -285,7 +319,7 @@ export default function OrganizationTree() {
                         <button className="btn btn-primary" onClick={onLayout} style={{ borderRadius: '12px', padding: '0.6rem 1.2rem', fontWeight: '700', boxShadow: '0 4px 12px rgba(var(--primary-rgb), 0.3)' }}>Auto Arrange</button>
                     </Panel>
                 </ReactFlow>
-                {menu && <ContextMenu x={menu.left} y={menu.top} node={menu.node} onClose={onPaneClick} onAction={handleMenuAction} unassignedUsers={unassignedUsers} />}
+                {menu && <ContextMenu x={menu.left} y={menu.top} node={menu.node} onClose={onPaneClick} onAction={handleMenuAction} allUsers={users} canEdit={canEdit} />}
             </div>
         </div>
     );
