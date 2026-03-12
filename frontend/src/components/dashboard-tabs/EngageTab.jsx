@@ -1,5 +1,5 @@
 import React from 'react';
-import { Trash2 } from 'lucide-react';
+import { Trash2, PartyPopper, AlignEndHorizontal } from 'lucide-react';
 import api from '../../api/axios';
 
 export default function EngageTab({
@@ -57,11 +57,11 @@ export default function EngageTab({
                             <span
                                 className={`tab-pill cyan ${orgActionTab === 'Poll' ? 'active' : ''}`}
                                 onClick={() => setOrgActionTab('Poll')}
-                            >📊 Poll</span>
+                            ><AlignEndHorizontal /> Poll</span>
                             <span
                                 className={`tab-pill blue ${orgActionTab === 'Praise' ? 'active' : ''}`}
                                 onClick={() => setOrgActionTab('Praise')}
-                            >🏆 Praise</span>
+                            > <PartyPopper />Praise</span>
                         </div>
 
                         {orgActionTab === 'Post' && (

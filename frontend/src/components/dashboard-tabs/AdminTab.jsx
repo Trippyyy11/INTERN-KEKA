@@ -35,6 +35,7 @@ const AdminTab = ({
                 <div className={`sub-nav-item ${activeSubTab === 'Approvals' ? 'active' : ''}`} onClick={() => setActiveSubTab('Approvals')}>APPROVALS ({pendingUsers.length})</div>
                 <div className={`sub-nav-item ${activeSubTab === 'Configs' ? 'active' : ''}`} onClick={() => setActiveSubTab('Configs')}>ORG CONFIGS</div>
                 <div className={`sub-nav-item ${activeSubTab === 'Settings' ? 'active' : ''}`} onClick={() => setActiveSubTab('Settings')}>SYSTEM SETTINGS</div>
+                <div className={`sub-nav-item ${activeSubTab === 'Bank' ? 'active' : ''}`} onClick={() => setActiveSubTab('Bank')}>VIEW BANK INFO</div>
             </div>
 
             {activeSubTab === 'Settings' && (
@@ -245,6 +246,42 @@ const AdminTab = ({
                                     <tr key={c._id}>
                                         <td>{c.type}</td><td>{c.name}</td><td>{c.date ? new Date(c.date).toLocaleDateString() : '-'}</td>
                                         <td><button className="btn btn-sm btn-danger" onClick={() => handleDeleteConfig(c._id)}>Delete</button></td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
+
+            {activeSubTab === 'Bank' && (
+                <div className="panel">
+                    <div className="panel-header">Intern Bank Details</div>
+                    <div style={{ overflowX: 'auto' }}>
+                        <table className="data-table">
+                            <thead>
+                                <tr>
+                                    <th>NAME</th>
+                                    <th>EMAIL</th>
+                                    <th>ACCOUNT HOLDER</th>
+                                    <th>BANK NAME</th>
+                                    <th>ACCOUNT NO.</th>
+                                    <th>IFSC</th>
+                                    <th>BRANCH</th>
+                                    <th>UPI ID</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {allUsers.map(u => (
+                                    <tr key={u._id}>
+                                        <td>{u.name}</td>
+                                        <td>{u.email}</td>
+                                        <td>{u.bankDetails?.accountHolderName || '-'}</td>
+                                        <td>{u.bankDetails?.bankName || '-'}</td>
+                                        <td>{u.bankDetails?.accountNumber || '-'}</td>
+                                        <td>{u.bankDetails?.ifscCode || '-'}</td>
+                                        <td>{u.bankDetails?.branchName || '-'}</td>
+                                        <td>{u.bankDetails?.upiId || '-'}</td>
                                     </tr>
                                 ))}
                             </tbody>
