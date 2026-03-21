@@ -8,7 +8,7 @@
 
 :root {
   /* Core Theme Colors — Premium Formal Dark */
-  --primary: oklch(0.205 0 0);
+  --primary: #3b82f6;
   /* Corporate Blue */
   --primary-hover: #2563eb;
   --primary-dim: rgba(59, 130, 246, 0.12);
@@ -240,13 +240,24 @@ ul {
 
 .btn-primary {
   background-color: var(--primary);
-  color: #0a0e17;
+  color: #ffffff;
   font-weight: 600;
 }
 
 .btn-primary:hover {
   background-color: var(--primary-hover);
-  box-shadow: var(--glow-green);
+  box-shadow: var(--glow-blue);
+}
+
+.btn-secondary {
+  background-color: rgba(255, 255, 255, 0.05);
+  color: var(--text-main);
+  border: 1px solid var(--border-dark);
+}
+
+.btn-secondary:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-color: var(--primary);
 }
 
 .btn-danger {

@@ -115,82 +115,117 @@ export default function AuthPage({ onLogin }) {
     };
 
     const renderSuccessStep = () => (
-        <div className="flex flex-col items-center text-center space-y-6 py-8">
-            <CheckCircle2 size={64} className="text-primary animate-in zoom-in duration-500" />
-            <div className="space-y-2">
-                <h3 className="text-2xl font-bold">Account Created!</h3>
+        <div className="flex flex-col items-center text-center gap-6 py-8">
+            <CheckCircle2 size={64} className="text-blue-600 animate-in zoom-in duration-500" />
+            <div className="flex flex-col gap-2">
+                <h3 className="text-2xl font-bold text-foreground">Account Created!</h3>
                 <p className="text-muted-foreground leading-relaxed">
                     Your account has been successfully created. We have sent an approval request to the Admins.
                     You will be able to log in once your account is activated.
                 </p>
             </div>
-            <Button onClick={() => { setIsSignUp(false); setStep(1); }} className="w-full mt-4">
+            <Button 
+                onClick={() => { setIsSignUp(false); setStep(1); }} 
+                className="w-full h-12 mt-4 !bg-blue-600 !text-white hover:!bg-blue-700 transition-all rounded-xl font-bold shadow-lg shadow-blue-500/30"
+            >
                 Back to Login
             </Button>
         </div>
     );
 
     const renderProfileStep = () => (
-        <form onSubmit={handleProfileSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                    <label className="text-sm font-medium">Designation</label>
-                    <select required value={formData.designation} onChange={e => setFormData({ ...formData, designation: e.target.value })} className="w-full p-2 bg-secondary/50 border rounded-md outline-none focus:ring-2 focus:ring-primary/20">
-                        <option value="">Select</option>
-                        {options.designations.map(o => <option key={o._id} value={o.name}>{o.name}</option>)}
-                    </select>
+        <form onSubmit={handleProfileSubmit} className="flex flex-col gap-8 py-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {message && (
+                <div className="flex items-center gap-3 p-4 bg-blue-50/50 border border-blue-100 rounded-xl text-blue-700 text-sm">
+                    <CheckCircle2 size={18} className="shrink-0" />
+                    <p className="font-medium">{message}</p>
                 </div>
-                <div className="space-y-2">
-                    <label className="text-sm font-medium">Department</label>
-                    <select required value={formData.department} onChange={e => setFormData({ ...formData, department: e.target.value })} className="w-full p-2 bg-secondary/50 border rounded-md outline-none focus:ring-2 focus:ring-primary/20">
-                        <option value="">Select</option>
-                        {options.departments.map(o => <option key={o._id} value={o.name}>{o.name}</option>)}
-                    </select>
+            )}
+
+            <div className="flex flex-col gap-6">
+                {/* Section: Job Details */}
+                <div className="space-y-4">
+                    <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground/60 px-1">Job Details</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5">
+                        <div className="space-y-2">
+                            <label className="text-[0.85rem] font-semibold text-foreground ml-1">Designation</label>
+                            <select required value={formData.designation} onChange={e => setFormData({ ...formData, designation: e.target.value })} className="w-full h-11 px-4 bg-slate-50/50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 text-slate-800 transition-all font-medium">
+                                <option value="" className="text-slate-500">Select Designation</option>
+                                {options.designations.map(o => <option key={o._id} value={o.name} className="text-foreground">{o.name}</option>)}
+                            </select>
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-[0.85rem] font-semibold text-foreground ml-1">Department</label>
+                            <select required value={formData.department} onChange={e => setFormData({ ...formData, department: e.target.value })} className="w-full h-11 px-4 bg-slate-50/50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 text-slate-800 transition-all font-medium">
+                                <option value="" className="text-slate-500">Select Department</option>
+                                {options.departments.map(o => <option key={o._id} value={o.name} className="text-foreground">{o.name}</option>)}
+                            </select>
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-[0.85rem] font-semibold text-foreground ml-1">Joining Date</label>
+                            <InputGroup className="h-11 border-slate-200 shadow-sm overflow-hidden rounded-xl">
+                                <InputGroupAddon align="inline-start" className="!pl-6 pr-0"><CalendarIcon size={16} className="text-muted-foreground/70" /></InputGroupAddon>
+                                <InputGroupInput required type="date" value={formData.joiningDate} onChange={e => setFormData({ ...formData, joiningDate: e.target.value })} className="!pl-6 !text-slate-900" />
+                            </InputGroup>
+                        </div>
+                    </div>
                 </div>
-                <div className="space-y-2">
-                    <label className="text-sm font-medium text-muted-foreground">Joining Date</label>
-                    <InputGroup>
-                        <InputGroupInput required type="date" value={formData.joiningDate} onChange={e => setFormData({ ...formData, joiningDate: e.target.value })} />
-                        <InputGroupAddon align="inline-start"><CalendarIcon size={16} /></InputGroupAddon>
-                    </InputGroup>
+
+                {/* Section: Personal Details */}
+                <div className="space-y-4 pt-2">
+                    <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground/60 px-1">Personal Details</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5">
+                        <div className="space-y-2">
+                            <label className="text-[0.85rem] font-semibold text-foreground ml-1">Date of Birth</label>
+                            <InputGroup className="h-11 border-slate-200 shadow-sm overflow-hidden rounded-xl">
+                                <InputGroupAddon align="inline-start" className="!pl-6 pr-0"><CalendarIcon size={16} className="text-muted-foreground/70" /></InputGroupAddon>
+                                <InputGroupInput required type="date" value={formData.dob} onChange={e => setFormData({ ...formData, dob: e.target.value })} className="!pl-6 !text-slate-900" />
+                            </InputGroup>
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-[0.85rem] font-semibold text-foreground ml-1">Place</label>
+                            <InputGroup className="h-11 border-slate-200 shadow-sm overflow-hidden rounded-xl">
+                                <InputGroupAddon align="inline-start" className="!pl-6 pr-0"><MapPinIcon size={16} className="text-muted-foreground/70" /></InputGroupAddon>
+                                <InputGroupInput required type="text" value={formData.place} onChange={e => setFormData({ ...formData, place: e.target.value })} placeholder="City" className="!pl-6 placeholder:text-slate-800" />
+                            </InputGroup>
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-[0.85rem] font-semibold text-foreground ml-1">Phone Number</label>
+                            <InputGroup className="h-11 border-slate-200 shadow-sm overflow-hidden rounded-xl">
+                                <InputGroupAddon align="inline-start" className="!pl-6 pr-0"><PhoneIcon size={16} className="text-muted-foreground/70" /></InputGroupAddon>
+                                <InputGroupInput required type="tel" value={formData.phoneNumber} onChange={e => setFormData({ ...formData, phoneNumber: e.target.value })} placeholder="Phone" className="!pl-6 placeholder:text-slate-800" />
+                            </InputGroup>
+                        </div>
+                    </div>
                 </div>
-                <div className="space-y-2">
-                    <label className="text-sm font-medium text-muted-foreground">Date of Birth</label>
-                    <InputGroup>
-                        <InputGroupInput required type="date" value={formData.dob} onChange={e => setFormData({ ...formData, dob: e.target.value })} />
-                        <InputGroupAddon align="inline-start"><CalendarIcon size={16} /></InputGroupAddon>
-                    </InputGroup>
-                </div>
-                <div className="space-y-2">
-                    <label className="text-sm font-medium text-muted-foreground">Place</label>
-                    <InputGroup>
-                        <InputGroupInput required type="text" value={formData.place} onChange={e => setFormData({ ...formData, place: e.target.value })} placeholder="City" />
-                        <InputGroupAddon align="inline-start"><MapPinIcon size={16} /></InputGroupAddon>
-                    </InputGroup>
-                </div>
-                <div className="space-y-2">
-                    <label className="text-sm font-medium text-muted-foreground">Phone Number</label>
-                    <InputGroup>
-                        <InputGroupInput required type="tel" value={formData.phoneNumber} onChange={e => setFormData({ ...formData, phoneNumber: e.target.value })} placeholder="Phone" />
-                        <InputGroupAddon align="inline-start"><PhoneIcon size={16} /></InputGroupAddon>
-                    </InputGroup>
-                </div>
-                <div className="space-y-2">
-                    <label className="text-sm font-medium text-muted-foreground">Password</label>
-                    <InputGroup>
-                        <InputGroupInput required type="password" value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })} />
-                        <InputGroupAddon align="inline-start"><LockIcon size={16} /></InputGroupAddon>
-                    </InputGroup>
-                </div>
-                <div className="space-y-2">
-                    <label className="text-sm font-medium text-muted-foreground">Confirm Password</label>
-                    <InputGroup>
-                        <InputGroupInput required type="password" value={formData.confirmPassword} onChange={e => setFormData({ ...formData, confirmPassword: e.target.value })} />
-                        <InputGroupAddon align="inline-start"><LockIcon size={16} /></InputGroupAddon>
-                    </InputGroup>
+
+                {/* Section: Security */}
+                <div className="space-y-4 pt-2">
+                    <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground/60 px-1">Security</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5">
+                        <div className="space-y-2">
+                            <label className="text-[0.85rem] font-semibold text-foreground ml-1">Password</label>
+                            <InputGroup className="h-11 border-slate-200 shadow-sm overflow-hidden rounded-xl">
+                                <InputGroupAddon align="inline-start" className="!pl-6 pr-0"><LockIcon size={16} className="text-muted-foreground/70" /></InputGroupAddon>
+                                <InputGroupInput required type="password" value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })} className="!pl-6 !text-slate-900" />
+                            </InputGroup>
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-[0.85rem] font-semibold text-foreground ml-1">Confirm Password</label>
+                            <InputGroup className="h-11 border-slate-200 shadow-sm overflow-hidden rounded-xl">
+                                <InputGroupAddon align="inline-start" className="!pl-6 pr-0"><LockIcon size={16} className="text-muted-foreground/70" /></InputGroupAddon>
+                                <InputGroupInput required type="password" value={formData.confirmPassword} onChange={e => setFormData({ ...formData, confirmPassword: e.target.value })} className="!pl-6 !text-slate-900" />
+                            </InputGroup>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <Button type="submit" className="w-full h-11 text-base font-semibold" disabled={isLoading}>
+
+            <Button 
+                type="submit" 
+                className="w-full h-12 mt-4 text-base font-bold !bg-blue-600 !text-white hover:!bg-blue-700 rounded-xl transition-all shadow-lg shadow-blue-500/30 active:scale-[0.98]" 
+                disabled={isLoading}
+            >
                 {isLoading ? <Loader2 className="animate-spin" /> : 'Complete Signup'}
             </Button>
         </form>
@@ -198,41 +233,54 @@ export default function AuthPage({ onLogin }) {
 
     return (
         <main className="relative md:h-screen md:overflow-hidden lg:grid lg:grid-cols-2 bg-background">
+            <style dangerouslySetInnerHTML={{ __html: `
+                input:-webkit-autofill,
+                input:-webkit-autofill:hover, 
+                input:-webkit-autofill:focus, 
+                input:-webkit-autofill:active {
+                    -webkit-box-shadow: 0 0 0 50px white inset !important;
+                    -webkit-text-fill-color: #0f172a !important; /* slate-900 */
+                }
+                
+                /* EXTREME CONTRAST OVERRIDES */
+                ::-webkit-datetime-edit,
+                ::-webkit-datetime-edit-fields-wrapper,
+                ::-webkit-datetime-edit-text,
+                ::-webkit-datetime-edit-month-field,
+                ::-webkit-datetime-edit-day-field,
+                ::-webkit-datetime-edit-year-field {
+                    color: #0f172a !important;
+                }
+                
+                ::placeholder {
+                    color: #1e293b !important;
+                    opacity: 1 !important;
+                }
+            ` }} />
             {/* Left Side - Visual Column */}
-            <div className="relative hidden h-full flex-col border-r bg-secondary p-10 lg:flex dark:bg-secondary/20">
+            <div className="relative hidden h-full flex-col border-r bg-slate-50 p-10 lg:flex">
                 <div className="absolute inset-0 bg-linear-to-b from-transparent via-transparent to-background" />
-                {/* <Logo className="mr-auto h-6 text-foreground" /> */}
-                {/* <img src="../assets/male_character.png" alt="Logo" className="mr-auto h-200 text-foreground" /> */}
                 <div className="z-10 mt-auto">
-                    <blockquote className="space-y-2">
-                        <p className="text-xl text-muted-foreground">
-                            &ldquo;Don't judge each day by the harvest you reap but by the seeds that you plant.&rdquo;
-                        </p>
-                        <footer className="font-mono font-semibold text-sm text-muted-foreground">
-                            ~ Robert Louis Stevenson
-                        </footer>
-                    </blockquote>
+                    {/* Quote removed as requested */}
                 </div>
-                <div className="absolute inset-0">
+                <div className="absolute inset-0 opacity-100 text-primary">
                     <FloatingPaths position={1} />
                     <FloatingPaths position={-1} />
                 </div>
             </div>
 
             {/* Right Side - Auth Form Column */}
-            <div className="relative flex min-h-screen items-center justify-center px-8 ">
+            <div className="relative flex min-h-screen items-center justify-center px-8 bg-background">
                 {/* Top Shades */}
-                <div aria-hidden className="absolute inset-0 isolate -z-10 opacity-60 contain-strict pointer-events-none">
-                    <div className="absolute top-0 right-0 h-320 w-140 -translate-y-87.5 rounded-full bg-[radial-gradient(68.54%_68.72%_at_55.02%_31.46%,--theme(--color-foreground/.06)_0,hsla(0,0%,55%,.02)_50%,--theme(--color-foreground/.01)_80%)]" />
-                    <div className="absolute top-0 right-0 h-320 w-60 rounded-full bg-[radial-gradient(50%_50%_at_50%_50%,--theme(--color-foreground/.04)_0,--theme(--color-foreground/.01)_80%,transparent_100%)] [translate:5%_-50%]" />
-                    <div className="absolute top-0 right-0 h-320 w-60 -translate-y-87.5 rounded-full bg-[radial-gradient(50%_50%_at_50%_50%,--theme(--color-foreground/.04)_0,--theme(--color-foreground/.01)_80%,transparent_100%)]" />
+                <div aria-hidden className="absolute inset-0 isolate -z-10 opacity-30 contain-strict pointer-events-none">
+                    <div className="absolute top-0 right-0 h-320 w-140 -translate-y-87.5 rounded-full bg-[radial-gradient(68.54%_68.72%_at_55.02%_31.46%,#3b82f615_0,transparent_80%)]" />
                 </div>
 
                 <div className="absolute top-7 left-5">
                     <Button
                         variant="ghost"
                         onClick={() => window.location.href = '/'}
-                        className="flex items-center gap-2"
+                        className="flex items-center gap-2 text-muted-foreground hover:text-primary hover:bg-slate-50"
                     >
                         <ChevronLeftIcon size={16} data-icon="inline-start" />
                         Home
@@ -254,22 +302,34 @@ export default function AuthPage({ onLogin }) {
                             {error}
                         </div>
                     )}
-                    {message && !error && (
-                        <div className="p-3 text-sm font-medium text-primary bg-primary/10 border border-primary/20 rounded-md text-center mb-4">
-                            {message}
-                        </div>
-                    )}
 
                     {!isSignUp || (isSignUp && step === 1) ? (
                         <>
-                            <form onSubmit={isSignUp ? handleRegisterStep1 : handleLogin} className="space-y-4">
-                                <div className="space-y-3">
-                                    <p className="text-start text-muted-foreground text-[0.9rem] mb-1">
-                                        Enter your email address to sign in or create an account
+                            <form onSubmit={isSignUp ? handleRegisterStep1 : handleLogin} className="flex flex-col gap-6">
+                                <div className="flex flex-col gap-4">
+                                    <p className="text-start text-muted-foreground text-[0.9rem]">
+                                        {isSignUp ? 'Create your account to get started' : 'Enter your email address to sign in or create an account'}
                                     </p>
-                                    <InputGroup className="h-11">
-                                        <InputGroupAddon align="inline-start">
-                                            <AtSignIcon size={18} className="text-slate-400" />
+                                    
+                                    {isSignUp && (
+                                        <InputGroup className="h-12 border-slate-200 overflow-hidden shadow-sm">
+                                            <InputGroupAddon align="inline-start" className="!pl-6 pr-0">
+                                                <UserCircle2 size={18} className="text-muted-foreground/70" />
+                                            </InputGroupAddon>
+                                            <InputGroupInput
+                                                required
+                                                type="text"
+                                                placeholder="Full Name"
+                                                value={formData.name}
+                                                onChange={e => setFormData({ ...formData, name: e.target.value })}
+                                                className="bg-transparent text-foreground tracking-wider placeholder:text-slate-800 !pl-6"
+                                            />
+                                        </InputGroup>
+                                    )}
+
+                                    <InputGroup className="h-12 border-slate-200 overflow-hidden shadow-sm">
+                                        <InputGroupAddon align="inline-start" className="!pl-6 pr-0">
+                                            <AtSignIcon size={18} className="text-muted-foreground/70" />
                                         </InputGroupAddon>
                                         <InputGroupInput
                                             required
@@ -277,27 +337,30 @@ export default function AuthPage({ onLogin }) {
                                             placeholder="your.email@example.com"
                                             value={formData.email}
                                             onChange={e => setFormData({ ...formData, email: e.target.value })}
-                                            className="bg-transparent text-black tracking-wider"
+                                            className="bg-transparent text-foreground tracking-wider placeholder:text-slate-800 !pl-6"
                                         />
                                     </InputGroup>
                                     {!isSignUp && (
-                                        <InputGroup className="h-11">
-                                            <InputGroupAddon align="inline-start">
-                                                <LockIcon size={18} className="text-slate-400" />
+                                        <InputGroup className="h-12 border-slate-200 overflow-hidden shadow-sm">
+                                            <InputGroupAddon align="inline-start" className="!pl-6 pr-0">
+                                                <LockIcon size={18} className="text-muted-foreground/70" />
                                             </InputGroupAddon>
                                             <InputGroupInput
                                                 required
                                                 type="password"
-                                                placeholder="Password"
                                                 value={formData.password}
                                                 onChange={e => setFormData({ ...formData, password: e.target.value })}
-                                                className="bg-transparent text-black tracking-wider"
+                                                className="bg-transparent text-slate-900 tracking-wider !pl-6"
                                             />
                                         </InputGroup>
                                     )}
                                 </div>
-                                <Button type="submit" className="w-full h-11 bg-white hover:bg-slate-50 text-slate-300 border border-slate-100 rounded-xl text-base font-semibold shadow-sm active:scale-[0.98]" disabled={isLoading}>
-                                    {isLoading ? <Loader2 className="animate-spin" /> : 'Continue With Email'}
+                                <Button 
+                                    type="submit" 
+                                    className="w-full h-12 !bg-blue-600 !text-white hover:!bg-blue-700 rounded-xl text-base font-bold shadow-lg shadow-blue-600/30 active:scale-[0.98] transition-all" 
+                                    disabled={isLoading}
+                                >
+                                    {isLoading ? <Loader2 className="animate-spin" /> : (isSignUp ? 'Join Now' : 'Sign In')}
                                 </Button>
                             </form>
                         </>
@@ -308,24 +371,15 @@ export default function AuthPage({ onLogin }) {
                         </>
                     )}
 
-                    {(!isSignUp || (isSignUp && step === 1)) && (
-                        <div className="pt-4">
-                            <p className="text-sm text-muted-foreground leading-relaxed">
-                                By clicking continue, you agree to our{" "}
-                                <a href="#" className="underline underline-offset-4 hover:text-primary transition-colors">Terms of Service</a>
-                                {" "}and{" "}
-                                <a href="#" className="underline underline-offset-4 hover:text-primary transition-colors">Privacy Policy</a>.
-                            </p>
-                        </div>
-                    )}
+                    {/* TOS Disclaimer removed as requested */}
 
                     {(!isSignUp || (isSignUp && step === 1)) && (
-                        <div className="text-center pt-2">
+                        <div className="text-center pt-6">
                             <p className="text-sm text-muted-foreground">
                                 {isSignUp ? 'Already have an account? ' : "Don't have an account? "}
                                 <button
                                     onClick={() => { setIsSignUp(!isSignUp); setStep(1); setError(''); setMessage(''); }}
-                                    className="font-bold text-foreground hover:underline underline-offset-4 focus:outline-none"
+                                    className="font-bold text-primary hover:underline underline-offset-4 focus:outline-none"
                                 >
                                     {isSignUp ? 'Sign In' : 'Join Now'}
                                 </button>

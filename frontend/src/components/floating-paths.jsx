@@ -19,21 +19,21 @@ export function FloatingPaths({
 
 	return (
         <div className="pointer-events-none absolute inset-0">
-            <svg className="h-full w-full text-primary" fill="none" viewBox="0 0 696 316">
+            <svg className="h-full w-full text-blue-700" fill="none" viewBox="0 0 696 316">
 				<title>Background Paths</title>
 				{paths.map((path) => (
 					<motion.path
                         animate={{
 							pathLength: 1,
-							opacity: [0.3, 0.6, 0.3],
+							opacity: [0.4, 0.7, 0.3],
 							pathOffset: [0, 1, 0],
 						}}
                         d={path.d}
                         initial={{ pathLength: 0.3, opacity: 0.6 }}
                         key={path.id}
                         stroke="currentColor"
-                        strokeOpacity={0.1 + path.id * 0.03}
-                        strokeWidth={path.width}
+                        strokeOpacity={0.2 + path.id * 0.03}
+                        strokeWidth={path.width * 1.5}
                         transition={{
 							duration: 20 + Math.random() * 10,
 							repeat: Number.POSITIVE_INFINITY,
