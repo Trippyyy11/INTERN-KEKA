@@ -74,10 +74,12 @@ export default function Dashboard({ user, onLogout, setUser }) {
 
     useEffect(() => {
         const handleClickOutside = (event) => {
+            if (!document.contains(event.target)) return; // Prevent closing if target was unmounted (e.g. clicking "Clear All")
+            
             if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target)) {
                 setShowProfileMenu(false);
             }
-            if (notificationRef.current && !notificationRef.current.contains(event.target)) {
+            if (notificationRef.current && !notificationRef.current.contains(event.target) && !event.target.closest('#notification-panel')) {
                 setShowNotifications(false);
             }
         };
@@ -2211,7 +2213,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
     };
 
     return (
-        <div className="dashboard-layout">
+        <div className="dashboard-layout" style={{ display: 'flex', flexDirection: 'row', height: '100vh', overflow: 'hidden', padding: '1.25rem', gap: '1.25rem', boxSizing: 'border-box' }}>
             <div ref={vantaRef} style={{
                 position: 'fixed',
                 top: 0,
@@ -2223,11 +2225,14 @@ export default function Dashboard({ user, onLogout, setUser }) {
                 pointerEvents: 'none',
                 transition: 'opacity 0.5s ease'
             }}></div>
-            <aside className="sidebar">
-                <div className="sidebar-brand">
-                    <span style={{ color: 'var(--primary)' }}>TP</span>&nbsp; Interns
+
+            {/* FLOATING SIDEBAR ISLAND */}
+            <aside className="sidebar" style={{ width: '260px', borderRadius: '24px', background: isLightMode ? 'rgba(255, 255, 255, 0.8)' : 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', zIndex: 5, overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.2)', transition: 'all 0.3s ease' }}>
+                <div className="sidebar-brand" style={{ padding: '1.5rem', height: 'auto', background: 'transparent', margin: 0, fontSize: '1.5rem', border: 'none', textAlign: 'center', fontWeight: '700' }}>
+                    <span style={{ color: 'var(--primary)' }}>TP</span>&nbsp;<span style={{ color: 'var(--text-main)' }}>Interns</span>
                 </div>
-                <nav className="sidebar-nav">
+                <div style={{ flex: 1, overflowY: 'auto', paddingBottom: '1rem' }}>
+                    <nav className="sidebar-nav">
                     {sidebarItems.filter(item => {
                         if (item.name === 'My Team' && teammates.length === 0) return false;
                         if (item.name === 'Admin' && !(user?.role === 'Admin' || user?.role === 'Super Admin')) return false;
@@ -2252,13 +2257,19 @@ export default function Dashboard({ user, onLogout, setUser }) {
                         </div>
                     ))}
                 </nav>
+                </div>
             </aside>
 
-            <main className="main-content">
-                <header className="topbar">
+            {/* RIGHT COLUMN (Topbar + Content) */}
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1.25rem', overflow: 'hidden', zIndex: 5 }}>
+                
+                {/* FLOATING TOPBAR ISLAND */}
+                <header className="topbar" style={{ width: '100%', borderRadius: '24px', background: isLightMode ? 'rgba(255, 255, 255, 0.8)' : 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative', height: '74px', flexShrink: 0, padding: '0 1.5rem', boxShadow: '0 8px 32px rgba(0,0,0,0.15)', transition: 'all 0.3s ease' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-                        <div style={{ fontSize: '1.5rem', fontWeight: '500', color: 'var(--text-topbar)' }}>{systemSettings?.companyName || 'Teaching Pariksha'}</div>
-                        <div style={{ fontSize: '0.85rem', color: 'var(--text-topbar)', opacity: 0.8, borderLeft: '1px solid rgba(255, 255, 255, 0.3)', paddingLeft: '1.5rem' }}>
+                        <div style={{ fontSize: '1.15rem', fontWeight: '600', color: 'var(--text-topbar)' }}>
+                            {systemSettings?.companyName || 'Teaching Pariksha'}
+                        </div>
+                        <div className="hidden md:block" style={{ fontSize: '0.9rem', color: 'var(--text-topbar)', opacity: 0.7, borderLeft: '1px solid var(--border-dark)', paddingLeft: '1.5rem' }}>
                             {new Date().toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
                         </div>
                     </div>
@@ -2288,8 +2299,119 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                 )}
                             </div>
 
-                            {showNotifications && (
+                            
+                        </div>
+                        <div ref={profileDropdownRef} style={{ position: 'relative' }}>
+                            <div
+                                className="avatar"
+                                style={{ cursor: 'pointer', background: '#00ff88', color: '#0a0e17' }}
+                                onClick={() => setShowProfileMenu(!showProfileMenu)}
+                            >
+                                {user?.profilePicture ? (
+                                    <img src={user.profilePicture} alt="Profile" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+                                ) : (
+                                    user?.name?.substring(0, 2).toUpperCase() || 'ME'
+                                )}
+                            </div>
+
+                            {showProfileMenu && (
                                 <div className="panel" style={{
+                                    position: 'absolute',
+                                    top: '100%',
+                                    right: '0',
+                                    marginTop: '0.5rem',
+                                    minWidth: '180px',
+                                    zIndex: 100,
+                                    padding: '0.5rem 0',
+                                    boxShadow: '0 10px 25px rgba(0,0,0,0.3)',
+                                    border: '1px solid var(--border-dark)'
+                                }}>
+                                    <div
+                                        style={{ padding: '0.75rem 1.25rem', borderBottom: '1px solid var(--border-dark)' }}
+                                    >
+                                        <div style={{ fontWeight: '600', color: 'var(--text-main)', fontSize: '0.85rem' }}>{user?.name}</div>
+                                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{user?.role}</div>
+                                    </div>
+                                    <div
+                                        className="dropdown-item"
+                                        onClick={() => { setActiveSidebar('Me'); setActiveSubTab('Profile'); setShowProfileMenu(false); }}
+                                    >
+                                        My Profile
+                                    </div>
+                                    <div
+                                        className="dropdown-item danger"
+                                        style={{ color: '#ffab00' }}
+                                        onClick={handleLogout}
+                                    >
+                                        Log Out
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </header>
+
+                {/* MAIN CONTENT CANVAS */}
+                <main className="main-content" style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: 'var(--bg-main)', borderRadius: '24px', border: '1px solid var(--border-dark)', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.3)', position: 'relative' }}>
+                    <div className="dashboard-content" style={{ flex: 1, overflowY: 'auto', height: '100%' }}>
+                        {renderContent()}
+                        {renderUserAttendanceModal()}
+                    </div>
+                </main>
+            </div>
+            {showHolidayModal && renderHolidayModal()}
+            {showLogInfo && renderLogInfoModal()}
+            {renderAlertModal()}
+            {renderPublicProfileModal()}
+            {renderAnnouncementModal()}
+            {renderAttendancePolicyModal()}
+            {renderEditModal()}
+
+            {
+                showClockInModal && (
+                    <div style={modalOverlay}>
+                        <div style={{ ...modalContent, maxWidth: '400px' }}>
+                            <div className="panel-header" style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between' }}>
+                                <span>Clock In - Select Mode</span>
+                                <span style={{ cursor: 'pointer' }} onClick={() => setShowClockInModal(false)}>✕</span>
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                <div
+                                    onClick={() => setSelectedWorkingMode('On-site')}
+                                    style={{
+                                        padding: '1rem',
+                                        border: `1px solid ${selectedWorkingMode === 'On-site' ? 'var(--primary)' : 'var(--border-dark)'}`,
+                                        borderRadius: 'var(--radius-md)',
+                                        cursor: 'pointer',
+                                        background: selectedWorkingMode === 'On-site' ? 'rgba(var(--primary-rgb), 0.1)' : 'transparent'
+                                    }}
+                                >
+                                    <div style={{ fontWeight: '500' }}>Working On-Site</div>
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Working from the office location.</div>
+                                </div>
+                                <div
+                                    onClick={() => setSelectedWorkingMode('Remote')}
+                                    style={{
+                                        padding: '1rem',
+                                        border: `1px solid ${selectedWorkingMode === 'Remote' ? 'var(--primary)' : 'var(--border-dark)'}`,
+                                        borderRadius: 'var(--radius-md)',
+                                        cursor: 'pointer',
+                                        background: selectedWorkingMode === 'Remote' ? 'rgba(var(--primary-rgb), 0.1)' : 'transparent'
+                                    }}
+                                >
+                                    <div style={{ fontWeight: '500' }}>Working Remotely</div>
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Working from home or another location.</div>
+                                </div>
+                                <button className="btn btn-primary" style={{ marginTop: '1rem' }} onClick={confirmClockIn}>
+                                    Confirm Clock In
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
+{showNotifications && (
+                                <div id="notification-panel" className="panel" style={{
                                     position: 'fixed', top: 0, right: 0,
                                     width: '25vw', minWidth: '320px', height: '100vh', zIndex: 1000,
                                     boxShadow: '-4px 0 30px rgba(0,0,0,0.4)',
@@ -2389,112 +2511,6 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                     </div>
                                 </div>
                             )}
-                        </div>
-                        <div ref={profileDropdownRef} style={{ position: 'relative' }}>
-                            <div
-                                className="avatar"
-                                style={{ cursor: 'pointer', background: '#00ff88', color: '#0a0e17' }}
-                                onClick={() => setShowProfileMenu(!showProfileMenu)}
-                            >
-                                {user?.profilePicture ? (
-                                    <img src={user.profilePicture} alt="Profile" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
-                                ) : (
-                                    user?.name?.substring(0, 2).toUpperCase() || 'ME'
-                                )}
-                            </div>
-
-                            {showProfileMenu && (
-                                <div className="panel" style={{
-                                    position: 'absolute',
-                                    top: '100%',
-                                    right: '0',
-                                    marginTop: '0.5rem',
-                                    minWidth: '180px',
-                                    zIndex: 100,
-                                    padding: '0.5rem 0',
-                                    boxShadow: '0 10px 25px rgba(0,0,0,0.3)',
-                                    border: '1px solid var(--border-dark)'
-                                }}>
-                                    <div
-                                        style={{ padding: '0.75rem 1.25rem', borderBottom: '1px solid var(--border-dark)' }}
-                                    >
-                                        <div style={{ fontWeight: '600', color: 'var(--text-main)', fontSize: '0.85rem' }}>{user?.name}</div>
-                                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{user?.role}</div>
-                                    </div>
-                                    <div
-                                        className="dropdown-item"
-                                        onClick={() => { setActiveSidebar('Me'); setActiveSubTab('Profile'); setShowProfileMenu(false); }}
-                                    >
-                                        My Profile
-                                    </div>
-                                    <div
-                                        className="dropdown-item danger"
-                                        style={{ color: '#ffab00' }}
-                                        onClick={handleLogout}
-                                    >
-                                        Log Out
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </header>
-                <div className="dashboard-content">
-                    {renderContent()}
-                    {renderUserAttendanceModal()}
-                </div>
-            </main>
-            {showHolidayModal && renderHolidayModal()}
-            {showLogInfo && renderLogInfoModal()}
-            {renderAlertModal()}
-            {renderPublicProfileModal()}
-            {renderAnnouncementModal()}
-            {renderAttendancePolicyModal()}
-            {renderEditModal()}
-
-            {
-                showClockInModal && (
-                    <div style={modalOverlay}>
-                        <div style={{ ...modalContent, maxWidth: '400px' }}>
-                            <div className="panel-header" style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between' }}>
-                                <span>Clock In - Select Mode</span>
-                                <span style={{ cursor: 'pointer' }} onClick={() => setShowClockInModal(false)}>✕</span>
-                            </div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                                <div
-                                    onClick={() => setSelectedWorkingMode('On-site')}
-                                    style={{
-                                        padding: '1rem',
-                                        border: `1px solid ${selectedWorkingMode === 'On-site' ? 'var(--primary)' : 'var(--border-dark)'}`,
-                                        borderRadius: 'var(--radius-md)',
-                                        cursor: 'pointer',
-                                        background: selectedWorkingMode === 'On-site' ? 'rgba(var(--primary-rgb), 0.1)' : 'transparent'
-                                    }}
-                                >
-                                    <div style={{ fontWeight: '500' }}>Working On-Site</div>
-                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Working from the office location.</div>
-                                </div>
-                                <div
-                                    onClick={() => setSelectedWorkingMode('Remote')}
-                                    style={{
-                                        padding: '1rem',
-                                        border: `1px solid ${selectedWorkingMode === 'Remote' ? 'var(--primary)' : 'var(--border-dark)'}`,
-                                        borderRadius: 'var(--radius-md)',
-                                        cursor: 'pointer',
-                                        background: selectedWorkingMode === 'Remote' ? 'rgba(var(--primary-rgb), 0.1)' : 'transparent'
-                                    }}
-                                >
-                                    <div style={{ fontWeight: '500' }}>Working Remotely</div>
-                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Working from home or another location.</div>
-                                </div>
-                                <button className="btn btn-primary" style={{ marginTop: '1rem' }} onClick={confirmClockIn}>
-                                    Confirm Clock In
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )
-            }
         </div >
     );
 }
