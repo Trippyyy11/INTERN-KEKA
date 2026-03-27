@@ -43,7 +43,7 @@ export const getDashboardStats = async (req, res) => {
         }).populate({
             path: 'user',
             match: myDept ? { department: myDept } : {},
-            select: 'name department avatar'
+            select: 'name department avatar profilePicture gender place bloodGroup dob welcomeProfile designation phoneNumber'
         });
 
         // Filter out leaves where user didn't match the department filter
@@ -56,7 +56,7 @@ export const getDashboardStats = async (req, res) => {
         }).populate({
             path: 'user',
             match: myDept ? { department: myDept } : {},
-            select: 'name department avatar'
+            select: 'name department avatar profilePicture gender place bloodGroup dob welcomeProfile designation phoneNumber'
         });
 
         // Filter out records where user didn't match the department filter
@@ -65,7 +65,7 @@ export const getDashboardStats = async (req, res) => {
         // 4. New Joinees (Last 30 days) - use createdAt (always set by timestamps) as primary
         const newJoinees = await User.find({
             createdAt: { $gte: thirtyDaysAgo.toDate() }
-        }).select('name joiningDate createdAt department avatar profilePicture');
+        }).select('name joiningDate createdAt department avatar profilePicture gender place bloodGroup dob welcomeProfile designation phoneNumber');
 
         // 5. Team Activity Stats (Today)
         const teamMembers = await User.find({ department: myDept }).select('name designation workingSchedule');
