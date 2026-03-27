@@ -354,7 +354,7 @@ const AdminTab = ({
 
             {/* ===== ORG CONFIGS ===== */}
             {activeSubTab === 'Configs' && (
-                <div style={{ display: 'grid', gridTemplateColumns: '380px 1fr', gap: '2rem', alignItems: 'start' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', alignItems: 'start' }}>
                     {/* Add Config */}
                     <div style={{ ...glass, padding: '2rem', position: 'sticky', top: '1.5rem' }}>
                         {/* Gradient Header Bar */}
@@ -475,7 +475,7 @@ const AdminTab = ({
 
             {/* ===== SYSTEM SETTINGS ===== */}
             {activeSubTab === 'Settings' && (
-                <div style={{ maxWidth: '1050px', margin: '0 auto' }}>
+                <div style={{ margin: '0' }}>
                     <div style={{ ...glass, padding: '2.5rem' }}>
                         {/* Big gradient banner */}
                         <div style={{

@@ -1787,50 +1787,121 @@ export default function Dashboard({ user, onLogout, setUser }) {
 
     const renderAnnouncementModal = () => {
         if (!showAnnouncementModal) return null;
+        const isLight = document.documentElement.getAttribute('data-theme') === 'light';
         return (
             <div style={modalOverlay}>
-                <div style={modalContent}>
-                    <div className="panel-header" style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between' }}>
-                        <span>Create Announcement</span>
-                        <span style={{ cursor: 'pointer' }} onClick={() => setShowAnnouncementModal(false)}>✕</span>
+                <div style={{
+                    background: isLight ? 'rgba(255,255,255,0.92)' : 'rgba(15,23,42,0.92)',
+                    backdropFilter: 'blur(24px)',
+                    WebkitBackdropFilter: 'blur(24px)',
+                    padding: 0,
+                    borderRadius: '28px',
+                    width: '90%',
+                    maxWidth: '560px',
+                    boxShadow: '0 25px 80px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.06)',
+                    border: `1px solid ${isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.08)'}`,
+                    overflow: 'hidden',
+                    animation: 'fadeIn 0.3s ease-out'
+                }}>
+                    {/* Gradient Header */}
+                    <div style={{
+                        background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a78bfa 100%)',
+                        padding: '2rem 2.5rem', position: 'relative', overflow: 'hidden'
+                    }}>
+                        <div style={{ position: 'absolute', right: '-10px', bottom: '-10px', opacity: 0.1 }}><span style={{ fontSize: '5rem' }}>📢</span></div>
+                        <div style={{ position: 'relative', zIndex: 1 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: '900', color: '#fff', letterSpacing: '-0.3px' }}>Create Announcement</h2>
+                                <button onClick={() => setShowAnnouncementModal(false)} style={{
+                                    width: '32px', height: '32px', borderRadius: '10px', border: 'none',
+                                    background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(8px)',
+                                    color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    fontSize: '1.1rem', fontWeight: '700', transition: 'all 0.2s'
+                                }} onMouseOver={e => e.currentTarget.style.background = 'rgba(255,255,255,0.35)'}
+                                   onMouseOut={e => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}>✕</button>
+                            </div>
+                            <p style={{ margin: '0.4rem 0 0', fontSize: '0.88rem', color: 'rgba(255,255,255,0.8)', fontWeight: '500' }}>Broadcast to all employees</p>
+                        </div>
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+
+                    {/* Form Body */}
+                    <div style={{ padding: '2rem 2.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                         <div>
-                            <label style={labelStyle}>Title</label>
+                            <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: '800', color: isLight ? '#64748b' : 'rgba(148,163,184,0.8)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Title</label>
                             <input
                                 type="text"
                                 value={newAnnouncement.title}
                                 onChange={(e) => setNewAnnouncement({ ...newAnnouncement, title: e.target.value })}
-                                style={inputStyle}
                                 placeholder="E.g., Company Townhall"
+                                style={{
+                                    width: '100%', padding: '0.9rem 1.2rem', fontSize: '0.95rem', fontWeight: '600',
+                                    background: isLight ? '#f8fafc' : 'rgba(0,0,0,0.2)',
+                                    border: `1.5px solid ${isLight ? '#e2e8f0' : 'rgba(255,255,255,0.08)'}`,
+                                    borderRadius: '14px', color: 'var(--text-main)', outline: 'none',
+                                    transition: 'all 0.25s', boxSizing: 'border-box'
+                                }}
+                                onFocus={e => { e.target.style.borderColor = '#6366f1'; e.target.style.boxShadow = '0 0 0 4px rgba(99,102,241,0.12)'; }}
+                                onBlur={e => { e.target.style.borderColor = isLight ? '#e2e8f0' : 'rgba(255,255,255,0.08)'; e.target.style.boxShadow = 'none'; }}
                             />
                         </div>
                         <div>
-                            <label style={labelStyle}>Content</label>
+                            <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: '800', color: isLight ? '#64748b' : 'rgba(148,163,184,0.8)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Content</label>
                             <textarea
                                 value={newAnnouncement.content}
                                 onChange={(e) => setNewAnnouncement({ ...newAnnouncement, content: e.target.value })}
-                                style={{ ...inputStyle, minHeight: '100px', resize: 'vertical' }}
                                 placeholder="Details of the announcement..."
+                                style={{
+                                    width: '100%', padding: '0.9rem 1.2rem', fontSize: '0.95rem', fontWeight: '500',
+                                    background: isLight ? '#f8fafc' : 'rgba(0,0,0,0.2)',
+                                    border: `1.5px solid ${isLight ? '#e2e8f0' : 'rgba(255,255,255,0.08)'}`,
+                                    borderRadius: '14px', color: 'var(--text-main)', outline: 'none',
+                                    minHeight: '120px', resize: 'vertical',
+                                    transition: 'all 0.25s', boxSizing: 'border-box', lineHeight: '1.6'
+                                }}
+                                onFocus={e => { e.target.style.borderColor = '#6366f1'; e.target.style.boxShadow = '0 0 0 4px rgba(99,102,241,0.12)'; }}
+                                onBlur={e => { e.target.style.borderColor = isLight ? '#e2e8f0' : 'rgba(255,255,255,0.08)'; e.target.style.boxShadow = 'none'; }}
                             />
                         </div>
                         <div>
-                            <label style={labelStyle}>Priority</label>
-                            <select
-                                value={newAnnouncement.priority}
-                                onChange={(e) => setNewAnnouncement({ ...newAnnouncement, priority: e.target.value })}
-                                style={inputStyle}
-                            >
-                                <option value="Low">Low</option>
-                                <option value="Medium">Medium</option>
-                                <option value="High">High</option>
-                            </select>
+                            <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: '800', color: isLight ? '#64748b' : 'rgba(148,163,184,0.8)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Priority</label>
+                            <div style={{ display: 'flex', gap: '0.6rem' }}>
+                                {['Low', 'Medium', 'High'].map(p => {
+                                    const active = newAnnouncement.priority === p;
+                                    const colorMap = { Low: '#10b981', Medium: '#f59e0b', High: '#ef4444' };
+                                    return (
+                                        <button key={p} type="button" onClick={() => setNewAnnouncement({ ...newAnnouncement, priority: p })} style={{
+                                            flex: 1, padding: '0.7rem', borderRadius: '12px', cursor: 'pointer',
+                                            fontWeight: '800', fontSize: '0.8rem', letterSpacing: '0.3px',
+                                            transition: 'all 0.2s',
+                                            background: active ? colorMap[p] + '18' : (isLight ? '#f8fafc' : 'rgba(0,0,0,0.15)'),
+                                            border: `1.5px solid ${active ? colorMap[p] : (isLight ? '#e2e8f0' : 'rgba(255,255,255,0.08)')}`,
+                                            color: active ? colorMap[p] : 'var(--text-muted)'
+                                        }}>{p}</button>
+                                    );
+                                })}
+                            </div>
                         </div>
                     </div>
-                    <div style={{ marginTop: '2rem', display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
-                        <button className="btn btn-secondary" onClick={() => setShowAnnouncementModal(false)}>Cancel</button>
+
+                    {/* Footer Actions */}
+                    <div style={{
+                        padding: '1.25rem 2.5rem 2rem', display: 'flex', gap: '1rem', justifyContent: 'flex-end',
+                        borderTop: `1px solid ${isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)'}`
+                    }}>
+                        <button onClick={() => setShowAnnouncementModal(false)} style={{
+                            padding: '0.75rem 1.75rem', borderRadius: '14px', cursor: 'pointer',
+                            background: 'transparent', border: `1.5px solid ${isLight ? '#e2e8f0' : 'rgba(255,255,255,0.1)'}`,
+                            color: 'var(--text-main)', fontWeight: '700', fontSize: '0.9rem', transition: 'all 0.2s'
+                        }} onMouseOver={e => e.currentTarget.style.borderColor = 'var(--primary)'} onMouseOut={e => e.currentTarget.style.borderColor = isLight ? '#e2e8f0' : 'rgba(255,255,255,0.1)'}>Cancel</button>
                         <button
-                            className="btn btn-primary"
+                            style={{
+                                padding: '0.75rem 2rem', borderRadius: '14px', border: 'none', cursor: 'pointer',
+                                background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', color: '#fff',
+                                fontWeight: '800', fontSize: '0.9rem',
+                                boxShadow: '0 6px 20px rgba(99,102,241,0.35)', transition: 'all 0.2s'
+                            }}
+                            onMouseOver={e => e.currentTarget.style.transform = 'translateY(-1px)'}
+                            onMouseOut={e => e.currentTarget.style.transform = 'translateY(0)'}
                             onClick={async () => {
                                 if (!newAnnouncement.title || !newAnnouncement.content) {
                                     showAlert('Please fill all required fields.', 'error');

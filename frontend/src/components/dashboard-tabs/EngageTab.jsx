@@ -11,7 +11,8 @@ import {
     CheckCircle2,
     User,
     BarChart3,
-    Heart
+    Heart,
+    Plus
 } from 'lucide-react';
 import api from '../../api/axios';
 
@@ -143,10 +144,16 @@ export default function EngageTab({
             </div>
 
             {engageTab === 'Create' && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', maxWidth: '800px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: (user?.role === 'Admin' || user?.role === 'Super Admin') ? '1fr 1fr' : '1fr', gap: '2rem', alignItems: 'start' }}>
 
                     {/* Creation Bento Panel */}
                     <div style={bentoPanelStyle}>
+                        {/* Yellow accent bar */}
+                        <div style={{
+                            position: 'absolute', top: 0, left: 0, right: 0, height: '4px',
+                            background: 'linear-gradient(90deg, #f59e0b, #fbbf24, #fcd34d)',
+                            borderRadius: '24px 24px 0 0'
+                        }}></div>
                         {/* Internal Tabs */}
                         <div style={{
                             display: 'flex', gap: '0.5rem', borderBottom: `1px solid ${isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.06)'}`,
@@ -326,26 +333,44 @@ export default function EngageTab({
                         )}
                     </div>
 
-                    {/* Announcement CTA (Admin) */}
+                    {/* Announcement CTA (Admin) - Right Column */}
                     {(user?.role === 'Admin' || user?.role === 'Super Admin') && (
-                        <div style={{
-                            ...bentoPanelStyle, background: 'transparent', border: `2px dashed ${isLightMode ? '#cbd5e1' : 'rgba(255,255,255,0.15)'}`,
-                            boxShadow: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '3rem 2rem'
-                        }}>
-                            <div style={{ width: '48px', height: '48px', borderRadius: '16px', background: 'rgba(var(--primary-rgb), 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1rem' }}>
-                                <Megaphone size={24} color="var(--primary)" />
+                        <div style={{ ...bentoPanelStyle, position: 'sticky', top: '1.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2.5rem 2rem', textAlign: 'center' }}>
+                            {/* Gradient accent bar */}
+                            <div style={{
+                                position: 'absolute', top: 0, left: 0, right: 0, height: '4px',
+                                background: 'linear-gradient(90deg, #6366f1, #8b5cf6, #a78bfa)',
+                                borderRadius: '24px 24px 0 0'
+                            }}></div>
+
+                            <div style={{
+                                width: '60px', height: '60px', borderRadius: '20px',
+                                background: 'linear-gradient(135deg, rgba(var(--primary-rgb),0.15), rgba(var(--primary-rgb),0.05))',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.25rem',
+                                boxShadow: '0 4px 16px rgba(var(--primary-rgb),0.1)'
+                            }}>
+                                <Megaphone size={28} color="var(--primary)" />
                             </div>
-                            <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '800', color: 'var(--text-main)', marginBottom: '0.5rem' }}>Global Announcement</h3>
-                            <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.95rem', fontWeight: '500', marginBottom: '1.5rem', textAlign: 'center', maxWidth: '300px' }}>
-                                Broadcast important updates to the entire organization.
+                            <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: '900', color: 'var(--text-main)', marginBottom: '0.5rem' }}>Global Announcement</h3>
+                            <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.88rem', fontWeight: '500', marginBottom: '2rem', lineHeight: '1.6', maxWidth: '280px' }}>
+                                Broadcast important updates to the entire organization instantly.
                             </p>
                             <button
-                                className="btn btn-primary"
-                                style={{ padding: '0.8rem 2.5rem', borderRadius: '12px', fontWeight: '800', boxShadow: '0 4px 15px rgba(var(--primary-rgb), 0.3)' }}
+                                style={{
+                                    padding: '0.85rem 2.5rem', borderRadius: '14px', fontWeight: '800', fontSize: '0.9rem',
+                                    background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', color: '#fff', border: 'none', cursor: 'pointer',
+                                    boxShadow: '0 6px 20px rgba(99,102,241,0.3)',
+                                    transition: 'all 0.25s',
+                                    display: 'flex', alignItems: 'center', gap: '0.5rem'
+                                }}
+                                onMouseOver={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 10px 30px rgba(99,102,241,0.4)'; }}
+                                onMouseOut={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(99,102,241,0.3)'; }}
                                 onClick={() => setShowAnnouncementModal(true)}
                             >
-                                + Create Announcement
+                                <Plus size={18} /> Create Announcement
                             </button>
+
+
                         </div>
                     )}
                 </div>

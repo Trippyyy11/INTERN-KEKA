@@ -362,7 +362,7 @@ export default function HomeTab({
                                 style={{ flex: 1, padding: '1.25rem 1rem', fontWeight: '700', fontSize: '0.85rem', color: orgActivityTab === 'NewJoinees' ? 'var(--primary)' : 'var(--text-muted)', background: orgActivityTab === 'NewJoinees' ? (isLightMode ? '#ffffff' : 'rgba(59, 130, 246, 0.05)') : 'transparent', borderBottom: orgActivityTab === 'NewJoinees' ? '3px solid var(--primary)' : '3px solid transparent', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
                                 onClick={() => setOrgActivityTab('NewJoinees')}
                             >
-                                <Users size={18} /> Joinees ({dashData.newJoinees.length})
+                                <Users size={18} /> New Joinees ({dashData.newJoinees.length})
                             </button>
                         </div>
                         
