@@ -1096,6 +1096,9 @@ export default function Dashboard({ user, onLogout, setUser }) {
 
                         {activeSubTab === 'Request' && (
                             <RequestTab
+                                user={user}
+                                allUsers={allUsers}
+                                isLightMode={isLightMode}
                                 requestType={requestType}
                                 setRequestType={setRequestType}
                                 requestLeaveType={requestLeaveType}
@@ -1131,6 +1134,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
                         {activeSubTab === 'Profile' && (
                             <ProfileTab
                                 user={user}
+                                isLightMode={isLightMode}
                                 isProfileEditing={isProfileEditing}
                                 setIsProfileEditing={setIsProfileEditing}
                                 tempProfile={tempProfile}
@@ -1140,8 +1144,6 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                 handleProfilePictureUpload={handleProfilePictureUpload}
                                 uploadingPic={uploadingPic}
                                 handleRemoveProfilePicture={handleRemoveProfilePicture}
-                                labelStyle={labelStyle}
-                                inputStyle={inputStyle}
                             />
                         )}
 
@@ -2264,7 +2266,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1.25rem', overflow: 'hidden', zIndex: 5 }}>
                 
                 {/* FLOATING TOPBAR ISLAND */}
-                <header className="topbar" style={{ width: '100%', borderRadius: '24px', background: isLightMode ? 'rgba(255, 255, 255, 0.8)' : 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative', height: '74px', flexShrink: 0, padding: '0 1.5rem', boxShadow: '0 8px 32px rgba(0,0,0,0.15)', transition: 'all 0.3s ease' }}>
+                <header className="topbar" style={{ zIndex: 50, width: '100%', borderRadius: '24px', background: isLightMode ? 'rgba(255, 255, 255, 0.8)' : 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative', height: '74px', flexShrink: 0, padding: '0 1.5rem', boxShadow: '0 8px 32px rgba(0,0,0,0.15)', transition: 'all 0.3s ease' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
                         <div style={{ fontSize: '1.15rem', fontWeight: '600', color: 'var(--text-topbar)' }}>
                             {systemSettings?.companyName || 'Teaching Pariksha'}

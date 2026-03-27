@@ -290,166 +290,262 @@ const AttendanceTab = ({
         );
     };
 
+    const bentoPanelStyle = {
+        padding: '1.5rem',
+        borderRadius: '24px',
+        background: isLightMode 
+            ? 'linear-gradient(145deg, rgba(255,255,255,0.95) 0%, rgba(248,250,252,0.8) 100%)'
+            : 'linear-gradient(145deg, rgba(30,30,30,0.9) 0%, rgba(20,20,20,0.6) 100%)',
+        border: `1px solid ${isLightMode ? 'rgba(226, 232, 240, 0.8)' : 'rgba(255, 255, 255, 0.05)'}`,
+        boxShadow: isLightMode 
+            ? '0 10px 40px -10px rgba(0,0,0,0.05)'
+            : '0 10px 40px -10px rgba(0,0,0,0.3)',
+        backdropFilter: 'blur(12px)',
+        display: 'flex',
+        flexDirection: 'column',
+        position: 'relative',
+        overflow: 'hidden'
+    };
+
     return (
-        <>
-            <div className="grid" style={{ gridTemplateColumns: 'minmax(300px, 1fr) minmax(300px, 1fr) minmax(300px, 1fr)', gap: '1.25rem', marginBottom: '1.25rem' }}>
-                <div className="panel" style={{ padding: '1.25rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-                        <span style={{ fontSize: '0.9rem', fontWeight: '500' }}>Attendance Stats</span>
+        <div style={{ animation: 'fadeIn 0.5s ease-out' }}>
+            {/* Bento Grid Top */}
+            <div className="grid" style={{ 
+                gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', 
+                gap: '1.5rem', 
+                marginBottom: '1.5rem' 
+            }}>
+                {/* Stats Panel */}
+                <div style={bentoPanelStyle}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                        <span style={{ fontSize: '1.05rem', fontWeight: '800', letterSpacing: '-0.3px', color: 'var(--text-main)' }}>Attendance Stats</span>
                         <select
                             value={statsPeriod}
                             onChange={(e) => {
                                 setStatsPeriod(e.target.value);
                                 fetchTeamStats(e.target.value);
                             }}
-                            style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: '0.75rem', outline: 'none', cursor: 'pointer' }}
+                            style={{ 
+                                background: isLightMode ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)', 
+                                border: 'none', 
+                                color: 'var(--text-main)', 
+                                fontSize: '0.75rem', 
+                                padding: '0.4rem 0.8rem',
+                                borderRadius: '12px',
+                                outline: 'none', 
+                                cursor: 'pointer',
+                                fontWeight: '600',
+                                transition: 'background 0.2s'
+                            }}
                         >
                             <option value="Last Week">Last Week</option>
                             <option value="Last Month">Last Month</option>
                         </select>
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                         {(meStats.hasData || teammateIndividualStats.length > 0) ? (
                             <>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                        <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(var(--primary-rgb), 0.2)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem' }}>ME</div>
-                                        <span style={{ fontSize: '0.85rem' }}>Me</span>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(var(--primary-rgb), 0.08)', padding: '1rem', borderRadius: '16px', border: '1px solid rgba(var(--primary-rgb), 0.15)' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+                                        <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'var(--primary)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem', fontWeight: 'bold', boxShadow: '0 4px 12px rgba(var(--primary-rgb), 0.4)' }}>ME</div>
+                                        <span style={{ fontSize: '0.95rem', fontWeight: '700' }}>Me</span>
                                     </div>
                                     <div style={{ textAlign: 'right' }}>
-                                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', letterSpacing: '0.3px' }}>Avg Hrs / Day</div>
-                                        <div style={{ fontSize: '0.9rem', fontWeight: '500' }}>{meStats.avgHours}</div>
+                                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.2rem', fontWeight: '600' }}>Avg Hrs/Day</div>
+                                        <div style={{ fontSize: '1.1rem', fontWeight: '800', color: 'var(--text-main)' }}>{meStats.avgHours}</div>
                                     </div>
                                     <div style={{ textAlign: 'right' }}>
-                                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', letterSpacing: '0.3px' }}>On Time Arrival</div>
-                                        <div style={{ fontSize: '0.9rem', fontWeight: '500' }}>{meStats.onTime}</div>
+                                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.2rem', fontWeight: '600' }}>On Time</div>
+                                        <div style={{ fontSize: '1.1rem', fontWeight: '800', color: 'var(--success)' }}>{meStats.onTime}</div>
                                     </div>
                                 </div>
                                 {teammateIndividualStats.map(ts => (
-                                    <div key={ts._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                            <div className="avatar" style={{ width: '32px', height: '32px', fontSize: '0.7rem', background: 'rgba(var(--primary-rgb), 0.1)', color: 'var(--text-muted)' }}>
+                                    <div key={ts._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0.5rem' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+                                            <div className="avatar" style={{ width: '36px', height: '36px', borderRadius: '12px', fontSize: '0.8rem', background: isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.05)', color: 'var(--text-main)', fontWeight: '700', border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.1)'}` }}>
                                                 {ts.name.substring(0, 2).toUpperCase()}
                                             </div>
-                                            <span style={{ fontSize: '0.85rem' }}>{ts.name}</span>
+                                            <span style={{ fontSize: '0.9rem', fontWeight: '600' }}>{ts.name}</span>
                                         </div>
                                         <div style={{ textAlign: 'right' }}>
-                                            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', letterSpacing: '0.3px' }}>Avg Hrs / Day</div>
-                                            <div style={{ fontSize: '0.9rem', fontWeight: '500' }}>{Math.floor(ts.avgHours)}h {Math.round((ts.avgHours % 1) * 60)}m</div>
+                                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', letterSpacing: '0.3px', fontWeight: '500' }}>Avg Hrs/Day</div>
+                                            <div style={{ fontSize: '0.9rem', fontWeight: '700' }}>{Math.floor(ts.avgHours)}h {Math.round((ts.avgHours % 1) * 60)}m</div>
                                         </div>
                                         <div style={{ textAlign: 'right' }}>
-                                            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', letterSpacing: '0.3px' }}>On Time Arrival</div>
-                                            <div style={{ fontSize: '0.9rem', fontWeight: '500' }}>{ts.onTimePercentage}%</div>
+                                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', letterSpacing: '0.3px', fontWeight: '500' }}>On Time</div>
+                                            <div style={{ fontSize: '0.9rem', fontWeight: '700', color: 'var(--text-main)' }}>{ts.onTimePercentage}%</div>
                                         </div>
                                     </div>
                                 ))}
                             </>
                         ) : (
-                            <div style={{ textAlign: 'center', padding: '2rem 0', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                                No data available to show for this period.
+                            <div style={{ textAlign: 'center', padding: '3rem 0', color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: '500', background: isLightMode ? '#f8fafc' : 'rgba(0,0,0,0.2)', borderRadius: '16px', border: `1px dashed ${isLightMode ? '#cbd5e1' : 'rgba(255,255,255,0.1)'}` }}>
+                                No data available for this period.
                             </div>
                         )}
                     </div>
                 </div>
 
-                <div className="panel" style={{ padding: '1.25rem' }}>
-                    <div className="panel-header" style={{ marginBottom: '1rem' }}>Work Schedule</div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                        <div style={{ background: 'rgba(var(--primary-rgb), 0.05)', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-dark)' }}>
-                            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'capitalize', letterSpacing: '0.3px', marginBottom: '0.5rem' }}>Daily Shift Requirement</div>
-                            <div style={{ fontSize: '0.95rem', fontWeight: '500', color: 'var(--text-main)' }}>{user?.workingSchedule?.shiftStart || '11:00'} - {user?.workingSchedule?.shiftEnd || '07:00 PM'}</div>
-                            <div style={{ fontSize: '0.75rem', color: 'var(--primary)', marginTop: '0.25rem', fontWeight: '500' }}>Target: {user?.workingSchedule?.minHours || 7.0} Effective Hours</div>
+                {/* Work Schedule Panel */}
+                <div style={bentoPanelStyle}>
+                    <div style={{ fontSize: '1.05rem', fontWeight: '800', letterSpacing: '-0.3px', color: 'var(--text-main)', marginBottom: '1.5rem' }}>Work Schedule</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', flex: 1 }}>
+                        <div style={{ 
+                            background: isLightMode ? '#f8fafc' : 'rgba(0,0,0,0.2)', 
+                            padding: '1.5rem', 
+                            borderRadius: '20px', 
+                            border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.05)'}`,
+                            flex: 1,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'center',
+                            position: 'relative',
+                            overflow: 'hidden'
+                        }}>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '0.5rem', fontWeight: '700' }}>Daily Shift Requirement</div>
+                            <div style={{ fontSize: '1.75rem', fontWeight: '800', color: 'var(--text-main)', letterSpacing: '-0.5px' }}>{user?.workingSchedule?.shiftStart || '11:00'} - {user?.workingSchedule?.shiftEnd || '07:00 PM'}</div>
+                            <div style={{ fontSize: '0.85rem', color: 'var(--primary)', marginTop: '0.75rem', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'rgba(var(--primary-rgb), 0.1)', display: 'inline-flex', padding: '0.4rem 0.8rem', borderRadius: '12px' }}>
+                                Target: {user?.workingSchedule?.minHours || 7.0} Effective Hours
+                            </div>
                         </div>
 
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', padding: '0.2rem 0' }}>
-                                <span style={{ color: 'var(--text-muted)' }}>Status Window:</span>
-                                <span style={{ color: 'var(--text-main)', fontWeight: '500' }}>{user?.workingSchedule?.shiftStart || '11:00'} to {(() => {
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', background: isLightMode ? '#ffffff' : 'rgba(255,255,255,0.02)', padding: '1.25rem', borderRadius: '20px', border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.05)'}` }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: '600' }}>Status Window</span>
+                                <span style={{ color: 'var(--text-main)', fontWeight: '700', fontSize: '0.85rem' }}>{user?.workingSchedule?.shiftStart || '11:00'} to {(() => {
                                     const [h, m] = (user?.workingSchedule?.shiftStart || '11:00').split(':').map(Number);
                                     return `${(h + 1) % 12 || 12}:${m.toString().padStart(2, '0')} ${h + 1 >= 12 ? 'PM' : 'AM'}`;
                                 })()}</span>
                             </div>
-                            <div style={{ height: '1px', background: 'var(--border-dark)' }}></div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                                <Calendar size={12} /> Next week-off: {user?.workingSchedule?.weekOffs?.[0] || 'Sunday'}
+                            <div style={{ height: '1px', background: isLightMode ? '#e2e8f0' : 'var(--border-dark)', margin: '0.25rem 0' }}></div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-main)', fontWeight: '600' }}>
+                                <Calendar size={14} color="var(--primary)" /> Next week-off: <span style={{ color: 'var(--text-muted)' }}>{user?.workingSchedule?.weekOffs?.[0] || 'Sunday'}</span>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div className="panel panel-actions" style={{ padding: '1.25rem' }}>
-                    <div className="panel-header" style={{ marginBottom: '0.75rem' }}>Actions</div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                {/* Actions Panel */}
+                <div style={{
+                    ...bentoPanelStyle, 
+                    background: isLightMode ? 'linear-gradient(145deg, #ffffff 0%, #f0f7ff 100%)' : 'linear-gradient(145deg, rgba(30,30,40,0.9) 0%, rgba(20,20,30,0.7) 100%)', 
+                    borderColor: 'rgba(var(--primary-rgb), 0.3)'
+                }}>
+                    <div style={{ fontSize: '1.05rem', fontWeight: '800', letterSpacing: '-0.3px', color: 'var(--text-main)', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        Actions
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', color: 'var(--primary)', background: 'rgba(var(--primary-rgb), 0.1)', padding: '0.4rem 0.8rem', borderRadius: '12px', fontWeight: '700' }}>
+                            <Home size={12} /> {isClockedIn ? (isWFH ? 'Work From Home' : 'Work On-Site') : (selectedWorkingMode === 'Remote' ? 'Work From Home' : 'Work On-Site')}
+                        </div>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'space-between' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                             <div>
-                                <div style={{ fontSize: '1.25rem', fontWeight: '400', marginBottom: '0.25rem' }}>
-                                    <span className={isClockedIn ? 'timer-pulse' : ''} style={{ display: 'inline-block' }}>{currentTime}</span>
+                                <div style={{ fontSize: '2.5rem', fontWeight: '800', letterSpacing: '-1.5px', color: 'var(--text-main)', lineHeight: '1' }}>
+                                    <span className={isClockedIn ? 'action-active' : ''} style={{ display: 'inline-block' }}>{currentTime}</span>
                                 </div>
-                                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>{new Date().toDateString()}</div>
-                                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'capitalize', letterSpacing: '0.3px', marginBottom: '0.25rem' }}>Total Hours <HelpCircle size={10} /></div>
-                                <div style={{ fontSize: '0.85rem' }}>
-                                    Effective: <span style={{ fontWeight: '500' }}>{isClockedIn ? calculateElapsedTime(activeLog?.clockInTime).text : '0h 0m'}</span>
-                                </div>
-                                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                                    Gross: {isClockedIn ? calculateElapsedTime(activeLog?.clockInTime).text : '0h 0m'}
+                                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.5rem', fontWeight: '600' }}>{new Date().toDateString()}</div>
+                                
+                                <div style={{ marginTop: '1.5rem', background: isLightMode ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: '16px', border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.05)'}` }}>
+                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.25rem', fontWeight: '700' }}>Total Hours <HelpCircle size={12} /></div>
+                                    <div style={{ fontSize: '1.25rem', color: 'var(--text-main)' }}>
+                                        Effective: <span style={{ fontWeight: '800' }}>{isClockedIn ? calculateElapsedTime(activeLog?.clockInTime).text : '0h 0m'}</span>
+                                    </div>
+                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.25rem', fontWeight: '500' }}>
+                                        Gross: {isClockedIn ? calculateElapsedTime(activeLog?.clockInTime).text : '0h 0m'}
+                                    </div>
                                 </div>
                             </div>
-                            {isClockedIn && renderHourglass()}
                         </div>
-                        <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem' }}>
+
+                        <div style={{ marginTop: '2rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                             {isAttendanceFinished && !isClockedIn ? (
-                                <div style={{ textAlign: 'right', color: '#00ff88', fontSize: '0.85rem', fontWeight: '500', maxWidth: '180px', lineHeight: '1.4' }}>
+                                <div style={{ padding: '1.25rem', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.2)', borderRadius: '16px', color: 'var(--success)', fontSize: '0.9rem', fontWeight: '700', textAlign: 'center' }}>
                                     Your attendance for today is completed. See you tomorrow!
                                 </div>
                             ) : (
-                                <>
-                                    <button
-                                        className={`btn ${isClockedIn ? 'btn-danger' : 'btn-primary'}`}
-                                        onClick={handleClockToggle}
-                                        style={{ width: '120px', fontSize: '0.8rem', padding: '0.5rem 0' }}
-                                    >
-                                        {isClockedIn ? 'Web Clock-out' : 'Web Clock-in'}
-                                    </button>
-                                    <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center' }}>
-                                        {isClockedIn ? (
-                                            <>
-                                                <span className="action-timer-dot timer-pulse"></span>
-                                                <Clock size={10} className="timer-pulse" style={{ marginRight: '4px' }} />
-                                                {calculateElapsedTime(activeLog?.clockInTime).text} Since Last Login
-                                            </>
-                                        ) : 'Currently offline'}
-                                    </div>
-                                </>
+                                <button
+                                    className={`btn ${isClockedIn ? 'btn-danger' : 'btn-primary'}`}
+                                    onClick={handleClockToggle}
+                                    style={{ 
+                                        width: '100%', 
+                                        padding: '1.25rem', 
+                                        fontSize: '1.05rem', 
+                                        borderRadius: '16px',
+                                        fontWeight: '800',
+                                        boxShadow: isClockedIn ? '0 8px 24px rgba(239, 68, 68, 0.4)' : '0 8px 24px rgba(59, 130, 246, 0.4)',
+                                        transform: 'translateY(0)',
+                                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        gap: '0.5rem'
+                                    }}
+                                    onMouseOver={(e) => {
+                                        e.currentTarget.style.transform = 'translateY(-3px)';
+                                        e.currentTarget.style.boxShadow = isClockedIn ? '0 12px 28px rgba(239, 68, 68, 0.5)' : '0 12px 28px rgba(59, 130, 246, 0.5)';
+                                    }}
+                                    onMouseOut={(e) => {
+                                        e.currentTarget.style.transform = 'translateY(0)';
+                                        e.currentTarget.style.boxShadow = isClockedIn ? '0 8px 24px rgba(239, 68, 68, 0.4)' : '0 8px 24px rgba(59, 130, 246, 0.4)';
+                                    }}
+                                >
+                                    <Clock size={18} /> {isClockedIn ? 'Web Clock-out' : 'Web Clock-in'}
+                                </button>
                             )}
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', color: 'var(--primary)', cursor: 'pointer' }}>
-                                <Home size={12} /> {isClockedIn ? (isWFH ? 'Work From Home' : 'Work On-Site') : (selectedWorkingMode === 'Remote' ? 'Work From Home' : 'Work On-Site')}
-                            </div>
-                            <div
-                                style={{ fontSize: '0.75rem', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
-                                onClick={() => setShowAttendancePolicyModal(true)}
-                            >
-                                <FileText size={12} /> Attendance Policy
+                            
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem' }}>
+                                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', fontWeight: '600' }}>
+                                    {isClockedIn ? (
+                                        <>
+                                            <span style={{ background: 'var(--success)', width: '8px', height: '8px', borderRadius: '50%', marginRight: '8px', boxShadow: '0 0 8px var(--success)' }} className="timer-pulse"></span>
+                                            {calculateElapsedTime(activeLog?.clockInTime).text} Since Last Login
+                                        </>
+                                    ) : (
+                                        <>
+                                            <span style={{ background: 'var(--text-muted)', width: '8px', height: '8px', borderRadius: '50%', marginRight: '8px', opacity: 0.5 }}></span>
+                                            Currently offline
+                                        </>
+                                    )}
+                                </div>
+                                <div
+                                    style={{ fontSize: '0.8rem', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: '600', transition: 'color 0.2s', ':hover': { color: 'var(--primary)' } }}
+                                    onClick={() => setShowAttendancePolicyModal(true)}
+                                >
+                                    <FileText size={14} /> Policy
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div className="panel" style={{ padding: 0 }}>
-                <div style={{ padding: '0 1.25rem', borderBottom: '1px solid var(--border-dark)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ display: 'flex', gap: '0.5rem', fontSize: '0.9rem', padding: '0.75rem 0' }}>
+            {/* Bottom Section - Logs & Calendar */}
+            <div style={{ 
+                background: isLightMode ? '#ffffff' : 'var(--bg-panel)',
+                borderRadius: '24px',
+                border: `1px solid ${isLightMode ? '#e2e8f0' : 'var(--border-dark)'}`,
+                boxShadow: isLightMode ? '0 10px 40px -10px rgba(0,0,0,0.05)' : '0 10px 40px -10px rgba(0,0,0,0.3)',
+                overflow: 'hidden',
+                display: 'flex',
+                flexDirection: 'column'
+            }}>
+                <div style={{ padding: '1rem 1.5rem', borderBottom: `1px solid ${isLightMode ? '#f1f5f9' : 'var(--border-dark)'}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: isLightMode ? '#f8fafc' : 'rgba(0,0,0,0.2)' }}>
+                    <div style={{ display: 'flex', gap: '0.5rem', background: isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.05)', padding: '0.4rem', borderRadius: '100px' }}>
                         {['Attendance Log', 'Calendar', 'Attendance Requests'].map(tab => (
                             <span
                                 key={tab}
                                 onClick={() => setAttendanceTab(tab)}
                                 style={{
-                                    padding: '0.4rem 1rem',
+                                    padding: '0.6rem 1.5rem',
                                     cursor: 'pointer',
-                                    color: attendanceTab === tab ? '#ffffff' : 'var(--text-muted)',
+                                    color: attendanceTab === tab ? '#ffffff' : (isLightMode ? '#64748b' : 'var(--text-muted)'),
                                     backgroundColor: attendanceTab === tab ? 'var(--primary)' : 'transparent',
-                                    borderRadius: '6px',
+                                    borderRadius: '100px',
                                     transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                                    fontWeight: '500'
+                                    fontWeight: '700',
+                                    fontSize: '0.85rem',
+                                    boxShadow: attendanceTab === tab ? '0 4px 12px rgba(var(--primary-rgb), 0.3)' : 'none'
                                 }}
                             >
                                 {tab}
@@ -458,12 +554,12 @@ const AttendanceTab = ({
                     </div>
                 </div>
 
-                <div style={{ padding: '1.25rem' }}>
+                <div style={{ padding: '1.5rem' }}>
                     {attendanceTab === 'Attendance Log' && (
-                        <>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-                                <span style={{ fontSize: '1rem', fontWeight: '500' }}>Attendance: {attendancePeriod}</span>
-                                <div style={{ display: 'flex', borderRadius: '4px', border: '1px solid var(--border-dark)', overflow: 'hidden' }}>
+                        <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                                <span style={{ fontSize: '1.1rem', fontWeight: '800', letterSpacing: '-0.3px', color: 'var(--text-main)' }}>Attendance: {attendancePeriod}</span>
+                                <div style={{ display: 'flex', borderRadius: '12px', background: isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.05)', padding: '0.3rem', border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.05)'}` }}>
                                     {(() => {
                                         const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
                                         const currentMonth = new Date().getMonth();
@@ -471,15 +567,20 @@ const AttendanceTab = ({
                                         for (let i = currentMonth; i >= 0; i--) {
                                             displayMonths.push(months[i]);
                                         }
-                                        return displayMonths.map((m, i) => (
+                                        return displayMonths.map((m) => (
                                             <div
                                                 key={m}
                                                 onClick={() => setAttendancePeriod(m)}
                                                 style={{
-                                                    padding: '0.4rem 0.75rem', fontSize: '0.7rem', cursor: 'pointer',
-                                                    background: attendancePeriod === m ? 'var(--primary)' : 'transparent',
-                                                    color: attendancePeriod === m ? 'white' : 'var(--text-muted)',
-                                                    borderRight: i === displayMonths.length - 1 ? 'none' : '1px solid var(--border-dark)'
+                                                    padding: '0.4rem 1rem', 
+                                                    fontSize: '0.75rem', 
+                                                    fontWeight: '700',
+                                                    cursor: 'pointer',
+                                                    background: attendancePeriod === m ? (isLightMode ? '#ffffff' : 'var(--primary)') : 'transparent',
+                                                    color: attendancePeriod === m ? (isLightMode ? 'var(--primary)' : '#ffffff') : 'var(--text-muted)',
+                                                    borderRadius: '8px',
+                                                    boxShadow: (attendancePeriod === m && isLightMode) ? '0 2px 8px rgba(0,0,0,0.05)' : 'none',
+                                                    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
                                                 }}
                                             >
                                                 {m}
@@ -488,103 +589,131 @@ const AttendanceTab = ({
                                     })()}
                                 </div>
                             </div>
-                            <table className="data-table">
-                                <thead>
-                                    <tr style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-                                        <th>Date</th>
-                                        <th>Attendance Visual</th>
-                                        <th>Effective Hours</th>
-                                        <th>Gross Hours</th>
-                                        <th>Arrival</th>
-                                        <th>Log</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {filteredAttendanceLogs.length > 0 ? filteredAttendanceLogs.map(log => (
-                                        <tr key={log._id}>
-                                            <td style={{ fontSize: '0.8rem' }}>{new Date(log.date).toLocaleDateString('en-US', { weekday: 'short', day: '2-digit', month: 'short' })}</td>
-                                            <td>
-                                                <div style={{ width: '120px', height: '6px', background: 'var(--border-dark)', borderRadius: '3px' }}>
-                                                    <div style={{ width: log.clockOutTime ? '100%' : '50%', height: '100%', background: 'var(--primary)', borderRadius: '3px' }}></div>
-                                                </div>
-                                            </td>
-                                            <td style={{ fontSize: '0.85rem' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', border: '2px solid var(--primary)' }}></div>
-                                                    {log.totalHours ? `${Math.floor(log.totalHours)}h ${Math.round((log.totalHours % 1) * 60)}m` : (log.clockInTime ? 'Ongoing' : '0h 0m')}
-                                                </div>
-                                            </td>
-                                            <td style={{ fontSize: '0.85rem' }}>{log.totalHours ? `${Math.floor(log.totalHours)}h ${Math.round((log.totalHours % 1) * 60)}m` : (log.clockInTime ? 'Ongoing' : '0h 0m')}</td>
-                                            <td style={{ fontSize: '0.8rem' }}>
-                                                {(() => {
-                                                    if (!log.clockInTime) return '-';
-                                                    const clockInDate = new Date(log.clockInTime);
-                                                    const hours = clockInDate.getHours();
-                                                    const mins = clockInDate.getMinutes();
-                                                    const totalMins = hours * 60 + mins;
-
-                                                    const [shiftH, shiftM] = (user?.workingSchedule?.shiftStart || '11:00').split(':').map(Number);
-                                                    const shiftStartMins = shiftH * 60 + shiftM;
-
-                                                    if (totalMins < shiftStartMins) {
-                                                        return <span style={{ color: 'var(--success)', fontWeight: '500' }}>Early</span>;
-                                                    } else if (totalMins <= shiftStartMins + 60) {
-                                                        return <span style={{ color: 'var(--primary)', fontWeight: '500' }}>On Time</span>;
-                                                    } else {
-                                                        return <span style={{ color: 'var(--danger)', fontWeight: '500' }}>Late</span>;
-                                                    }
-                                                })()}
-                                            </td>
-                                            <td><Info size={14} color="var(--primary)" style={{ cursor: 'pointer' }} onClick={() => setShowLogInfo(log)} /></td>
+                            <div style={{ borderRadius: '20px', border: `1px solid ${isLightMode ? '#e2e8f0' : 'var(--border-dark)'}`, overflow: 'hidden' }}>
+                                <table className="data-table" style={{ margin: 0 }}>
+                                    <thead>
+                                        <tr style={{ 
+                                            background: isLightMode ? '#f8fafc' : 'rgba(0,0,0,0.2)',
+                                            fontSize: '0.75rem', 
+                                            color: 'var(--text-muted)', 
+                                            textTransform: 'uppercase', 
+                                            letterSpacing: '0.5px' 
+                                        }}>
+                                            <th style={{ padding: '1.25rem', fontWeight: '800' }}>Date</th>
+                                            <th style={{ padding: '1.25rem', fontWeight: '800' }}>Gross Hours</th>
+                                            <th style={{ padding: '1.25rem', fontWeight: '800' }}>Arrival</th>
+                                            <th style={{ padding: '1.25rem', fontWeight: '800' }}>Status</th>
+                                            <th style={{ padding: '1.25rem', fontWeight: '800', textAlign: 'center' }}>Action</th>
                                         </tr>
-                                    )) : (
-                                        <tr style={{ border: 'none' }}><td colSpan="6" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>No logs found for {attendancePeriod}</td></tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        </>
+                                    </thead>
+                                    <tbody>
+                                        {filteredAttendanceLogs.length > 0 ? filteredAttendanceLogs.map(log => (
+                                            <tr key={log._id} style={{ 
+                                                borderBottom: `1px solid ${isLightMode ? '#e2e8f0' : 'var(--border-dark)'}`,
+                                                transition: 'background 0.2s',
+                                                cursor: 'default'
+                                            }} onMouseOver={e => e.currentTarget.style.backgroundColor = isLightMode ? '#f8fafc' : 'rgba(255,255,255,0.02)'} onMouseOut={e => e.currentTarget.style.backgroundColor = 'transparent'}>
+                                                <td style={{ fontSize: '0.9rem', fontWeight: '700', padding: '1.25rem', color: 'var(--text-main)' }}>{new Date(log.date).toLocaleDateString('en-US', { weekday: 'short', day: '2-digit', month: 'short' })}</td>
+                                                <td style={{ fontSize: '0.9rem', color: 'var(--text-muted)', padding: '1.25rem', fontWeight: '500' }}>{log.totalHours ? `${Math.floor(log.totalHours)}h ${Math.round((log.totalHours % 1) * 60)}m` : (log.clockInTime ? 'Ongoing' : '0h 0m')}</td>
+                                                <td style={{ fontSize: '0.85rem', padding: '1.25rem' }}>
+                                                    {(() => {
+                                                        if (!log.clockInTime) return '-';
+                                                        const clockInDate = new Date(log.clockInTime);
+                                                        const hours = clockInDate.getHours();
+                                                        const mins = clockInDate.getMinutes();
+                                                        const totalMins = hours * 60 + mins;
+
+                                                        const [shiftH, shiftM] = (user?.workingSchedule?.shiftStart || '11:00').split(':').map(Number);
+                                                        const shiftStartMins = shiftH * 60 + shiftM;
+
+                                                        if (totalMins < shiftStartMins) {
+                                                            return <span style={{ padding: '0.4rem 0.8rem', background: 'rgba(16, 185, 129, 0.1)', color: 'var(--success)', borderRadius: '20px', fontWeight: '700', fontSize: '0.75rem', border: '1px solid rgba(16, 185, 129, 0.2)' }}>Early</span>;
+                                                        } else if (totalMins <= shiftStartMins + 60) {
+                                                            return <span style={{ padding: '0.4rem 0.8rem', background: 'rgba(59, 130, 246, 0.1)', color: 'var(--primary)', borderRadius: '20px', fontWeight: '700', fontSize: '0.75rem', border: '1px solid rgba(59, 130, 246, 0.2)' }}>On Time</span>;
+                                                        } else {
+                                                            return <span style={{ padding: '0.4rem 0.8rem', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', borderRadius: '20px', fontWeight: '700', fontSize: '0.75rem', border: '1px solid rgba(239, 68, 68, 0.2)' }}>Late</span>;
+                                                        }
+                                                    })()}
+                                                </td>
+                                                <td style={{ fontSize: '0.9rem', padding: '1.25rem', fontWeight: '600' }}>
+                                                    {(() => {
+                                                        if (!log.totalHours) {
+                                                            return <span style={{ color: 'var(--text-muted)' }}>{log.clockInTime ? 'Ongoing' : '-'}</span>;
+                                                        }
+                                                        const targetHours = user?.workingSchedule?.minHours || 7.0;
+                                                        const diff = log.totalHours - targetHours;
+                                                        
+                                                        if (diff >= 2) {
+                                                            return <span style={{ padding: '0.4rem 0.8rem', background: 'rgba(139, 92, 246, 0.1)', color: '#8b5cf6', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '700', border: '1px solid rgba(139, 92, 246, 0.2)' }}>Overtime</span>;
+                                                        } else if (diff >= -1) {
+                                                            return <span style={{ padding: '0.4rem 0.8rem', background: 'rgba(16, 185, 129, 0.1)', color: 'var(--success)', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '700', border: '1px solid rgba(16, 185, 129, 0.2)' }}>Full day</span>;
+                                                        } else if (log.totalHours >= targetHours / 2) {
+                                                            return <span style={{ padding: '0.4rem 0.8rem', background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '700', border: '1px solid rgba(245, 158, 11, 0.2)' }}>Half day</span>;
+                                                        } else {
+                                                            return <span style={{ padding: '0.4rem 0.8rem', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '700', border: '1px solid rgba(239, 68, 68, 0.2)' }}>Short day</span>;
+                                                        }
+                                                    })()}
+                                                </td>
+                                                <td style={{ textAlign: 'center', padding: '1.25rem' }}>
+                                                    <div onClick={() => setShowLogInfo(log)} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '36px', height: '36px', borderRadius: '50%', background: isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.05)', color: 'var(--primary)', cursor: 'pointer', transition: 'all 0.2s', ':hover': { background: 'var(--primary)', color: '#fff', transform: 'scale(1.1)' } }}>
+                                                        <Info size={16} />
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        )) : (
+                                            <tr style={{ border: 'none' }}><td colSpan="5" style={{ textAlign: 'center', padding: '5rem', color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: '500' }}>No logs found for {attendancePeriod}</td></tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     )}
                     {attendanceTab === 'Calendar' && (
-                        <div style={{ padding: '1.25rem' }}>
+                        <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
                             {renderAttendanceCalendar()}
                         </div>
                     )}
                     {attendanceTab === 'Attendance Requests' && (
-                        <div>
-                            <div style={{ fontSize: '0.9rem', fontWeight: '500', marginBottom: '1rem', color: 'var(--text-main)' }}>Work From Home Requests</div>
-                            <div className="panel" style={{ padding: 0 }}>
-                                <table className="data-table">
+                        <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
+                            <div style={{ fontSize: '1.05rem', fontWeight: '800', letterSpacing: '-0.3px', color: 'var(--text-main)', marginBottom: '1.5rem' }}>Work From Home Requests</div>
+                            <div style={{ borderRadius: '20px', border: `1px solid ${isLightMode ? '#e2e8f0' : 'var(--border-dark)'}`, overflow: 'hidden' }}>
+                                <table className="data-table" style={{ margin: 0 }}>
                                     <thead>
-                                        <tr style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-                                            <th>Request Dates</th>
-                                            <th>Request Type</th>
-                                            <th>Status</th>
-                                            <th>Requested By</th>
-                                            <th>Action Taken On</th>
-                                            <th>Message</th>
-                                            <th>Reject/Cancel Reason</th>
+                                        <tr style={{ 
+                                            background: isLightMode ? '#f8fafc' : 'rgba(0,0,0,0.2)',
+                                            fontSize: '0.75rem', 
+                                            color: 'var(--text-muted)', 
+                                            textTransform: 'uppercase', 
+                                            letterSpacing: '0.5px' 
+                                        }}>
+                                            <th style={{ padding: '1.25rem', fontWeight: '800' }}>Request Dates</th>
+                                            <th style={{ padding: '1.25rem', fontWeight: '800' }}>Request Type</th>
+                                            <th style={{ padding: '1.25rem', fontWeight: '800' }}>Status</th>
+                                            <th style={{ padding: '1.25rem', fontWeight: '800' }}>Requested By</th>
+                                            <th style={{ padding: '1.25rem', fontWeight: '800' }}>Action Taken On</th>
+                                            <th style={{ padding: '1.25rem', fontWeight: '800' }}>Message</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {myRequests.filter(r => r.type === 'Work From Home').length > 0 ? myRequests.filter(r => r.type === 'Work From Home').map(r => (
-                                            <tr key={r._id}>
-                                                <td style={{ fontSize: '0.8rem' }}>
+                                            <tr key={r._id} style={{ borderBottom: `1px solid ${isLightMode ? '#e2e8f0' : 'var(--border-dark)'}` }}>
+                                                <td style={{ fontSize: '0.85rem', fontWeight: '600', padding: '1.25rem' }}>
                                                     {new Date(r.startDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
                                                     {r.startDate !== r.endDate && ` - ${new Date(r.endDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}`}
-                                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px', fontWeight: '600' }}>
                                                         {Math.ceil((new Date(r.endDate) - new Date(r.startDate)) / (1000 * 60 * 60 * 24)) + 1} day(s)
                                                     </div>
                                                 </td>
-                                                <td style={{ fontSize: '0.85rem' }}>
+                                                <td style={{ fontSize: '0.85rem', fontWeight: '700', padding: '1.25rem' }}>
                                                     {r.type}
-                                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Requested on {new Date(r.createdAt).toLocaleDateString()}</div>
+                                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px', fontWeight: '500' }}>Requested on {new Date(r.createdAt).toLocaleDateString()}</div>
                                                 </td>
-                                                <td>
+                                                <td style={{ padding: '1.25rem' }}>
                                                     <span style={{
-                                                        padding: '0.2rem 0.6rem',
+                                                        padding: '0.4rem 0.8rem',
                                                         borderRadius: '20px',
-                                                        fontSize: '0.7rem',
-                                                        fontWeight: '700',
+                                                        fontSize: '0.75rem',
+                                                        fontWeight: '800',
                                                         textTransform: 'uppercase',
                                                         letterSpacing: '0.5px',
                                                         ...getStatusStyle(r.status)
@@ -592,17 +721,19 @@ const AttendanceTab = ({
                                                         {r.status}
                                                     </span>
                                                     {r.status !== 'Pending' && r.actionBy && (
-                                                        <div style={{ fontSize: '0.65rem', color: isLightMode ? 'rgba(0,0,0,0.6)' : 'var(--text-muted)', marginTop: '4px', fontWeight: '500' }}>by {r.actionBy.name}</div>
+                                                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '6px', fontWeight: '600' }}>by {r.actionBy.name}</div>
                                                     )}
                                                 </td>
 
-                                                <td style={{ fontSize: '0.8rem' }}>{user.name}</td>
-                                                <td style={{ fontSize: '0.8rem' }}>{r.status !== 'Pending' && r.actionDate ? new Date(r.actionDate).toLocaleDateString() : '-'}</td>
-                                                <td style={{ fontSize: '0.75rem', color: 'var(--text-muted)', maxWidth: '150px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.message || '-'}</td>
-                                                <td style={{ fontSize: '0.75rem', color: 'var(--text-muted)', maxWidth: '150px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.actionNote || '-'}</td>
+                                                <td style={{ fontSize: '0.85rem', fontWeight: '600', padding: '1.25rem' }}>{user.name}</td>
+                                                <td style={{ fontSize: '0.85rem', padding: '1.25rem' }}>{r.status !== 'Pending' && r.actionDate ? new Date(r.actionDate).toLocaleDateString() : '-'}</td>
+                                                <td style={{ fontSize: '0.8rem', color: 'var(--text-muted)', maxWidth: '200px', padding: '1.25rem', fontWeight: '500' }}>
+                                                    <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.message || '-'}</div>
+                                                    {r.actionNote && <div style={{ marginTop: '4px', color: 'var(--warning)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: '600' }}>Note: {r.actionNote}</div>}
+                                                </td>
                                             </tr>
                                         )) : (
-                                            <tr><td colSpan="7" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>No WFH requests found.</td></tr>
+                                            <tr><td colSpan="6" style={{ textAlign: 'center', padding: '5rem', color: 'var(--text-muted)', fontWeight: '500' }}>No WFH requests found.</td></tr>
                                         )}
                                     </tbody>
                                 </table>
@@ -611,7 +742,21 @@ const AttendanceTab = ({
                     )}
                 </div>
             </div>
-        </>
+            <style>{`
+                @keyframes fadeIn {
+                    from { opacity: 0; transform: translateY(10px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                .action-active {
+                    animation: colorPulse 3s infinite;
+                }
+                @keyframes colorPulse {
+                    0% { text-shadow: 0 0 0 rgba(var(--primary-rgb), 0); }
+                    50% { text-shadow: 0 0 15px rgba(var(--primary-rgb), 0.5); }
+                    100% { text-shadow: 0 0 0 rgba(var(--primary-rgb), 0); }
+                }
+            `}</style>
+        </div>
     );
 };
 
