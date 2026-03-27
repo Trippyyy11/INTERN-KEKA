@@ -1224,6 +1224,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
                         setEditMode={setEditMode}
                         setModalTab={setModalTab}
                         handleShowAttendance={handleShowAttendance}
+                        isLightMode={isLightMode}
                     />
                 </div>
             );
