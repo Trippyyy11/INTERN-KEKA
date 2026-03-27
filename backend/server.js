@@ -9,6 +9,8 @@ dotenv.config();
 connectDB();
 console.log('JWT_SECRET loaded:', !!process.env.JWT_SECRET, 'Length:', process.env.JWT_SECRET?.length);
 
+import './cron/attendanceJobs.js'; // Initialize cron jobs
+
 const app = express();
 
 app.use(cors({

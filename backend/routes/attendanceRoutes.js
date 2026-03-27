@@ -1,5 +1,5 @@
 import express from 'express';
-import { clockIn, clockOut, getLogs, getTodayStatus, getTeamStats, getTeammateIndividualStats, getUserLogs } from '../controllers/attendanceController.js';
+import { clockIn, clockOut, getLogs, getTodayStatus, getTeamStats, getTeammateIndividualStats, getUserLogs, updateAttendance, getAllLogs } from '../controllers/attendanceController.js';
 import { getBirthdays, getTeammates } from '../controllers/userController.js';
 import { protect, authorize } from '../middlewares/authMiddleware.js';
 
@@ -13,6 +13,8 @@ router.get('/birthdays', protect, getBirthdays);
 router.get('/teammates', protect, getTeammates);
 router.get('/team-stats', protect, getTeamStats);
 router.get('/teammates-stats', protect, getTeammateIndividualStats);
+router.get('/all', protect, authorize(['Admin', 'Super Admin']), getAllLogs);
 router.get('/logs/:userId', protect, authorize(['Admin', 'Super Admin']), getUserLogs);
+router.put('/logs/:logId', protect, authorize(['Admin', 'Super Admin']), updateAttendance);
 
 export default router;

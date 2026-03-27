@@ -64,6 +64,9 @@ const AdminTab = ({
     setSystemSettings,
     handleSaveSettings,
     allUsers,
+    allAttendanceLogs = [],
+    setAllAttendanceLogs,
+    handleUpdateAttendance,
     handleApproveUser,
     handleDenyUser,
     handleDeleteUser,
@@ -185,6 +188,7 @@ const AdminTab = ({
             }}>
                 {[
                     { key: 'Leave', label: 'USERS' },
+                    { key: 'Attendance', label: 'ATTENDANCE' },
                     { key: 'Approvals', label: 'APPROVALS', count: pendingUsers.length },
                     { key: 'Configs', label: 'ORG CONFIGS' },
                     { key: 'Settings', label: 'SYSTEM SETTINGS' },
@@ -293,6 +297,83 @@ const AdminTab = ({
                                         </td>
                                     </tr>
                                 ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
+
+            {/* ===== ATTENDANCE ===== */}
+            {activeSubTab === 'Attendance' && (
+                <div style={{ ...glass, padding: '2rem' }}>
+                    <SectionHeader icon={<Clock size={24} />} title="Global Attendance Logs" subtitle="Recent clock-in/out records across the entire team" />
+                    
+                    <div style={{ overflowX: 'auto', margin: '0 -2rem -2rem', borderBottomLeftRadius: '28px', borderBottomRightRadius: '28px' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '800px' }}>
+                            <thead>
+                                <tr>
+                                    <th style={{ ...thStyle, paddingLeft: '2rem' }}>EMPLOYEE</th>
+                                    <th style={thStyle}>DATE</th>
+                                    <th style={thStyle}>CLOCK IN</th>
+                                    <th style={thStyle}>CLOCK OUT</th>
+                                    <th style={thStyle}>TOTAL HOURS</th>
+                                    <th style={thStyle}>STATUS</th>
+                                    <th style={{ ...thStyle, textAlign: 'center', paddingRight: '2rem' }}>ACTIONS</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {allAttendanceLogs && allAttendanceLogs.length > 0 ? (
+                                    allAttendanceLogs.map((log, idx) => (
+                                        <tr key={log._id} style={{ borderTop: rowBorder, transition: 'background 0.2s' }}
+                                            onMouseOver={e => e.currentTarget.style.background = isLightMode ? 'rgba(99,102,241,0.03)' : 'rgba(255,255,255,0.02)'}
+                                            onMouseOut={e => e.currentTarget.style.background = 'transparent'}>
+                                            <td style={{ ...tdStyle, paddingLeft: '2rem' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                                    {getAvatar(log.user?.name || 'User', idx)}
+                                                    <div>
+                                                        <div style={{ fontWeight: '700', fontSize: '0.9rem', color: 'var(--text-main)' }}>{log.user?.name || 'Deleted User'}</div>
+                                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{log.user?.department || 'N/A'}</div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td style={tdStyle}>{new Date(log.date).toLocaleDateString()}</td>
+                                            <td style={tdStyle}>{log.clockInTime ? new Date(log.clockInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}</td>
+                                            <td style={tdStyle}>{log.clockOutTime ? new Date(log.clockOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : (log.clockInTime ? <span style={{ color: 'var(--primary)', fontWeight: '700' }}>Ongoing</span> : '-')}</td>
+                                            <td style={tdStyle}>{log.totalHours ? `${log.totalHours}h` : '-'}</td>
+                                            <td style={tdStyle}>
+                                                <span style={{
+                                                    padding: '0.2rem 0.6rem', borderRadius: '8px', fontSize: '0.65rem', fontWeight: '800', 
+                                                    textTransform: 'uppercase',
+                                                    background: log.status === 'Present' || log.status === 'WFH' ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
+                                                    color: log.status === 'Present' || log.status === 'WFH' ? '#10b981' : '#ef4444'
+                                                }}>
+                                                    {log.status === 'WFH' ? 'Remote' : log.status}
+                                                </span>
+                                            </td>
+                                            <td style={{ ...tdStyle, textAlign: 'center', paddingRight: '2rem' }}>
+                                                <button 
+                                                    onClick={() => handleShowAttendance(log.user)} 
+                                                    style={{ 
+                                                        padding: '0.4rem 0.8rem', borderRadius: '8px', border: '1px solid var(--primary)', 
+                                                        background: 'transparent', color: 'var(--primary)', fontSize: '0.75rem', 
+                                                        fontWeight: '700', cursor: 'pointer', transition: 'all 0.2s' 
+                                                    }}
+                                                    onMouseOver={e => { e.currentTarget.style.background = 'var(--primary)'; e.currentTarget.style.color = '#fff'; }}
+                                                    onMouseOut={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--primary)'; }}
+                                                >
+                                                    Edit Log
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td colSpan="7" style={{ padding: '6rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                                            <div style={{ marginBottom: '1rem' }}><Clock size={40} opacity={0.2} /></div>
+                                            No attendance records found yet.
+                                        </td>
+                                    </tr>
+                                )}
                             </tbody>
                         </table>
                     </div>

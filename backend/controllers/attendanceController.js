@@ -261,3 +261,49 @@ export const getUserLogs = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+
+// @desc    Get All Attendance Logs (Admin only)
+// @route   GET /api/attendance/all
+// @access  Private/Admin
+export const getAllLogs = async (req, res) => {
+    try {
+        const logs = await Attendance.find({}).populate('user', 'name email department').sort({ date: -1 }).limit(100);
+        res.status(200).json(logs);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+
+// @desc    Update Attendance Log (Admin only)
+// @route   PUT /api/attendance/logs/:logId
+// @access  Private/Admin
+export const updateAttendance = async (req, res) => {
+    try {
+        const { clockInTime, clockOutTime, status } = req.body;
+        const log = await Attendance.findById(req.params.logId);
+
+        if (!log) {
+            return res.status(404).json({ message: 'Attendance record not found.' });
+        }
+
+        if (clockInTime) log.clockInTime = new Date(clockInTime);
+        if (clockOutTime) log.clockOutTime = new Date(clockOutTime);
+        if (status) log.status = status;
+
+        if (log.clockInTime && log.clockOutTime) {
+            const diffMs = log.clockOutTime - log.clockInTime;
+            const diffHrs = diffMs > 0 ? (diffMs / (1000 * 60 * 60)) : 0;
+            log.totalHours = diffHrs.toFixed(2);
+        } else if (log.clockOutTime === null) {
+            log.totalHours = 0;
+        }
+
+        const updatedLog = await log.save();
+        res.status(200).json(updatedLog);
+
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+

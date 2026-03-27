@@ -240,6 +240,9 @@ export default function Dashboard({ user, onLogout, setUser }) {
     const [attendancePolicyTab, setAttendancePolicyTab] = useState('Penalisation Policy');
     const [showUserAttendanceModal, setShowUserAttendanceModal] = useState(false);
     const [userAttendanceLogs, setUserAttendanceLogs] = useState([]);
+    const [allAttendanceLogs, setAllAttendanceLogs] = useState([]);
+    const [editLogId, setEditLogId] = useState(null);
+    const [editForm, setEditForm] = useState({ clockInTime: '', clockOutTime: '', status: '' });
 
     useEffect(() => {
         const timer = setInterval(() => setCurrentTime(new Date().toLocaleTimeString()), 1000);
@@ -603,8 +606,18 @@ export default function Dashboard({ user, onLogout, setUser }) {
         try {
             const usersRes = await api.get('/admin/users');
             setAllUsers(usersRes.data);
+            fetchAllAttendanceLogs();
         } catch (err) {
             console.error('Failed to fetch admin users data:', err);
+        }
+    };
+
+    const fetchAllAttendanceLogs = async () => {
+        try {
+            const res = await api.get('/attendance/all');
+            setAllAttendanceLogs(res.data);
+        } catch (err) {
+            console.error('Failed to fetch all attendance logs');
         }
     };
 
@@ -697,6 +710,17 @@ export default function Dashboard({ user, onLogout, setUser }) {
             fetchStats();
             showAlert(`Attendance marked as ${type}`, 'info');
         } catch (err) { showAlert('Action failed', 'info'); }
+    };
+
+    const handleSaveAttendanceEdit = async (logId) => {
+        try {
+            const res = await api.put(`/attendance/logs/${logId}`, editForm);
+            setUserAttendanceLogs(prev => prev.map(l => l._id === logId ? res.data : l));
+            setEditLogId(null);
+            showAlert('Attendance record updated successfully', 'success');
+        } catch (err) {
+            showAlert(err.response?.data?.message || 'Failed to update attendance', 'error');
+        }
     };
 
     const handleSaveResponse = async (key) => {
@@ -1224,6 +1248,9 @@ export default function Dashboard({ user, onLogout, setUser }) {
                         setSystemSettings={setSystemSettings}
                         handleSaveSettings={handleSaveSettings}
                         allUsers={allUsers}
+                        allAttendanceLogs={allAttendanceLogs}
+                        setAllAttendanceLogs={setAllAttendanceLogs}
+                        handleUpdateAttendance={handleSaveAttendanceEdit}
                         handleApproveUser={handleApproveUser}
                         handleDenyUser={handleDenyUser}
                         handleDeleteUser={handleDeleteUser}
@@ -1687,26 +1714,91 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                                     {new Date(log.date).toLocaleDateString('en-US', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}
                                                 </td>
                                                 <td style={{ padding: '1.25rem 1rem' }}>
-                                                    <span style={{
-                                                        padding: '0.3rem 0.75rem',
-                                                        borderRadius: '20px',
-                                                        fontSize: '0.65rem',
-                                                        fontWeight: '800',
-                                                        textTransform: 'uppercase',
-                                                        letterSpacing: '0.5px',
-                                                        background: log.status === 'WFH' ? 'rgba(96, 165, 250, 0.15)' : 'rgba(52, 211, 153, 0.15)',
-                                                        color: log.status === 'WFH' ? '#60a5fa' : '#34d399',
-                                                        border: `1px solid ${log.status === 'WFH' ? 'rgba(96, 165, 250, 0.2)' : 'rgba(52, 211, 153, 0.2)'}`
-                                                    }}>
-                                                        {log.status === 'WFH' ? 'Remote' : 'Present'}
-                                                    </span>
+                                                    {editLogId === log._id ? (
+                                                        <select 
+                                                            value={editForm.status} 
+                                                            onChange={(e) => setEditForm({...editForm, status: e.target.value})}
+                                                            style={{ padding: '0.3rem', borderRadius: '4px', background: 'var(--bg-panel)', color: 'var(--text-main)', border: '1px solid var(--border-dark)' }}
+                                                        >
+                                                            <option value="Present">Present</option>
+                                                            <option value="WFH">Remote</option>
+                                                            <option value="On Leave">Leave</option>
+                                                        </select>
+                                                    ) : (
+                                                        <span style={{
+                                                            padding: '0.3rem 0.75rem',
+                                                            borderRadius: '20px',
+                                                            fontSize: '0.65rem',
+                                                            fontWeight: '800',
+                                                            textTransform: 'uppercase',
+                                                            letterSpacing: '0.5px',
+                                                            background: log.status === 'WFH' ? 'rgba(96, 165, 250, 0.15)' : 'rgba(52, 211, 153, 0.15)',
+                                                            color: log.status === 'WFH' ? '#60a5fa' : '#34d399',
+                                                            border: `1px solid ${log.status === 'WFH' ? 'rgba(96, 165, 250, 0.2)' : 'rgba(52, 211, 153, 0.2)'}`
+                                                        }}>
+                                                            {log.status === 'WFH' ? 'Remote' : log.status}
+                                                        </span>
+                                                    )}
                                                 </td>
-                                                <td style={{ padding: '1.25rem 1rem', color: 'var(--text-main)', fontSize: '0.9rem' }}>{log.clockInTime ? new Date(log.clockInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}</td>
-                                                <td style={{ padding: '1.25rem 1rem', color: 'var(--text-main)', fontSize: '0.9rem' }}>{log.clockOutTime ? new Date(log.clockOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : (log.clockInTime ? <span style={{ color: 'var(--primary)', fontWeight: '600' }}>Ongoing</span> : '-')}</td>
+                                                <td style={{ padding: '1.25rem 1rem', color: 'var(--text-main)', fontSize: '0.9rem' }}>
+                                                    {editLogId === log._id ? (
+                                                        <input 
+                                                            type="datetime-local" 
+                                                            value={editForm.clockInTime ? new Date(new Date(editForm.clockInTime).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ''} 
+                                                            onChange={(e) => setEditForm({...editForm, clockInTime: e.target.value})}
+                                                            style={{ padding: '0.3rem', borderRadius: '4px', background: 'var(--bg-panel)', color: 'var(--text-main)', border: '1px solid var(--border-dark)', fontSize: '0.8rem' }}
+                                                        />
+                                                    ) : (
+                                                        log.clockInTime ? new Date(log.clockInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'
+                                                    )}
+                                                </td>
+                                                <td style={{ padding: '1.25rem 1rem', color: 'var(--text-main)', fontSize: '0.9rem' }}>
+                                                    {editLogId === log._id ? (
+                                                        <input 
+                                                            type="datetime-local" 
+                                                            value={editForm.clockOutTime ? new Date(new Date(editForm.clockOutTime).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ''} 
+                                                            onChange={(e) => setEditForm({...editForm, clockOutTime: e.target.value})}
+                                                            style={{ padding: '0.3rem', borderRadius: '4px', background: 'var(--bg-panel)', color: 'var(--text-main)', border: '1px solid var(--border-dark)', fontSize: '0.8rem' }}
+                                                        />
+                                                    ) : (
+                                                        log.clockOutTime ? new Date(log.clockOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : (log.clockInTime ? <span style={{ color: 'var(--primary)', fontWeight: '600' }}>Ongoing</span> : '-')
+                                                    )}
+                                                </td>
                                                 <td style={{ padding: '1.25rem 1rem', fontWeight: '700', color: 'var(--primary)', fontSize: '0.95rem' }}>
                                                     {log.totalHours ? `${Math.floor(log.totalHours)}h ${Math.round((log.totalHours % 1) * 60)}m` : '-'}
                                                 </td>
-                                                <td style={{ padding: '1.25rem 1rem', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '500' }}>{log.workingMode || 'On-site'}</td>
+                                                <td style={{ padding: '1.25rem 1rem', textAlign: 'right' }}>
+                                                    {editLogId === log._id ? (
+                                                        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                                                            <button 
+                                                                onClick={() => handleSaveAttendanceEdit(log._id)}
+                                                                style={{ padding: '0.4rem 0.8rem', borderRadius: '8px', background: 'var(--primary)', color: 'white', border: 'none', cursor: 'pointer', fontSize: '0.75rem', fontWeight: '700' }}
+                                                            >
+                                                                Save
+                                                            </button>
+                                                            <button 
+                                                                onClick={() => setEditLogId(null)}
+                                                                style={{ padding: '0.4rem 0.8rem', borderRadius: '8px', background: 'rgba(255,255,255,0.1)', color: 'var(--text-main)', border: 'none', cursor: 'pointer', fontSize: '0.75rem', fontWeight: '700' }}
+                                                            >
+                                                                Cancel
+                                                            </button>
+                                                        </div>
+                                                    ) : (
+                                                        <button 
+                                                            onClick={() => {
+                                                                setEditLogId(log._id);
+                                                                setEditForm({
+                                                                    clockInTime: log.clockInTime || '',
+                                                                    clockOutTime: log.clockOutTime || '',
+                                                                    status: log.status || 'Present'
+                                                                });
+                                                            }}
+                                                            style={{ background: 'transparent', border: 'none', color: 'var(--primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.8rem', fontWeight: '600' }}
+                                                        >
+                                                            <Edit3 size={14} /> Edit
+                                                        </button>
+                                                    )}
+                                                </td>
                                             </tr>
                                         ))}
                                     </tbody>
