@@ -5,7 +5,12 @@ import {
     ChevronRight,
     Search,
     Download,
-    X
+    X,
+    Users,
+    Clock,
+    UserX,
+    Laptop,
+    AlertCircle
 } from 'lucide-react';
 import api from '../../api/axios';
 import moment from 'moment';
@@ -24,6 +29,7 @@ const MyTeamTab = ({
     const [loading, setLoading] = useState(false);
     const [appAlert, setAppAlert] = useState(null);
     const [filterStatus, setFilterStatus] = useState('All');
+    // activeMenu is unused but kept to preserve existing state
     const [activeMenu, setActiveMenu] = useState(null);
 
     const triggerAlert = (msg) => {
@@ -119,16 +125,48 @@ const MyTeamTab = ({
         remoteCount: 0
     };
 
+    const bentoPanelStyle = {
+        background: isLightMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(15, 23, 42, 0.5)',
+        backdropFilter: 'blur(16px)',
+        borderRadius: '24px',
+        border: `1px solid ${isLightMode ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)'}`,
+        padding: '1.5rem',
+        boxShadow: isLightMode ? '0 4px 24px rgba(0,0,0,0.04)' : '0 4px 24px rgba(0,0,0,0.2)',
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        position: 'relative',
+        overflow: 'hidden'
+    };
+
+    const inputStyle = {
+        width: '100%',
+        padding: '0.8rem 1rem 0.8rem 2.8rem',
+        borderRadius: '16px',
+        border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.08)'}`,
+        background: isLightMode ? '#f8fafc' : 'rgba(0,0,0,0.2)',
+        color: 'var(--text-main)',
+        fontSize: '0.9rem',
+        fontWeight: '500',
+        outline: 'none',
+        transition: 'border-color 0.2s, box-shadow 0.2s',
+    };
+
+    const getGradientStyle = (colorRaw) => {
+        return {
+            background: `linear-gradient(135deg, rgba(${colorRaw}, 0.15), rgba(${colorRaw}, 0.02))`,
+            border: `1px solid rgba(${colorRaw}, 0.2)`,
+            color: `rgb(${colorRaw})`
+        }
+    };
+
     const renderCalendar = () => {
-        if (loading) return <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>Loading calendar...</div>;
+        if (loading) return <div style={{ ...bentoPanelStyle, padding: '4rem', textAlign: 'center', color: 'var(--text-muted)' }}>Loading calendar...</div>;
         if (!calendarData || calendarData.teamMembers.length === 0) {
-            return <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>No data available for this month</div>;
+            return <div style={{ ...bentoPanelStyle, padding: '4rem', textAlign: 'center', color: 'var(--text-muted)' }}>No data available for this month</div>;
         }
 
         const { teamMembers, attendance, leaves, holidays, daysInMonth } = calendarData;
         const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
-        // Get day names for the headers
         const dayHeaders = days.map(d => {
             const date = currentMonth.clone().date(d);
             return {
@@ -140,102 +178,103 @@ const MyTeamTab = ({
         });
 
         return (
-            <div className="panel" style={{ padding: '1.5rem', marginTop: '1.5rem' }}>
-                <div className="panel-header" style={{ borderBottom: 'none', marginBottom: '1.5rem' }}>Team calendar</div>
+            <div style={{ ...bentoPanelStyle, padding: '2rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <div style={{
+                            width: '42px', height: '42px', borderRadius: '14px',
+                            background: 'linear-gradient(135deg, rgba(var(--primary-rgb), 0.15), rgba(var(--primary-rgb), 0.05))',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            color: 'var(--primary)',
+                            boxShadow: '0 4px 12px rgba(var(--primary-rgb), 0.15)'
+                        }}>
+                            <CalendarIcon size={20} />
+                        </div>
+                        <div>
+                            <h2 style={{ margin: 0, fontSize: '1.2rem', fontWeight: '800', color: 'var(--text-main)', letterSpacing: '-0.3px' }}>Team Calendar</h2>
+                            <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '500', marginTop: '0.15rem' }}>Monthly view of team availability and presence</p>
+                        </div>
+                    </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', marginBottom: '1.5rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', background: 'var(--bg-panel)', padding: '2px 8px', borderRadius: '4px', border: '1px solid var(--border-dark)' }}>
-                        <button className="btn-icon" style={{ padding: '4px' }} onClick={handlePrevMonth}><ChevronLeft size={14} /></button>
-                        <span style={{ fontSize: '0.8rem', fontWeight: '600', minWidth: '80px', textAlign: 'center' }}>
-                            {currentMonth.format('MMM YYYY')}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: isLightMode ? '#f8fafc' : 'rgba(0,0,0,0.2)', padding: '0.4rem', borderRadius: '12px', border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.06)'}` }}>
+                        <button style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center' }} onClick={handlePrevMonth}><ChevronLeft size={16} /></button>
+                        <span style={{ fontSize: '0.85rem', fontWeight: '700', minWidth: '90px', textAlign: 'center', color: 'var(--text-main)' }}>
+                            {currentMonth.format('MMMM YYYY')}
                         </span>
-                        <button className="btn-icon" style={{ padding: '4px' }} onClick={handleNextMonth}><ChevronRight size={14} /></button>
+                        <button style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center' }} onClick={handleNextMonth}><ChevronRight size={16} /></button>
                     </div>
                 </div>
 
-                <div style={{ overflowX: 'auto' }}>
-                    <div style={{ minWidth: `${200 + daysInMonth * 28}px` }}>
-                        {/* Day Names Header */}
-                        <div style={{ display: 'flex', marginBottom: '0.5rem' }}>
-                            <div style={{ width: '200px' }}></div>
+                <div style={{ overflowX: 'auto', paddingBottom: '1rem' }}>
+                    <div style={{ minWidth: `${220 + daysInMonth * 28}px` }}>
+                        {/* Headers */}
+                        <div style={{ display: 'flex', marginBottom: '1.5rem', background: isLightMode ? 'rgba(0,0,0,0.02)' : 'rgba(255,255,255,0.02)', borderRadius: '12px', padding: '0.5rem 0' }}>
+                            <div style={{ width: '220px', paddingLeft: '1rem', fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center' }}>Team Member</div>
                             <div style={{ flex: 1, display: 'flex' }}>
-                                {dayHeaders.map((h, i) => {
-                                    return (
-                                        <div key={i} style={{ flex: 1, textAlign: 'center', minWidth: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-                                            <span style={{ fontSize: '0.65rem', color: h.isWeekend ? 'var(--text-muted)' : 'inherit' }}>{h.dayName}</span>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </div>
-
-                        {/* Day Numbers Header */}
-                        <div style={{ display: 'flex', marginBottom: '1rem' }}>
-                            <div style={{ width: '200px' }}></div>
-                            <div style={{ flex: 1, display: 'flex' }}>
-                                {dayHeaders.map(h => (
-                                    <div key={h.dayNum} style={{ flex: 1, textAlign: 'center', fontSize: '0.7rem', fontWeight: currentMonth.isSame(moment(), 'month') && h.dayNum === moment().date() ? '700' : '400', color: currentMonth.isSame(moment(), 'month') && h.dayNum === moment().date() ? 'var(--primary)' : 'inherit' }}>{h.dayNum}</div>
+                                {dayHeaders.map((h, i) => (
+                                    <div key={i} style={{ flex: 1, textAlign: 'center', minWidth: '28px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                                        <span style={{ fontSize: '0.65rem', fontWeight: '700', color: h.isWeekend ? 'var(--text-muted)' : 'var(--text-main)', opacity: h.isWeekend ? 0.5 : 1 }}>{h.dayName}</span>
+                                        <span style={{ fontSize: '0.75rem', fontWeight: currentMonth.isSame(moment(), 'month') && h.dayNum === moment().date() ? '800' : '600', color: currentMonth.isSame(moment(), 'month') && h.dayNum === moment().date() ? 'var(--primary)' : (h.isWeekend ? 'var(--text-muted)' : 'var(--text-main)') }}>{h.dayNum}</span>
+                                    </div>
                                 ))}
                             </div>
                         </div>
 
                         {/* Team Rows */}
                         {teamMembers.map((member) => (
-                            <div key={member._id} style={{ display: 'flex', alignItems: 'center', marginBottom: '0.75rem' }}>
-                                <div style={{ width: '200px', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                    <div className="avatar" style={{ width: '24px', height: '24px', fontSize: '0.7rem' }}>
-                                        {member.avatar ? <img src={member.avatar} alt="" style={{ width: '100%', height: '100%', borderRadius: '50%' }} /> : member.name.substring(0, 2).toUpperCase()}
+                            <div key={member._id} style={{ display: 'flex', alignItems: 'center', marginBottom: '0.85rem', padding: '0.5rem', borderRadius: '12px', transition: 'background 0.2s' }} onMouseOver={e => e.currentTarget.style.background = isLightMode ? 'rgba(0,0,0,0.02)' : 'rgba(255,255,255,0.02)'} onMouseOut={e => e.currentTarget.style.background = 'transparent'}>
+                                <div style={{ width: '220px', display: 'flex', alignItems: 'center', gap: '0.85rem', paddingLeft: '0.5rem' }}>
+                                    <div style={{
+                                        width: '32px', height: '32px', borderRadius: '10px', fontSize: '0.75rem', fontWeight: '800', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', overflow: 'hidden',
+                                        background: member.avatar ? 'transparent' : 'linear-gradient(135deg, var(--primary), rgba(var(--primary-rgb), 0.7))',
+                                    }}>
+                                        {member.avatar ? <img src={member.avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : member.name.substring(0, 2).toUpperCase()}
                                     </div>
-                                    <span style={{ fontSize: '0.8rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{member.name}</span>
+                                    <span style={{ fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{member.name}</span>
                                 </div>
                                 <div style={{ flex: 1, display: 'flex' }}>
                                     {dayHeaders.map(h => {
                                         let dotColor = 'transparent';
+                                        let tooltip = null;
                                         const dateStr = h.fullDate;
                                         const dayNameLong = moment(dateStr).format('dddd');
                                         const isPastOrToday = moment(dateStr).isSameOrBefore(moment(), 'day');
 
-                                        // 1. Check Leaves (Always show, past and future)
                                         const leave = leaves.find(l => l.user?._id === member._id && moment(l.startDate).isSameOrBefore(dateStr, 'day') && moment(l.endDate).isSameOrAfter(dateStr, 'day'));
                                         if (leave) {
-                                            if (leave.type === 'Paid' || leave.type === 'Casual') dotColor = '#00d1ff'; // Paid Leave (Cyan)
-                                            else if (leave.type === 'Sick') dotColor = '#f43f5e'; // Sick/Pink
-                                            else dotColor = '#fef3c7'; // Unpaid/Other
-                                        }
-                                        else {
-                                            // 2. Check WFH (Always show, past and future)
+                                            if (leave.type === 'Paid' || leave.type === 'Casual') dotColor = '#06b6d4'; // Cyan
+                                            else if (leave.type === 'Sick') dotColor = '#f43f5e'; // Pink
+                                            else dotColor = '#f59e0b'; // Amber/Unpaid
+                                        } else {
                                             const att = attendance.find(a => a.user === member._id && moment(a.date).isSame(dateStr, 'day'));
                                             if (att && (att.status === 'WFH' || att.workingMode === 'Remote')) {
-                                                dotColor = '#b24fff'; // WFH (Purple)
-                                            }
-                                            // 3. Other fields only for past or today
-                                            else if (isPastOrToday) {
-                                                // Holidays
+                                                dotColor = '#a855f7'; // Purple
+                                            } else if (isPastOrToday) {
                                                 const holiday = holidays.find(hol => moment(hol.date).isSame(dateStr, 'day'));
                                                 if (holiday) {
-                                                    dotColor = '#3b82f6'; // Holiday (Blue/Indigo)
-                                                }
-                                                // Weekly Off (Default to Sunday if not set)
-                                                else {
+                                                    dotColor = '#3b82f6'; // Blue
+                                                    tooltip = holiday.name;
+                                                } else {
                                                     const userWeekOffs = (member.workingSchedule?.weekOffs && member.workingSchedule.weekOffs.length > 0)
-                                                        ? member.workingSchedule.weekOffs
-                                                        : ['Sunday'];
-
+                                                        ? member.workingSchedule.weekOffs : ['Sunday'];
                                                     if (userWeekOffs.includes(dayNameLong)) {
-                                                        dotColor = '#fbbf24'; // Weekly off (Amber)
-                                                    }
-                                                    // Attendance (Present)
-                                                    else if (att && att.status === 'Present') {
-                                                        dotColor = '#22c55e'; // Present (Green)
+                                                        dotColor = '#94a3b8'; // Slate
+                                                    } else if (att && att.status === 'Present') {
+                                                        dotColor = '#22c55e'; // Green
+                                                    } else if (!h.isWeekend) {
+                                                        dotColor = '#ef4444'; // Red (Absent/No Atte)
                                                     }
                                                 }
                                             }
                                         }
 
                                         return (
-                                            <div key={h.dayNum} style={{ flex: 1, height: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '24px' }}>
+                                            <div key={h.dayNum} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '28px' }} title={tooltip || ''}>
                                                 {dotColor !== 'transparent' && (
-                                                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: dotColor }}></div>
+                                                    <div style={{
+                                                        width: '10px', height: '10px', borderRadius: '50%', background: dotColor,
+                                                        boxShadow: `0 0 8px ${dotColor}60`
+                                                    }}></div>
                                                 )}
                                             </div>
                                         );
@@ -246,188 +285,250 @@ const MyTeamTab = ({
                     </div>
                 </div>
 
-                {/* Calendar Legend - Refined per feedback */}
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.2rem', marginTop: '1.5rem', fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#b24fff' }}></div> Work from home</div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#22c55e' }}></div> Present</div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#00d1ff' }}></div> Paid Leave</div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#fef3c7' }}></div> Unpaid Leave</div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#f87171' }}></div> Leave due to No Attendance</div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#fbbf24' }}></div> Weekly off</div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#3b82f6' }}></div> Holiday</div>
+                {/* Legend */}
+                <div style={{
+                    display: 'flex', flexWrap: 'wrap', gap: '1.25rem', marginTop: '2rem', padding: '1rem',
+                    background: isLightMode ? '#f8fafc' : 'rgba(0,0,0,0.15)', borderRadius: '16px', border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.04)'}`
+                }}>
+                    {[
+                        { label: 'Work from home', color: '#a855f7' },
+                        { label: 'Present', color: '#22c55e' },
+                        { label: 'Paid/Casual Leave', color: '#06b6d4' },
+                        { label: 'Sick Leave', color: '#f43f5e' },
+                        { label: 'Unpaid Leave', color: '#f59e0b' },
+                        { label: 'No Attendance', color: '#ef4444' },
+                        { label: 'Weekly off', color: '#94a3b8' },
+                        { label: 'Holiday', color: '#3b82f6' }
+                    ].map(l => (
+                        <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', fontWeight: '600', color: 'var(--text-muted)' }}>
+                            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: l.color }}></div> {l.label}
+                        </div>
+                    ))}
                 </div>
             </div>
         );
     };
 
     return (
-        <div className="page-content" style={{ position: 'relative' }}>
-            {/* Top Summaries Row */}
-            <div className="grid" style={{
-                gridTemplateColumns: '1fr 1fr',
-                columnGap: '2.5rem',
-                rowGap: '2rem', marginBottom: '1.5rem'
-            }}>
-                <div className="panel" style={{ padding: '1.25rem' }}>
-                    <div className="panel-header" style={{ borderBottom: 'none', marginBottom: '1rem', fontSize: '0.9rem' }}>Who is off today</div>
-                    <div style={{ display: 'flex', gap: '0.75rem' }}>
+        <div style={{ padding: '0 1.5rem', marginTop: '1rem', position: 'relative' }}>
+            {/* ── Top Summaries Row ── */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.2fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+                <div style={{ ...bentoPanelStyle, padding: '1.5rem 1.75rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1.25rem' }}>
+                        <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'rgba(244, 63, 94, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <UserX size={16} color="#f43f5e" />
+                        </div>
+                        <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: '800', color: 'var(--text-main)' }}>Who is off today</h3>
+                    </div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem' }}>
                         {dashData.leaves && dashData.leaves.length > 0 ? dashData.leaves.map(l => (
-                            <div key={l._id} style={{ textAlign: 'center' }}>
-                                <div className="avatar" style={{ border: '2px solid #ff4f8b' }}>
+                            <div key={l._id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem', background: isLightMode ? '#f8fafc' : 'rgba(0,0,0,0.15)', padding: '0.75rem', borderRadius: '16px', border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.04)'}` }}>
+                                <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: 'rgba(244, 63, 94, 0.1)', color: '#f43f5e', fontSize: '1rem', fontWeight: '800', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                     {l.user?.name?.substring(0, 2).toUpperCase()}
                                 </div>
-                                <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '0.4rem' }}>{l.user?.name?.split(' ')[0]}..</div>
+                                <div style={{ fontSize: '0.75rem', fontWeight: '600', color: 'var(--text-main)', maxWidth: '60px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{l.user?.name?.split(' ')[0]}</div>
                             </div>
-                        )) : <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>No one is off today</div>}
+                        )) : <div style={{ fontSize: '0.85rem', fontWeight: '500', color: 'var(--text-muted)' }}>No one is off today</div>}
                     </div>
                 </div>
-                <div className="panel" style={{ padding: '1.25rem' }}>
-                    <div className="panel-header" style={{ borderBottom: 'none', marginBottom: '1rem', fontSize: '0.9rem' }}>Not in yet today</div>
-                    <div style={{ display: 'flex', gap: '0.75rem' }}>
+
+                <div style={{ ...bentoPanelStyle, padding: '1.5rem 1.75rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1.25rem' }}>
+                        <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'rgba(245, 158, 11, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <AlertCircle size={16} color="#f59e0b" />
+                        </div>
+                        <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: '800', color: 'var(--text-main)' }}>Not in yet today</h3>
+                    </div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem' }}>
                         {dashData.notInYet && dashData.notInYet.length > 0 ? dashData.notInYet.map(m => (
-                            <div key={m._id} style={{ textAlign: 'center' }}>
-                                <div className="avatar" style={{ border: '2px solid #00d1ff', background: '#00d1ff22' }}>
+                            <div key={m._id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem', background: isLightMode ? '#f8fafc' : 'rgba(0,0,0,0.15)', padding: '0.75rem', borderRadius: '16px', border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.04)'}` }}>
+                                <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', fontSize: '1rem', fontWeight: '800', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                     {m.name.substring(0, 2).toUpperCase()}
                                 </div>
-                                <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '0.4rem' }}>{m.name.split(' ')[0]}..</div>
+                                <div style={{ fontSize: '0.75rem', fontWeight: '600', color: 'var(--text-main)', maxWidth: '60px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.name.split(' ')[0]}</div>
                             </div>
-                        )) : <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Everyone is in!</div>}
+                        )) : <div style={{ fontSize: '0.85rem', fontWeight: '500', color: 'var(--text-muted)' }}>Everyone is in!</div>}
                     </div>
                 </div>
             </div>
 
-            {/* Stats Cards Row */}
-            <div className="grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem', marginBottom: '2rem' }}>
-                <div className="panel" style={{ padding: '1.25rem', borderLeft: '3px solid var(--primary)' }}>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Employees On Time today</div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-                        <span style={{ fontSize: '1.5rem', fontWeight: '600' }}>{stats.onTimeCount}</span>
-                        <span className="view-details" style={{ color: 'var(--primary)', fontSize: '0.75rem', cursor: 'pointer' }} onClick={() => setShowEmployeesPanel(true)}>View Employees</span>
+            {/* ── Stats Cards Row ── */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem', marginBottom: '2rem' }}>
+                <div style={{ ...bentoPanelStyle, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1.75rem' }}>
+                    <div>
+                        <div style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '0.5rem' }}>On Time Today</div>
+                        <div style={{ display: 'flex', alignItems: 'flex-end', gap: '0.75rem' }}>
+                            <div style={{ fontSize: '2rem', fontWeight: '800', color: 'var(--text-main)', lineHeight: '1' }}>{stats.onTimeCount}</div>
+                            <span style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--primary)', cursor: 'pointer', paddingBottom: '0.2rem' }} onClick={() => setShowEmployeesPanel(true)}>View All</span>
+                        </div>
+                    </div>
+                    <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: 'rgba(34, 197, 94, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Clock size={28} color="#22c55e" />
                     </div>
                 </div>
-                <div className="panel" style={{ padding: '1.25rem', borderLeft: '3px solid #ff4f8b' }}>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Late Arrivals today</div>
-                    <div style={{ fontSize: '1.5rem', fontWeight: '600' }}>{stats.lateCount}</div>
+
+                <div style={{ ...bentoPanelStyle, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1.75rem' }}>
+                    <div>
+                        <div style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '0.5rem' }}>Late Arrivals</div>
+                        <div style={{ fontSize: '2rem', fontWeight: '800', color: 'var(--text-main)', lineHeight: '1' }}>{stats.lateCount}</div>
+                    </div>
+                    <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: 'rgba(239, 68, 68, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Clock size={28} color="#ef4444" />
+                    </div>
                 </div>
-                <div className="panel" style={{ padding: '1.25rem', borderLeft: '3px solid #00d1ff' }}>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Remote Clock-ins today</div>
-                    <div style={{ fontSize: '1.5rem', fontWeight: '600' }}>{stats.remoteCount}</div>
+
+                <div style={{ ...bentoPanelStyle, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1.75rem' }}>
+                    <div>
+                        <div style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '0.5rem' }}>Remote Clock-ins</div>
+                        <div style={{ fontSize: '2rem', fontWeight: '800', color: 'var(--text-main)', lineHeight: '1' }}>{stats.remoteCount}</div>
+                    </div>
+                    <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: 'rgba(168, 85, 247, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Laptop size={28} color="#a855f7" />
+                    </div>
                 </div>
             </div>
 
-            {/* Team Calendar */}
+            {/* ── Team Calendar ── */}
             {renderCalendar()}
 
-            {/* Peers Section */}
-            <div style={{ marginTop: '2.5rem' }}>
-                <div style={{ fontSize: '1rem', fontWeight: '500', marginBottom: '1.5rem' }}>Peers ({teammates.length + 1})</div>
-                <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem' }}>
+            {/* ── Peers Section ── */}
+            <div style={{ marginTop: '2.5rem', marginBottom: '2rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
+                    <div style={{ width: '36px', height: '36px', borderRadius: '12px', background: 'rgba(var(--primary-rgb), 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Users size={16} color="var(--primary)" />
+                    </div>
+                    <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: '800', color: 'var(--text-main)' }}>Your Peers</h3>
+                    <div style={{ fontSize: '0.75rem', fontWeight: '700', background: 'rgba(var(--primary-rgb), 0.1)', color: 'var(--primary)', padding: '0.2rem 0.6rem', borderRadius: '20px' }}>
+                        {teammates.length + 1}
+                    </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.25rem' }}>
                     {[user, ...teammates].map(t => {
                         const isOff = dashData.leaves?.some(l => l.user?._id === t._id);
                         const isNotIn = dashData.notInYet?.some(m => m._id === t._id);
 
                         return (
-                            <div key={t._id} className="panel" style={{ padding: '1.5rem', position: 'relative' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                    <div className="avatar" style={{ width: '48px', height: '48px' }}>
-                                        {t.name.substring(0, 2).toUpperCase()}
-                                    </div>
-                                    <div style={{ flex: 1, overflow: 'hidden' }}>
-                                        <div style={{ fontWeight: '600', fontSize: '0.9rem', marginBottom: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.name}</div>
-                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{t.designation}</div>
-                                    </div>
-                                    {isNotIn && <div style={{ fontSize: '0.6rem', padding: '2px 6px', background: '#4a5568', borderRadius: '4px', fontWeight: '600' }}>NOT IN YET</div>}
-                                    {isOff && <div style={{ fontSize: '0.6rem', padding: '2px 6px', background: '#b24fff', borderRadius: '4px', fontWeight: '600' }}>LEAVE</div>}
+                            <div key={t._id} style={{ ...bentoPanelStyle, padding: '1.25rem 1.5rem', display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'default' }} onMouseOver={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = isLightMode ? '0 8px 24px rgba(0,0,0,0.06)' : '0 8px 24px rgba(0,0,0,0.2)'; e.currentTarget.style.borderColor = isLightMode ? '#cbd5e1' : 'rgba(255,255,255,0.1)' }} onMouseOut={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = isLightMode ? '0 4px 24px rgba(0,0,0,0.04)' : '0 4px 24px rgba(0,0,0,0.2)'; e.currentTarget.style.borderColor = isLightMode ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)' }}>
+                                <div style={{
+                                    width: '46px', height: '46px', borderRadius: '14px', fontSize: '1rem', fontWeight: '800', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
+                                    background: t.profilePicture ? 'transparent' : 'linear-gradient(135deg, var(--primary), rgba(var(--primary-rgb), 0.7))',
+                                }}>
+                                    {t.profilePicture ? <img src={t.profilePicture} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : t.name.substring(0, 2).toUpperCase()}
                                 </div>
+                                <div style={{ flex: 1, overflow: 'hidden' }}>
+                                    <div style={{ fontWeight: '700', fontSize: '0.95rem', color: 'var(--text-main)', marginBottom: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.name}</div>
+                                    <div style={{ fontSize: '0.75rem', fontWeight: '500', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.designation}</div>
+                                </div>
+                                {isNotIn && <div style={{ fontSize: '0.65rem', padding: '0.3rem 0.6rem', background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', borderRadius: '8px', fontWeight: '700' }}>NOT IN</div>}
+                                {isOff && <div style={{ fontSize: '0.65rem', padding: '0.3rem 0.6rem', background: 'rgba(244, 63, 94, 0.15)', color: '#f43f5e', borderRadius: '8px', fontWeight: '700' }}>OFF</div>}
                             </div>
                         );
                     })}
                 </div>
             </div>
 
-            {/* Lateral Panel: View Employees */}
+            {/* ── Lateral Panel: View Employees ── */}
             {showEmployeesPanel && (
-                <div style={{
-                    position: 'fixed',
-                    top: 0,
-                    right: 0,
-                    width: '600px',
-                    height: '100vh',
-                    background: 'var(--bg-panel)',
-                    boxShadow: 'var(--glow-panel)',
-                    zIndex: 2000,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    animation: 'slideInRight 0.3s ease-out',
-                    color: 'var(--text-main)',
-                    borderLeft: '1px solid var(--border-dark)'
-                }}>
-                    <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--border-dark)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <h2 style={{ fontSize: '1.25rem', margin: 0, fontWeight: '600', color: 'var(--text-main)' }}>View Employees</h2>
-                        <button className="btn-icon" style={{ color: 'var(--text-muted)' }} onClick={() => setShowEmployeesPanel(false)}><X size={24} /></button>
-                    </div>
+                <>
+                    {/* Backdrop */}
+                    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', zIndex: 1999, animation: 'fadeIn 0.2s ease-out' }} onClick={() => setShowEmployeesPanel(false)}></div>
 
-                    <div style={{ padding: '1.5rem', flex: 1, overflowY: 'auto' }}>
-                        <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
-                            <div style={{ flex: 1, position: 'relative' }}>
-                                <Search size={18} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                                <input
-                                    type="text"
-                                    placeholder="Search"
-                                    style={{
-                                        width: '100%',
-                                        padding: '0.6rem 1rem 0.6rem 2.5rem',
-                                        background: isLightMode ? '#f7fafc' : 'rgba(0,0,0,0.2)',
-                                        border: '1px solid var(--border-dark)',
-                                        color: 'var(--text-main)',
-                                        borderRadius: '8px',
-                                        outline: 'none'
-                                    }}
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                />
+                    {/* Drawer */}
+                    <div style={{
+                        position: 'fixed', top: 0, right: 0, width: '100%', maxWidth: '650px', height: '100vh',
+                        background: isLightMode ? '#ffffff' : 'var(--bg-panel)', boxShadow: '-10px 0 40px rgba(0,0,0,0.1)',
+                        zIndex: 2000, display: 'flex', flexDirection: 'column', animation: 'slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                        borderLeft: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.08)'}`
+                    }}>
+                        {/* Header */}
+                        <div style={{ padding: '2rem', borderBottom: `1px solid ${isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.06)'}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(var(--primary-rgb), 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <Users size={18} color="var(--primary)" />
+                                </div>
+                                <div>
+                                    <h2 style={{ fontSize: '1.25rem', margin: 0, fontWeight: '800', color: 'var(--text-main)', letterSpacing: '-0.3px' }}>View Employees</h2>
+                                    <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '500', marginTop: '0.2rem' }}>Detailed list and status filtering</p>
+                                </div>
                             </div>
-                            <button className="btn-icon" style={{ color: 'var(--text-muted)' }} title="Download" onClick={handleDownloadCSV}><Download size={20} /></button>
+                            <button style={{ width: '36px', height: '36px', borderRadius: '10px', background: isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.06)', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.2s' }} onClick={() => setShowEmployeesPanel(false)} onMouseOver={e => e.currentTarget.style.background = isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.1)'} onMouseOut={e => e.currentTarget.style.background = isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.06)'}>
+                                <X size={18} />
+                            </button>
                         </div>
 
-                        {/* Status Filters - NEW FEATURE */}
-                        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
-                            {['All', 'On Time', 'Late', 'WFH', 'Not In'].map(status => (
-                                <button
-                                    key={status}
-                                    onClick={() => setFilterStatus(status)}
-                                    style={{
-                                        padding: '4px 12px',
-                                        borderRadius: '16px',
-                                        fontSize: '0.75rem',
-                                        fontWeight: '500',
-                                        border: '1px solid',
-                                        borderColor: filterStatus === status ? 'var(--primary)' : 'var(--border-dark)',
-                                        background: filterStatus === status ? 'var(--primary)' : 'transparent',
-                                        color: filterStatus === status ? 'white' : 'var(--text-muted)',
-                                        cursor: 'pointer',
-                                        transition: 'all 0.2s'
-                                    }}
-                                >
-                                    {status}
+                        {/* Content */}
+                        <div style={{ padding: '2rem', flex: 1, overflowY: 'auto' }}>
+                            <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem' }}>
+                                <div style={{ flex: 1, position: 'relative' }}>
+                                    <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                                    <input
+                                        type="text"
+                                        placeholder="Search by name..."
+                                        style={inputStyle}
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                    />
+                                </div>
+                                <button style={{
+                                    height: '100%', padding: '0 1.25rem', borderRadius: '16px', border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.08)'}`,
+                                    background: isLightMode ? '#ffffff' : 'var(--bg-panel)', color: 'var(--text-main)', fontWeight: '700', fontSize: '0.85rem',
+                                    display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 4px 12px rgba(0,0,0,0.02)'
+                                }} onClick={handleDownloadCSV} onMouseOver={e => { e.currentTarget.style.borderColor = 'var(--primary)'; e.currentTarget.style.color = 'var(--primary)'; }} onMouseOut={e => { e.currentTarget.style.borderColor = isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = 'var(--text-main)'; }}>
+                                    <Download size={16} /> Export CSV
                                 </button>
-                            ))}
-                        </div>
+                            </div>
 
+                            {/* Status Filters */}
+                            <div style={{ display: 'flex', gap: '0.6rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
+                                {['All', 'On Time', 'Late', 'WFH', 'Not In'].map(status => (
+                                    <button
+                                        key={status}
+                                        onClick={() => setFilterStatus(status)}
+                                        style={{
+                                            padding: '0.5rem 1rem',
+                                            borderRadius: '20px',
+                                            fontSize: '0.8rem',
+                                            fontWeight: '700',
+                                            border: filterStatus === status ? 'none' : `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.08)'}`,
+                                            background: filterStatus === status ? 'var(--primary)' : 'transparent',
+                                            color: filterStatus === status ? 'white' : 'var(--text-muted)',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.2s',
+                                            boxShadow: filterStatus === status ? '0 4px 12px rgba(var(--primary-rgb), 0.3)' : 'none',
+                                        }}
+                                        onMouseOver={e => { if (filterStatus !== status) { e.currentTarget.style.borderColor = 'var(--text-muted)'; e.currentTarget.style.color = 'var(--text-main)'; } }}
+                                        onMouseOut={e => { if (filterStatus !== status) { e.currentTarget.style.borderColor = isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = 'var(--text-muted)'; } }}
+                                    >
+                                        {status}
+                                    </button>
+                                ))}
+                            </div>
 
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '1rem', textAlign: 'right' }}>Total: {[user, ...teammates].length}</div>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', padding: '0 0.5rem' }}>
+                                <div style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-main)' }}>Results</div>
+                                <div style={{ fontSize: '0.75rem', fontWeight: '600', color: 'var(--text-muted)', background: isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.06)', padding: '0.2rem 0.6rem', borderRadius: '12px' }}>
+                                    Total: {[user, ...teammates].filter(e => {
+                                        const matchesSearch = e.name.toLowerCase().includes(searchTerm.toLowerCase());
+                                        const att = dashData.teamAttendance?.find(a => a.user.toString() === e._id.toString());
+                                        const isNotIn = dashData.notInYet?.some(m => m._id === e._id);
+                                        if (!matchesSearch) return false;
+                                        if (filterStatus === 'All') return true;
+                                        if (filterStatus === 'Not In') return isNotIn;
+                                        if (filterStatus === 'WFH') return att?.status === 'WFH';
+                                        if (att && att.clockInTime && (e.workingSchedule?.shiftStart || '09:00')) {
+                                            const shiftStart = moment(e.workingSchedule?.shiftStart || '09:00', 'HH:mm');
+                                            const isLate = moment(att.clockInTime).isAfter(shiftStart.add(15, 'minutes'));
+                                            if (filterStatus === 'Late') return isLate;
+                                            if (filterStatus === 'On Time') return !isLate;
+                                        }
+                                        return false;
+                                    }).length}
+                                </div>
+                            </div>
 
-                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
-                            <thead>
-                                <tr style={{ borderBottom: `2px solid ${isLightMode ? '#edf2f7' : '#2d3748'}`, color: 'var(--text-muted)' }}>
-                                    <th style={{ textAlign: 'left', padding: '1rem 0.5rem', fontWeight: '600' }}>EMPLOYEE</th>
-                                    <th style={{ textAlign: 'left', padding: '1rem 0.5rem', fontWeight: '600' }}>DEPARTMENT</th>
-                                    <th style={{ textAlign: 'left', padding: '1rem 0.5rem', fontWeight: '600' }}>LOCATION</th>
-                                    <th style={{ textAlign: 'left', padding: '1rem 0.5rem', fontWeight: '600' }}>JOB TITLE</th>
-                                    <th style={{ textAlign: 'left', padding: '1rem 0.5rem', fontWeight: '600' }}>CLOCK-IN TIME</th>
-                                </tr>
-                            </thead>
-                            <tbody>
+                            {/* Data List */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                                 {[user, ...teammates]
                                     .filter(e => {
                                         const matchesSearch = e.name.toLowerCase().includes(searchTerm.toLowerCase());
@@ -441,8 +542,7 @@ const MyTeamTab = ({
 
                                         if (att && att.clockInTime && (e.workingSchedule?.shiftStart || '09:00')) {
                                             const shiftStart = moment(e.workingSchedule?.shiftStart || '09:00', 'HH:mm');
-                                            const clockIn = moment(att.clockInTime);
-                                            const isLate = clockIn.isAfter(shiftStart.add(15, 'minutes'));
+                                            const isLate = moment(att.clockInTime).isAfter(shiftStart.add(15, 'minutes'));
                                             if (filterStatus === 'Late') return isLate;
                                             if (filterStatus === 'On Time') return !isLate;
                                         }
@@ -452,94 +552,86 @@ const MyTeamTab = ({
                                         const att = dashData.teamAttendance?.find(a => a.user.toString() === e._id.toString());
                                         const isNotIn = dashData.notInYet?.some(m => m._id === e._id);
 
-                                        // CLOCK IN LOGIC: Use actual if present, otherwise shift timing if not clocked in
-                                        let clockInDisplay = '09:00 AM'; // Default fallback
+                                        let clockInDisplay = '09:00 AM';
                                         let statusLabel = '';
-                                        let statusColor = '#718096';
+                                        let statusColor = '#94a3b8';
 
                                         if (att?.clockInTime) {
                                             clockInDisplay = moment(att.clockInTime).format('hh:mm A');
                                             const shiftStart = moment(e.workingSchedule?.shiftStart || '09:00', 'HH:mm');
                                             if (moment(att.clockInTime).isAfter(shiftStart.add(15, 'minutes'))) {
                                                 statusLabel = 'Late';
-                                                statusColor = '#f43f5e';
+                                                statusColor = '#ef4444';
                                             } else {
                                                 statusLabel = 'On Time';
                                                 statusColor = '#22c55e';
                                             }
                                         } else if (e.workingSchedule?.shiftStart) {
-                                            // Show shift timing as expected clock-in
                                             clockInDisplay = moment(e.workingSchedule.shiftStart, 'HH:mm').format('hh:mm A');
                                             if (isNotIn) {
                                                 statusLabel = 'Not In yet';
                                                 statusColor = '#f59e0b';
+                                            } else {
+                                                statusLabel = 'Scheduled';
                                             }
                                         }
 
                                         return (
-                                            <tr key={e._id} style={{ borderBottom: `1px solid ${isLightMode ? '#edf2f7' : 'rgba(255,255,255,0.05)'}` }}>
-                                                <td style={{ padding: '1.25rem 0.5rem' }}>
-                                                    <div style={{ fontWeight: '600', color: 'var(--primary)' }}>{e.name}</div>
-                                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{e._id.substring(0, 8)}</div>
-                                                </td>
-                                                <td style={{ padding: '1.25rem 0.5rem', color: 'var(--text-main)' }}>{e.department}</td>
-                                                <td style={{ padding: '1.25rem 0.5rem', color: 'var(--text-main)' }}>{e.place || 'Nagpur'}</td>
-                                                <td style={{ padding: '1.25rem 0.5rem', color: 'var(--text-main)' }}>{e.designation}</td>
-                                                <td style={{ padding: '1.25rem 0.5rem', position: 'relative' }}>
-                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                        <div>
-                                                            <div style={{ color: 'var(--text-main)', fontWeight: '500' }}>{clockInDisplay}</div>
-                                                            {statusLabel && <div style={{ fontSize: '0.65rem', color: statusColor, fontWeight: '600' }}>{statusLabel}</div>}
-                                                        </div>
+                                            <div key={e._id} style={{
+                                                background: isLightMode ? '#f8fafc' : 'rgba(0,0,0,0.15)',
+                                                border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.04)'}`,
+                                                borderRadius: '16px', padding: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                                transition: 'all 0.2s',
+                                            }} onMouseOver={e => { e.currentTarget.style.borderColor = isLightMode ? '#cbd5e1' : 'rgba(255,255,255,0.1)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.04)' }} onMouseOut={e => { e.currentTarget.style.borderColor = isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.04)'; e.currentTarget.style.boxShadow = 'none' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                                    <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: 'var(--primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', fontWeight: '800' }}>
+                                                        {e.name.substring(0, 2).toUpperCase()}
                                                     </div>
-                                                </td>
-                                            </tr>
+                                                    <div>
+                                                        <div style={{ fontSize: '0.95rem', fontWeight: '700', color: 'var(--text-main)', marginBottom: '2px' }}>{e.name}</div>
+                                                        <div style={{ fontSize: '0.75rem', fontWeight: '500', color: 'var(--text-muted)' }}>{e.designation} <span style={{ opacity: 0.5 }}>•</span> {e.department} <span style={{ opacity: 0.5 }}>•</span> {e.place || 'Nagpur'}</div>
+                                                    </div>
+                                                </div>
+                                                <div style={{ textAlign: 'right' }}>
+                                                    <div style={{ fontSize: '0.9rem', fontWeight: '700', color: 'var(--text-main)', marginBottom: '4px' }}>{clockInDisplay}</div>
+                                                    <div style={{ fontSize: '0.65rem', fontWeight: '800', background: `${statusColor}22`, color: statusColor, padding: '0.2rem 0.6rem', borderRadius: '8px', display: 'inline-block' }}>{statusLabel.toUpperCase()}</div>
+                                                </div>
+                                            </div>
                                         );
                                     })}
-                            </tbody>
-                        </table>
+                            </div>
+                        </div>
                     </div>
-                </div>
+                </>
             )}
 
             {/* In-App Custom Alert */}
             {appAlert && (
                 <div style={{
-                    position: 'fixed',
-                    top: '20px',
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                    background: 'var(--bg-panel)',
-                    color: 'var(--text-main)',
-                    padding: '0.75rem 1.5rem',
-                    borderRadius: '8px',
-                    border: '1px solid var(--border-dark)',
-                    boxShadow: 'var(--glow-panel)',
-                    zIndex: 3000,
-                    fontSize: '0.9rem',
-                    fontWeight: '500',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem',
-                    animation: 'fadeInOut 3s ease-in-out'
+                    position: 'fixed', bottom: '2rem', right: '2rem',
+                    background: 'var(--primary)', color: 'white', padding: '1rem 1.5rem',
+                    borderRadius: '16px', boxShadow: '0 8px 32px rgba(var(--primary-rgb), 0.3)',
+                    zIndex: 3000, fontSize: '0.85rem', fontWeight: '700',
+                    display: 'flex', alignItems: 'center', gap: '0.75rem',
+                    animation: 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
                 }}>
-                    <span style={{ fontSize: '1.1rem' }}>ℹ️</span> {appAlert}
+                    <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✓</div>
+                    {appAlert}
                 </div>
             )}
 
             <style>{`
                 @keyframes slideInRight {
-                    from { transform: translateX(100%); }
-                    to { transform: translateX(0); }
+                    from { transform: translateX(100%); opacity: 0; }
+                    to { transform: translateX(0); opacity: 1; }
                 }
-                @keyframes fadeInOut {
-                    0% { opacity: 0; transform: translate(-50%, -10px); }
-                    10% { opacity: 1; transform: translate(-50%, 0); }
-                    90% { opacity: 1; transform: translate(-50%, 0); }
-                    100% { opacity: 0; transform: translate(-50%, -10px); }
+                @keyframes fadeIn {
+                    from { opacity: 0; }
+                    to { opacity: 1; }
                 }
-                .menu-item:hover {
-                    background: #f7fafc;
+                @keyframes slideUp {
+                    from { transform: translateY(20px); opacity: 0; }
+                    to { transform: translateY(0); opacity: 1; }
                 }
             `}</style>
         </div>

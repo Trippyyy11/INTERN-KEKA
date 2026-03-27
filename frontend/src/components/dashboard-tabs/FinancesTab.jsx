@@ -2,13 +2,26 @@ import React, { useState } from 'react';
 import api from '../../api/axios';
 import moment from 'moment';
 
-import { ChevronDown, FileText, Clock, Calendar, Building2, Award, Info } from 'lucide-react';
+import {
+    ChevronDown,
+    FileText,
+    Clock,
+    Calendar,
+    Building2,
+    Award,
+    Info,
+    Wallet,
+    CheckCircle2,
+    Landmark,
+    ShieldCheck,
+    Smartphone
+} from 'lucide-react';
 
 const bankLabelStyle = {
     display: 'block',
     fontSize: '0.75rem',
-    letterSpacing: '0.6px',
-    fontWeight: '600',
+    letterSpacing: '0.8px',
+    fontWeight: '700',
     marginBottom: '0.6rem',
     color: 'var(--text-muted)',
     textTransform: 'uppercase'
@@ -16,11 +29,11 @@ const bankLabelStyle = {
 
 const bankIconStyle = {
     position: 'absolute',
-    left: '0.85rem',
+    left: '1rem',
     top: '50%',
     transform: 'translateY(-50%)',
     color: 'var(--text-muted)',
-    opacity: 0.5,
+    opacity: 0.6,
     pointerEvents: 'none'
 };
 
@@ -39,7 +52,6 @@ const FinancesTab = ({
     setUser,
     activeSubTab,
     setActiveSubTab,
-    globalPayslips,
     payslips,
     isLightMode
 }) => {
@@ -64,6 +76,18 @@ const FinancesTab = ({
 
     const years = Array.from({ length: 5 }, (_, i) => moment().year() - i);
 
+    const bentoPanelStyle = {
+        background: isLightMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(15, 23, 42, 0.5)',
+        backdropFilter: 'blur(16px)',
+        borderRadius: '24px',
+        border: `1px solid ${isLightMode ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)'}`,
+        padding: '2rem',
+        boxShadow: isLightMode ? '0 4px 24px rgba(0,0,0,0.04)' : '0 4px 24px rgba(0,0,0,0.2)',
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        overflow: 'hidden',
+        position: 'relative'
+    };
+
     const handleBankSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
@@ -82,67 +106,36 @@ const FinancesTab = ({
     };
 
     const renderPayslips = () => {
-        const filteredPayslip = payslips.find(p => p.month === selectedMonth && parseInt(p.year) === parseInt(selectedYear));
-
-        const themeColors = {
-            panelBg: isLightMode ? '#ffffff' : 'linear-gradient(145deg, rgba(23, 23, 23, 0.4) 0%, rgba(10, 10, 10, 0.2) 100%)',
-            selectBg: isLightMode ? '#f8f9fa' : 'rgba(255, 255, 255, 0.05)',
-            selectBorder: isLightMode ? '#e9ecef' : 'rgba(255, 255, 255, 0.1)',
-            cardBg: isLightMode ? '#fdfdfd' : 'rgba(255,255,255,0.01)',
-            cardBorder: isLightMode ? '#f1f3f5' : 'rgba(255,255,255,0.03)',
-            stripeBg: isLightMode ? 'rgba(var(--primary-rgb), 0.05)' : 'linear-gradient(90deg, rgba(var(--primary-rgb), 0.1) 0%, rgba(var(--primary-rgb), 0.05) 100%)',
-            stripeBorder: isLightMode ? 'rgba(var(--primary-rgb), 0.15)' : 'rgba(var(--primary-rgb), 0.3)',
-            textMain: isLightMode ? '#1a1a1a' : 'var(--text-main)',
-            textMuted: isLightMode ? '#6c757d' : 'var(--text-muted)'
-        };
+        const filteredPayslip = payslips?.find(p => p.month === selectedMonth && parseInt(p.year) === parseInt(selectedYear));
 
         const selectContainerStyle = {
             position: 'relative',
             display: 'inline-flex',
             alignItems: 'center',
-            background: themeColors.selectBg,
-            border: `1px solid ${themeColors.selectBorder}`,
-            borderRadius: '12px',
-            padding: '0 1rem',
-            transition: 'all 0.3s ease',
-            backdropFilter: isLightMode ? 'none' : 'blur(10px)',
+            background: isLightMode ? '#f8fafc' : 'rgba(0,0,0,0.2)',
+            border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.08)'}`,
+            borderRadius: '14px',
+            padding: '0 1.25rem',
+            transition: 'all 0.2s ease',
             cursor: 'pointer',
-            boxShadow: isLightMode ? '0 2px 4px rgba(0,0,0,0.02)' : 'none'
         };
 
         const selectStyle = {
             appearance: 'none',
             background: 'transparent',
             border: 'none',
-            color: themeColors.textMain,
+            color: 'var(--text-main)',
             fontSize: '0.9rem',
-            fontWeight: '600',
+            fontWeight: '700',
             padding: '0.75rem 2rem 0.75rem 0.5rem',
             cursor: 'pointer',
             outline: 'none',
             width: '100%'
         };
 
-        const dropdownIconStyle = {
-            position: 'absolute',
-            right: '1rem',
-            pointerEvents: 'none',
-            color: 'var(--primary)',
-            opacity: 0.8
-        };
-
         return (
-            <div className="panel" style={{
-                width: '100%',
-                minHeight: 'calc(100vh - 250px)',
-                margin: '0',
-                background: themeColors.panelBg,
-                border: isLightMode ? '1px solid #edf2f7' : '1px solid rgba(255, 255, 255, 0.05)',
-                display: 'flex',
-                flexDirection: 'column',
-                color: themeColors.textMain,
-                boxShadow: isLightMode ? '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)' : 'none'
-            }}>
+            <div style={{ ...bentoPanelStyle, minHeight: 'calc(100vh - 250px)', display: 'flex', flexDirection: 'column' }}>
+                {/* Header Controls */}
                 <div style={{
                     display: 'flex',
                     justifyContent: 'space-between',
@@ -150,247 +143,264 @@ const FinancesTab = ({
                     marginBottom: '2.5rem',
                     flexWrap: 'wrap',
                     gap: '1.5rem',
-                    padding: '0.5rem'
+                    padding: '0.5rem 0'
                 }}>
                     <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
-                        <h2 style={{ fontSize: '1.5rem', fontWeight: '700', letterSpacing: '-0.5px' }}>Monthly Payslip</h2>
-
-                        <div style={selectContainerStyle} onMouseEnter={(e) => e.currentTarget.style.borderColor = 'rgba(var(--primary-rgb), 0.5)'} onMouseLeave={(e) => e.currentTarget.style.borderColor = themeColors.selectBorder}>
-                            <select
-                                value={selectedMonth}
-                                onChange={(e) => setSelectedMonth(e.target.value)}
-                                style={selectStyle}
-                            >
-                                {months.map(m => <option key={m} value={m} style={{ background: isLightMode ? '#ffffff' : '#1a1a1a', color: themeColors.textMain }}>{m}</option>)}
-                            </select>
-                            <ChevronDown size={16} style={dropdownIconStyle} />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <div style={{
+                                width: '42px', height: '42px', borderRadius: '12px',
+                                background: 'linear-gradient(135deg, rgba(var(--primary-rgb), 0.15), rgba(var(--primary-rgb), 0.05))',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                color: 'var(--primary)', boxShadow: '0 4px 12px rgba(var(--primary-rgb), 0.1)'
+                            }}>
+                                <Wallet size={20} />
+                            </div>
+                            <div>
+                                <h2 style={{ fontSize: '1.25rem', fontWeight: '800', margin: 0, color: 'var(--text-main)' }}>Monthly Payslip</h2>
+                                <p style={{ fontSize: '0.75rem', fontWeight: '500', color: 'var(--text-muted)', margin: '2px 0 0 0' }}>View and download your salary details</p>
+                            </div>
                         </div>
 
-                        <div style={selectContainerStyle} onMouseEnter={(e) => e.currentTarget.style.borderColor = 'rgba(var(--primary-rgb), 0.5)'} onMouseLeave={(e) => e.currentTarget.style.borderColor = themeColors.selectBorder}>
-                            <select
-                                value={selectedYear}
-                                onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                                style={selectStyle}
-                            >
-                                {years.map(y => <option key={y} value={y} style={{ background: isLightMode ? '#ffffff' : '#1a1a1a', color: themeColors.textMain }}>{y}</option>)}
+                        <div style={selectContainerStyle}>
+                            <select value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)} style={selectStyle}>
+                                {months.map(m => <option key={m} value={m} style={{ background: isLightMode ? '#ffffff' : '#1e293b' }}>{m}</option>)}
                             </select>
-                            <ChevronDown size={16} style={dropdownIconStyle} />
+                            <ChevronDown size={16} style={{ position: 'absolute', right: '1rem', color: 'var(--primary)', pointerEvents: 'none' }} />
+                        </div>
+
+                        <div style={selectContainerStyle}>
+                            <select value={selectedYear} onChange={(e) => setSelectedYear(parseInt(e.target.value))} style={selectStyle}>
+                                {years.map(y => <option key={y} value={y} style={{ background: isLightMode ? '#ffffff' : '#1e293b' }}>{y}</option>)}
+                            </select>
+                            <ChevronDown size={16} style={{ position: 'absolute', right: '1rem', color: 'var(--primary)', pointerEvents: 'none' }} />
                         </div>
                     </div>
                     {filteredPayslip && (
                         <button className="btn btn-primary" style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '0.5rem',
-                            padding: '0.75rem 1.5rem',
-                            borderRadius: '10px',
-                            boxShadow: '0 4px 15px rgba(var(--primary-rgb), 0.3)'
-                        }}>
-                            <FileText size={18} />
-                            Download PDF
+                            display: 'flex', alignItems: 'center', gap: '0.5rem',
+                            padding: '0.75rem 1.5rem', borderRadius: '14px',
+                            fontWeight: '700', fontSize: '0.9rem',
+                            boxShadow: '0 4px 15px rgba(var(--primary-rgb), 0.25)',
+                            transition: 'all 0.2s'
+                        }} onMouseOver={e => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseOut={e => e.currentTarget.style.transform = 'translateY(0)'}>
+                            <FileText size={18} /> Download PDF
                         </button>
                     )}
                 </div>
 
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                    {filteredPayslip ? (
-                        <>
-                            <div style={{ marginBottom: '2rem', display: 'flex', gap: '3rem', padding: '1rem', background: isLightMode ? '#f8f9fa' : 'rgba(255,255,255,0.02)', borderRadius: '16px', border: `1px solid ${isLightMode ? '#edf2f7' : 'rgba(255,255,255,0.05)'}` }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                    <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(var(--primary-rgb), 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
-                                        <Clock size={20} />
-                                    </div>
-                                    <div>
-                                        <div style={{ fontSize: '0.75rem', color: themeColors.textMuted, textTransform: 'uppercase', fontWeight: '600' }}>Status</div>
-                                        <div style={{
-                                            fontSize: '1rem',
-                                            fontWeight: '700',
-                                            color: filteredPayslip.status === 'Paid' ? 'var(--success)' : 'var(--warning)'
-                                        }}>
-                                            {filteredPayslip.status || 'Paid'}
-                                        </div>
-                                    </div>
-                                </div>
-                                {filteredPayslip.status === 'Paid' && (
-                                    <>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                            <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(34, 197, 94, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--success)' }}>
-                                                <Calendar size={20} />
-                                            </div>
-                                            <div>
-                                                <div style={{ fontSize: '0.75rem', color: themeColors.textMuted, textTransform: 'uppercase', fontWeight: '600' }}>Paid Date</div>
-                                                <div style={{ fontSize: '1rem', fontWeight: '600', color: themeColors.textMain }}>{moment(filteredPayslip.paidAt || filteredPayslip.updatedAt).format('DD MMM YYYY')}</div>
-                                            </div>
-                                        </div>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                            <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(155, 81, 224, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9b51e0' }}>
-                                                <Building2 size={20} />
-                                            </div>
-                                            <div>
-                                                <div style={{ fontSize: '0.75rem', color: themeColors.textMuted, textTransform: 'uppercase', fontWeight: '600' }}>Method</div>
-                                                <div style={{ fontSize: '1rem', fontWeight: '600', color: themeColors.textMain }}>{filteredPayslip.paymentMethod || 'Bank Transfer'}</div>
-                                            </div>
-                                        </div>
-                                    </>
-                                )}
-                            </div>
-
-                            <div className="grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '3rem', marginBottom: '3rem', flex: 1 }}>
-                                <div style={{ background: themeColors.cardBg, padding: '2rem', borderRadius: '20px', border: `1px solid ${themeColors.cardBorder}`, boxShadow: isLightMode ? '0 2px 10px rgba(0,0,0,0.02)' : 'none' }}>
-                                    <div style={{ fontSize: '1rem', color: 'var(--primary)', fontWeight: '700', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                        <Award size={18} />
-                                        EARNINGS
-                                    </div>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1rem', color: themeColors.textMain }}><span>Basic Salary</span><span style={{ fontWeight: '600' }}>₹{filteredPayslip.earnings.basicSalary.toLocaleString()}</span></div>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1rem', color: themeColors.textMain }}><span>HRA</span><span style={{ fontWeight: '600' }}>₹{filteredPayslip.earnings.hra.toLocaleString()}</span></div>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1rem', color: 'var(--primary)' }}><span>Bonus</span><span style={{ fontWeight: '700' }}>₹{(filteredPayslip.earnings.bonus || 0).toLocaleString()}</span></div>
-                                        {filteredPayslip.earnings.specialAllowance > 0 && (
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1rem', color: themeColors.textMain }}><span>Special Allowance</span><span style={{ fontWeight: '600' }}>₹{filteredPayslip.earnings.specialAllowance.toLocaleString()}</span></div>
-                                        )}
-                                    </div>
-                                </div>
-                                <div style={{ background: themeColors.cardBg, padding: '2rem', borderRadius: '20px', border: `1px solid ${themeColors.cardBorder}`, boxShadow: isLightMode ? '0 2px 10px rgba(0,0,0,0.02)' : 'none' }}>
-                                    <div style={{ fontSize: '1rem', color: '#ff4757', fontWeight: '700', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                        <Info size={18} />
-                                        DEDUCTIONS
-                                    </div>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1rem', color: themeColors.textMain }}><span>PF</span><span style={{ fontWeight: '600', color: '#ff4757' }}>₹{filteredPayslip.deductions.pf.toLocaleString()}</span></div>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1rem', color: themeColors.textMain }}><span>Tax (TDS)</span><span style={{ fontWeight: '600', color: '#ff4757' }}>₹{filteredPayslip.deductions.tax.toLocaleString()}</span></div>
-                                        {filteredPayslip.deductions.professionalTax > 0 && (
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1rem', color: themeColors.textMain }}><span>Professional Tax</span><span style={{ fontWeight: '600', color: '#ff4757' }}>₹{filteredPayslip.deductions.professionalTax.toLocaleString()}</span></div>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div style={{
-                                marginTop: 'auto',
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                alignItems: 'center',
-                                background: themeColors.stripeBg,
-                                border: `1px solid ${themeColors.stripeBorder}`,
-                                padding: '2rem',
-                                borderRadius: '24px',
-                                boxShadow: isLightMode ? '0 8px 20px rgba(0,0,0,0.05)' : '0 10px 30px rgba(0,0,0,0.2)'
-                            }}>
-                                <div>
-                                    <div style={{ fontSize: '0.85rem', color: themeColors.textMuted, fontWeight: '600', textTransform: 'uppercase', letterSpacing: '1px' }}>Net Payout (Final Amount)</div>
-                                    <div style={{ fontSize: '1rem', color: themeColors.textMain, marginTop: '0.25rem' }}>{selectedMonth} {selectedYear}</div>
-                                </div>
-                                <div style={{ textAlign: 'right' }}>
-                                    <div style={{ fontSize: '2.5rem', fontWeight: '800', color: 'var(--success)', letterSpacing: '-1px' }}>
-                                        ₹{filteredPayslip.netPay.toLocaleString()}
-                                    </div>
-                                </div>
-                            </div>
-                        </>
-                    ) : (
+                {filteredPayslip ? (
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                        {/* Status Bar */}
                         <div style={{
-                            flex: 1,
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            padding: '4rem',
-                            color: themeColors.textMuted,
-                            background: isLightMode ? '#fdfdfd' : 'rgba(255,255,255,0.01)',
-                            borderRadius: '24px',
-                            border: `1px dashed ${isLightMode ? '#dee2e6' : 'rgba(255,255,255,0.1)'}`,
-                            textAlign: 'center'
+                            marginBottom: '2.5rem', display: 'flex', flexWrap: 'wrap', gap: '2.5rem', padding: '1.5rem 2rem',
+                            background: isLightMode ? '#f8fafc' : 'rgba(0,0,0,0.15)', borderRadius: '20px',
+                            border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.04)'}`
                         }}>
-                            <div style={{
-                                width: '120px',
-                                height: '120px',
-                                borderRadius: '50%',
-                                background: isLightMode ? '#ffffff' : 'rgba(255,255,255,0.03)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                marginBottom: '2rem',
-                                border: `1px solid ${isLightMode ? '#f1f3f5' : 'rgba(255,255,255,0.05)'}`,
-                                boxShadow: isLightMode ? '0 10px 25px rgba(0,0,0,0.05)' : '0 20px 40px rgba(0,0,0,0.2)'
-                            }}>
-                                <FileText size={48} style={{ opacity: 0.3, color: 'var(--primary)' }} />
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+                                <div style={{ width: '46px', height: '46px', borderRadius: '14px', background: 'rgba(var(--primary-rgb), 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
+                                    <Clock size={22} />
+                                </div>
+                                <div>
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.5px' }}>Status</div>
+                                    <div style={{ fontSize: '1.1rem', fontWeight: '800', color: filteredPayslip.status === 'Paid' ? '#10b981' : '#f59e0b', marginTop: '0.15rem' }}>
+                                        {filteredPayslip.status || 'Paid'}
+                                    </div>
+                                </div>
                             </div>
-                            <h3 style={{ fontSize: '1.75rem', fontWeight: '700', color: themeColors.textMain, marginBottom: '1rem' }}>No Data Available</h3>
-                            <p style={{ fontSize: '1.1rem', maxWidth: '400px', lineHeight: '1.6', opacity: 0.7 }}>
-                                We couldn't find any payslip record for **{selectedMonth} {selectedYear}**.
-                                Payslips are typically generated and uploaded during the last week of the month.
-                            </p>
-                            <button
-                                onClick={() => { setSelectedMonth(moment().format('MMMM')); setSelectedYear(moment().year()); }}
-                                className="btn btn-secondary"
-                                style={{ marginTop: '2.5rem', padding: '0.75rem 2rem', borderRadius: '12px' }}
-                            >
-                                Back to Current Month
-                            </button>
+                            {filteredPayslip.status === 'Paid' && (
+                                <>
+                                    <div style={{ width: '1px', background: isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.06)' }}></div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+                                        <div style={{ width: '46px', height: '46px', borderRadius: '14px', background: 'rgba(16, 185, 129, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10b981' }}>
+                                            <Calendar size={22} />
+                                        </div>
+                                        <div>
+                                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.5px' }}>Paid Date</div>
+                                            <div style={{ fontSize: '1.1rem', fontWeight: '700', color: 'var(--text-main)', marginTop: '0.15rem' }}>{moment(filteredPayslip.paidAt || filteredPayslip.updatedAt).format('DD MMM YYYY')}</div>
+                                        </div>
+                                    </div>
+                                    <div style={{ width: '1px', background: isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.06)' }}></div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+                                        <div style={{ width: '46px', height: '46px', borderRadius: '14px', background: 'rgba(168, 85, 247, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#a855f7' }}>
+                                            <Building2 size={22} />
+                                        </div>
+                                        <div>
+                                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.5px' }}>Method</div>
+                                            <div style={{ fontSize: '1.1rem', fontWeight: '700', color: 'var(--text-main)', marginTop: '0.15rem' }}>{filteredPayslip.paymentMethod || 'Bank Transfer'}</div>
+                                        </div>
+                                    </div>
+                                </>
+                            )}
                         </div>
-                    )}
-                </div>
+
+                        {/* Breakdown Grid */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '2rem', marginBottom: '3rem', flex: 1 }}>
+                            {/* Earnings Card */}
+                            <div style={{ background: isLightMode ? '#ffffff' : 'rgba(0,0,0,0.2)', padding: '2rem', borderRadius: '24px', border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.06)'}`, boxShadow: isLightMode ? '0 4px 12px rgba(0,0,0,0.02)' : 'none' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '2rem' }}>
+                                    <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'rgba(var(--primary-rgb), 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <Award size={18} color="var(--primary)" />
+                                    </div>
+                                    <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '800', color: 'var(--primary)', letterSpacing: '0.5px' }}>EARNINGS</h3>
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <span style={{ fontSize: '0.95rem', fontWeight: '600', color: 'var(--text-muted)' }}>Basic Salary</span>
+                                        <span style={{ fontSize: '1.1rem', fontWeight: '700', color: 'var(--text-main)' }}>₹{filteredPayslip.earnings.basicSalary.toLocaleString()}</span>
+                                    </div>
+                                    <div style={{ height: '1px', background: isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.04)' }}></div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <span style={{ fontSize: '0.95rem', fontWeight: '600', color: 'var(--text-muted)' }}>HRA</span>
+                                        <span style={{ fontSize: '1.1rem', fontWeight: '700', color: 'var(--text-main)' }}>₹{filteredPayslip.earnings.hra.toLocaleString()}</span>
+                                    </div>
+                                    {filteredPayslip.earnings.bonus > 0 && (
+                                        <>
+                                            <div style={{ height: '1px', background: isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.04)' }}></div>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <span style={{ fontSize: '0.95rem', fontWeight: '600', color: 'var(--text-muted)' }}>Bonus</span>
+                                                <span style={{ fontSize: '1.1rem', fontWeight: '800', color: 'var(--primary)' }}>₹{filteredPayslip.earnings.bonus.toLocaleString()}</span>
+                                            </div>
+                                        </>
+                                    )}
+                                    {filteredPayslip.earnings.specialAllowance > 0 && (
+                                        <>
+                                            <div style={{ height: '1px', background: isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.04)' }}></div>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <span style={{ fontSize: '0.95rem', fontWeight: '600', color: 'var(--text-muted)' }}>Special Allowance</span>
+                                                <span style={{ fontSize: '1.1rem', fontWeight: '700', color: 'var(--text-main)' }}>₹{filteredPayslip.earnings.specialAllowance.toLocaleString()}</span>
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Deductions Card */}
+                            <div style={{ background: isLightMode ? '#ffffff' : 'rgba(0,0,0,0.2)', padding: '2rem', borderRadius: '24px', border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.06)'}`, boxShadow: isLightMode ? '0 4px 12px rgba(0,0,0,0.02)' : 'none' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '2rem' }}>
+                                    <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'rgba(244, 63, 94, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <Info size={18} color="#f43f5e" />
+                                    </div>
+                                    <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '800', color: '#f43f5e', letterSpacing: '0.5px' }}>DEDUCTIONS</h3>
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <span style={{ fontSize: '0.95rem', fontWeight: '600', color: 'var(--text-muted)' }}>PF (Provident Fund)</span>
+                                        <span style={{ fontSize: '1.1rem', fontWeight: '700', color: '#f43f5e' }}>₹{filteredPayslip.deductions.pf.toLocaleString()}</span>
+                                    </div>
+                                    <div style={{ height: '1px', background: isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.04)' }}></div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <span style={{ fontSize: '0.95rem', fontWeight: '600', color: 'var(--text-muted)' }}>Tax (TDS)</span>
+                                        <span style={{ fontSize: '1.1rem', fontWeight: '700', color: '#f43f5e' }}>₹{filteredPayslip.deductions.tax.toLocaleString()}</span>
+                                    </div>
+                                    {filteredPayslip.deductions.professionalTax > 0 && (
+                                        <>
+                                            <div style={{ height: '1px', background: isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.04)' }}></div>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <span style={{ fontSize: '0.95rem', fontWeight: '600', color: 'var(--text-muted)' }}>Professional Tax</span>
+                                                <span style={{ fontSize: '1.1rem', fontWeight: '700', color: '#f43f5e' }}>₹{filteredPayslip.deductions.professionalTax.toLocaleString()}</span>
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Net Pay Bottom Bar */}
+                        <div style={{
+                            marginTop: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                            background: isLightMode ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.02))' : 'linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(16, 185, 129, 0.05))',
+                            border: `1px solid rgba(16, 185, 129, 0.2)`, padding: '2.5rem', borderRadius: '24px',
+                            boxShadow: '0 8px 32px rgba(16, 185, 129, 0.1)', position: 'relative', overflow: 'hidden'
+                        }}>
+                            <div style={{ position: 'absolute', right: '-20px', top: '-20px', opacity: 0.05, transform: 'rotate(-15deg)' }}>
+                                <CheckCircle2 size={160} color="#10b981" />
+                            </div>
+                            <div style={{ position: 'relative', zIndex: 1 }}>
+                                <div style={{ fontSize: '0.85rem', color: '#10b981', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '0.5rem' }}>Net Payout (Final Amount)</div>
+                                <div style={{ fontSize: '1.1rem', color: 'var(--text-main)', fontWeight: '700', opacity: 0.9 }}>For {selectedMonth} {selectedYear}</div>
+                            </div>
+                            <div style={{ textAlign: 'right', position: 'relative', zIndex: 1 }}>
+                                <div style={{ fontSize: '3.5rem', fontWeight: '900', color: '#10b981', letterSpacing: '-1.5px', lineHeight: '1' }}>
+                                    ₹{filteredPayslip.netPay.toLocaleString()}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                ) : (
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '4rem', textAlign: 'center' }}>
+                        <div style={{
+                            width: '100px', height: '100px', borderRadius: '24px', background: isLightMode ? '#f8fafc' : 'rgba(255,255,255,0.03)',
+                            border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.06)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            marginBottom: '2rem', transform: 'rotate(-5deg)', boxShadow: '0 10px 25px rgba(0,0,0,0.05)'
+                        }}>
+                            <FileText size={40} style={{ color: 'var(--text-muted)', opacity: 0.5 }} />
+                        </div>
+                        <h3 style={{ fontSize: '1.5rem', fontWeight: '800', color: 'var(--text-main)', marginBottom: '1rem' }}>No Payslip Found</h3>
+                        <p style={{ fontSize: '0.95rem', maxWidth: '400px', color: 'var(--text-muted)', lineHeight: '1.6', fontWeight: '500' }}>
+                            We couldn't locate any payslip records for <strong style={{ color: 'var(--text-main)' }}>{selectedMonth} {selectedYear}</strong>. Payslips are typically processed during the last week of the month.
+                        </p>
+                        <button onClick={() => { setSelectedMonth(moment().format('MMMM')); setSelectedYear(moment().year()); }}
+                            className="btn btn-secondary" style={{ marginTop: '2rem', padding: '0.75rem 2rem', borderRadius: '14px', fontWeight: '700' }}>
+                            View Current Month
+                        </button>
+                    </div>
+                )}
             </div>
         );
     };
 
     const bankInputStyle = {
         width: '100%',
-        padding: '0.85rem 1.25rem 0.85rem 3rem',
-        background: isLightMode ? '#f8fafc' : '#0a0a0a',
-        border: `1.5px solid ${isLightMode ? '#e2e8f0' : 'rgba(255, 255, 255, 0.03)'}`,
+        padding: '0.85rem 1.25rem 0.85rem 2.8rem',
+        background: isLightMode ? '#f8fafc' : 'rgba(0,0,0,0.2)',
+        border: `1.5px solid ${isLightMode ? '#e2e8f0' : 'rgba(255, 255, 255, 0.06)'}`,
         borderRadius: '16px',
-        color: isLightMode ? '#1e293b' : '#f8f9fa',
+        color: 'var(--text-main)',
         fontSize: '0.95rem',
+        fontWeight: '500',
         outline: 'none',
-        transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+        transition: 'all 0.3s ease',
         boxSizing: 'border-box',
-        letterSpacing: '0.3px',
-        fontFamily: 'inherit',
-        WebkitBoxShadow: `0 0 0px 1000px ${isLightMode ? '#f8fafc' : '#0a0a0a'} inset`,
-        WebkitTextFillColor: isLightMode ? '#1e293b' : '#f8f9fa'
     };
 
-    const bankInputFocusStyle = {
-        borderColor: 'var(--primary)',
-        background: isLightMode ? '#ffffff' : '#050505',
-        boxShadow: isLightMode
-            ? '0 0 0 4px rgba(59, 130, 246, 0.08), 0 4px 12px rgba(0, 0, 0, 0.02)'
-            : '0 0 0 4px rgba(59, 130, 246, 0.12), 0 8px 24px rgba(0, 0, 0, 0.4)',
-        transform: 'translateY(-2px)'
+    const handleFocus = (e) => {
+        e.target.style.borderColor = 'var(--primary)';
+        e.target.style.background = isLightMode ? '#ffffff' : 'rgba(0,0,0,0.4)';
+        e.target.style.boxShadow = isLightMode ? '0 0 0 4px rgba(var(--primary-rgb), 0.1)' : '0 0 0 4px rgba(var(--primary-rgb), 0.2)';
+    };
+
+    const handleBlur = (e) => {
+        e.target.style.borderColor = isLightMode ? '#e2e8f0' : 'rgba(255, 255, 255, 0.06)';
+        e.target.style.background = isLightMode ? '#f8fafc' : 'rgba(0,0,0,0.2)';
+        e.target.style.boxShadow = 'none';
     };
 
     const renderBankInfo = () => (
         <div style={{ maxWidth: '900px', margin: '0 auto' }}>
-            {/* Header Card */}
+            {/* Header Banner - Retaining the gradient look but making it rounder */}
             <div style={{
-                background: `linear-gradient(135deg, ${isLightMode ? '#6366f1' : '#4f46e5'} 0%, ${isLightMode ? '#8b5cf6' : '#7c3aed'} 100%)`,
-                borderRadius: '20px',
-                padding: '2rem 2.5rem',
-                marginBottom: '1.5rem',
+                background: `linear-gradient(135deg, ${isLightMode ? '#6366f1' : 'rgba(99, 102, 241, 0.8)'} 0%, ${isLightMode ? '#8b5cf6' : 'rgba(139, 92, 246, 0.8)'} 100%)`,
+                borderRadius: '24px',
+                padding: '2.5rem',
+                marginBottom: '2rem',
                 position: 'relative',
-                overflow: 'hidden'
+                overflow: 'hidden',
+                boxShadow: '0 10px 30px rgba(99, 102, 241, 0.2)'
             }}>
-                <div style={{
-                    position: 'absolute', top: '-30px', right: '-20px', width: '120px', height: '120px',
-                    borderRadius: '50%', background: 'rgba(255,255,255,0.08)'
-                }} />
-                <div style={{
-                    position: 'absolute', bottom: '-40px', right: '60px', width: '80px', height: '80px',
-                    borderRadius: '50%', background: 'rgba(255,255,255,0.05)'
-                }} />
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', position: 'relative', zIndex: 1 }}>
+                <div style={{ position: 'absolute', top: '-30px', right: '-20px', width: '150px', height: '150px', borderRadius: '50%', background: 'rgba(255,255,255,0.08)' }} />
+                <div style={{ position: 'absolute', bottom: '-40px', right: '80px', width: '100px', height: '100px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)' }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', position: 'relative', zIndex: 1 }}>
                     <div style={{
-                        width: '48px', height: '48px', borderRadius: '14px',
-                        background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(10px)',
+                        width: '56px', height: '56px', borderRadius: '16px',
+                        background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(10px)',
                         display: 'flex', alignItems: 'center', justifyContent: 'center'
                     }}>
-                        <Building2 size={24} color="#fff" />
+                        <Landmark size={28} color="#ffffff" />
                     </div>
                     <div>
-                        <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: '700', color: '#fff' }}>Bank Account Details</h2>
-                        <p style={{ margin: '0.25rem 0 0', fontSize: '0.85rem', color: 'rgba(255,255,255,0.75)' }}>
-                            Manage your banking & payment information
+                        <h2 style={{ margin: 0, fontSize: '1.6rem', fontWeight: '800', color: '#ffffff', letterSpacing: '-0.5px' }}>Bank Account Details</h2>
+                        <p style={{ margin: '0.4rem 0 0', fontSize: '0.95rem', fontWeight: '500', color: 'rgba(255,255,255,0.85)' }}>
+                            Manage your deposit and UPI information securely.
                         </p>
                     </div>
                 </div>
@@ -398,216 +408,96 @@ const FinancesTab = ({
 
             {message && (
                 <div style={{
-                    padding: '1rem 1.25rem',
-                    borderRadius: '12px',
-                    marginBottom: '1.5rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.75rem',
-                    background: message.type === 'success'
-                        ? (isLightMode ? 'rgba(34, 197, 94, 0.08)' : 'rgba(34, 197, 94, 0.12)')
-                        : (isLightMode ? 'rgba(244, 63, 94, 0.08)' : 'rgba(244, 63, 94, 0.12)'),
-                    color: message.type === 'success' ? '#22c55e' : '#f43f5e',
-                    border: `1px solid ${message.type === 'success' ? 'rgba(34,197,94,0.2)' : 'rgba(244,63,94,0.2)'}`,
-                    fontSize: '0.85rem', fontWeight: '500'
+                    padding: '1.25rem 1.5rem', borderRadius: '16px', marginBottom: '1.5rem',
+                    display: 'flex', alignItems: 'center', gap: '1rem',
+                    background: message.type === 'success' ? (isLightMode ? 'rgba(16, 185, 129, 0.1)' : 'rgba(16, 185, 129, 0.15)') : (isLightMode ? 'rgba(244, 63, 94, 0.1)' : 'rgba(244, 63, 94, 0.15)'),
+                    color: message.type === 'success' ? '#10b981' : '#f43f5e',
+                    border: `1px solid ${message.type === 'success' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(244, 63, 94, 0.2)'}`,
+                    fontSize: '0.9rem', fontWeight: '700', animation: 'fadeIn 0.3s ease-out'
                 }}>
-                    <span style={{ fontSize: '1.1rem' }}>{message.type === 'success' ? '✓' : '✕'}</span>
+                    <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: message.type === 'success' ? 'rgba(16,185,129,0.2)' : 'rgba(244,63,94,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        {message.type === 'success' ? '✓' : '✕'}
+                    </div>
                     {message.text}
                 </div>
             )}
 
             <form onSubmit={handleBankSubmit}>
-                {/* Bank Transfer Section */}
-                <div className="panel" style={{
-                    borderRadius: '16px',
-                    border: `1px solid ${isLightMode ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)'}`,
-                    overflow: 'hidden',
-                    marginBottom: '1.5rem'
-                }}>
-                    <div style={{
-                        padding: '1.25rem 1.75rem',
-                        borderBottom: `1px solid ${isLightMode ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)'}`,
-                        display: 'flex', alignItems: 'center', gap: '0.75rem'
-                    }}>
-                        <div style={{
-                            width: '32px', height: '32px', borderRadius: '8px',
-                            background: isLightMode ? 'rgba(99,102,241,0.1)' : 'rgba(99,102,241,0.15)',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center'
-                        }}>
-                            <FileText size={16} color="var(--primary)" />
+                {/* Bank Transfer Bento */}
+                <div style={{ ...bentoPanelStyle, padding: '2rem', marginBottom: '2rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
+                        <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(var(--primary-rgb), 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <FileText size={20} color="var(--primary)" />
                         </div>
-                        <span style={{ fontSize: '0.95rem', fontWeight: '600', color: 'var(--text-main)' }}>Bank Transfer Details</span>
+                        <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: '800', color: 'var(--text-main)' }}>Bank Transfer Details</h3>
                     </div>
-                    <div style={{ padding: '1.75rem' }}>
-                        <div className="grid" style={{ gridTemplateColumns: '1fr 1fr', rowGap: '1.75rem', columnGap: '2rem' }}>
-                            <BankField label="Account Holder Name" icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>}>
-                                <input
-                                    type="text"
-                                    style={bankInputStyle}
-                                    onFocus={(e) => Object.assign(e.target.style, bankInputFocusStyle)}
-                                    onBlur={(e) => Object.assign(e.target.style, {
-                                        borderColor: isLightMode ? '#e2e8f0' : 'rgba(255, 255, 255, 0.03)',
-                                        boxShadow: 'none',
-                                        background: isLightMode ? '#f8fafc' : '#0a0a0a',
-                                        transform: 'none',
-                                        WebkitBoxShadow: `0 0 0px 1000px ${isLightMode ? '#f8fafc' : '#0a0a0a'} inset`
-                                    })}
-                                    placeholder="Enter full name"
-                                    value={bankData.accountHolderName}
-                                    onChange={(e) => setBankData({ ...bankData, accountHolderName: e.target.value })}
-                                    required
-                                />
-                            </BankField>
-                            <BankField label="Bank Name" icon={<Building2 size={16} />}>
-                                <input
-                                    type="text"
-                                    style={bankInputStyle}
-                                    onFocus={(e) => Object.assign(e.target.style, bankInputFocusStyle)}
-                                    onBlur={(e) => Object.assign(e.target.style, {
-                                        borderColor: isLightMode ? '#e2e8f0' : 'rgba(255, 255, 255, 0.03)',
-                                        boxShadow: 'none',
-                                        background: isLightMode ? '#f8fafc' : '#0a0a0a',
-                                        transform: 'none',
-                                        WebkitBoxShadow: `0 0 0px 1000px ${isLightMode ? '#f8fafc' : '#0a0a0a'} inset`
-                                    })}
-                                    placeholder="e.g., State Bank of India"
-                                    value={bankData.bankName}
-                                    onChange={(e) => setBankData({ ...bankData, bankName: e.target.value })}
-                                    required
-                                />
-                            </BankField>
-                            <BankField label="Account Number" icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="5" width="20" height="14" rx="2" /><line x1="2" y1="10" x2="22" y2="10" /></svg>}>
-                                <input
-                                    type="text"
-                                    inputMode="numeric"
-                                    maxLength="18"
-                                    style={bankInputStyle}
-                                    onFocus={(e) => Object.assign(e.target.style, bankInputFocusStyle)}
-                                    onBlur={(e) => Object.assign(e.target.style, {
-                                        borderColor: isLightMode ? '#e2e8f0' : 'rgba(255, 255, 255, 0.03)',
-                                        boxShadow: 'none',
-                                        background: isLightMode ? '#f8fafc' : '#0a0a0a',
-                                        transform: 'none',
-                                        WebkitBoxShadow: `0 0 0px 1000px ${isLightMode ? '#f8fafc' : '#0a0a0a'} inset`
-                                    })}
-                                    placeholder="Enter account number"
-                                    value={bankData.accountNumber}
-                                    onChange={(e) => setBankData({ ...bankData, accountNumber: e.target.value })}
-                                    required
-                                />
-                            </BankField>
-                            <BankField label="IFSC Code" icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 21V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v16" /><path d="M2 21h20" /><path d="M9 7h6" /><path d="M9 11h6" /><path d="M9 15h6" /></svg>}>
-                                <input
-                                    type="text"
-                                    style={{ ...bankInputStyle, textTransform: 'uppercase', letterSpacing: '1px', fontFamily: 'monospace' }}
-                                    onFocus={(e) => Object.assign(e.target.style, bankInputFocusStyle)}
-                                    onBlur={(e) => Object.assign(e.target.style, {
-                                        borderColor: isLightMode ? '#e2e8f0' : 'rgba(255, 255, 255, 0.03)',
-                                        boxShadow: 'none',
-                                        background: isLightMode ? '#f8fafc' : '#0a0a0a',
-                                        transform: 'none',
-                                        WebkitBoxShadow: `0 0 0px 1000px ${isLightMode ? '#f8fafc' : '#0a0a0a'} inset`
-                                    })}
-                                    placeholder="e.g., SBIN0001234"
-                                    value={bankData.ifscCode}
-                                    onChange={(e) => setBankData({ ...bankData, ifscCode: e.target.value.toUpperCase() })}
-                                    required
-                                />
-                            </BankField>
-                            <BankField label="Branch Name" icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>}>
-                                <input
-                                    type="text"
-                                    style={bankInputStyle}
-                                    onFocus={(e) => Object.assign(e.target.style, bankInputFocusStyle)}
-                                    onBlur={(e) => Object.assign(e.target.style, {
-                                        borderColor: isLightMode ? '#e2e8f0' : 'rgba(255, 255, 255, 0.03)',
-                                        boxShadow: 'none',
-                                        background: isLightMode ? '#f8fafc' : '#0a0a0a',
-                                        transform: 'none',
-                                        WebkitBoxShadow: `0 0 0px 1000px ${isLightMode ? '#f8fafc' : '#0a0a0a'} inset`
-                                    })}
-                                    placeholder="Enter branch name"
-                                    value={bankData.branchName}
-                                    onChange={(e) => setBankData({ ...bankData, branchName: e.target.value })}
-                                />
-                            </BankField>
-                        </div>
-                    </div>
-                </div>
 
-                {/* UPI Section */}
-                <div className="panel" style={{
-                    borderRadius: '16px',
-                    border: `1px solid ${isLightMode ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)'}`,
-                    overflow: 'hidden',
-                    marginBottom: '2rem'
-                }}>
-                    <div style={{
-                        padding: '1.25rem 1.75rem',
-                        borderBottom: `1px solid ${isLightMode ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)'}`,
-                        display: 'flex', alignItems: 'center', gap: '0.75rem'
-                    }}>
-                        <div style={{
-                            width: '32px', height: '32px', borderRadius: '8px',
-                            background: isLightMode ? 'rgba(16,185,129,0.1)' : 'rgba(16,185,129,0.15)',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center'
-                        }}>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>
-                        </div>
-                        <span style={{ fontSize: '0.95rem', fontWeight: '600', color: 'var(--text-main)' }}>UPI Payment</span>
-                        <span style={{
-                            fontSize: '0.65rem', fontWeight: '600', padding: '0.2rem 0.6rem',
-                            borderRadius: '20px', background: 'rgba(16,185,129,0.12)', color: '#10b981',
-                            textTransform: 'uppercase', letterSpacing: '0.5px', marginLeft: 'auto'
-                        }}>Instant</span>
-                    </div>
-                    <div style={{ padding: '1.75rem' }}>
-                        <BankField label="UPI ID" icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="4" /><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-3.92 7.94" /></svg>}>
-                            <input
-                                type="text"
-                                style={{ ...bankInputStyle, maxWidth: '420px' }}
-                                onFocus={(e) => Object.assign(e.target.style, bankInputFocusStyle)}
-                                onBlur={(e) => Object.assign(e.target.style, {
-                                    borderColor: isLightMode ? '#e2e8f0' : 'rgba(255, 255, 255, 0.03)',
-                                    boxShadow: 'none',
-                                    background: isLightMode ? '#f8fafc' : '#0a0a0a',
-                                    transform: 'none',
-                                    WebkitBoxShadow: `0 0 0px 1000px ${isLightMode ? '#f8fafc' : '#0a0a0a'} inset`
-                                })}
-                                placeholder="yourname@upi"
-                                value={bankData.upiId}
-                                onChange={(e) => setBankData({ ...bankData, upiId: e.target.value })}
-                                required
-                            />
+                    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', rowGap: '2rem', columnGap: '2.5rem' }}>
+                        <BankField label="Account Holder Name" icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>}>
+                            <input type="text" style={bankInputStyle} onFocus={handleFocus} onBlur={handleBlur} placeholder="Enter full name" value={bankData.accountHolderName} onChange={(e) => setBankData({ ...bankData, accountHolderName: e.target.value })} required />
+                        </BankField>
+                        <BankField label="Bank Name" icon={<Building2 size={18} />}>
+                            <input type="text" style={bankInputStyle} onFocus={handleFocus} onBlur={handleBlur} placeholder="e.g., State Bank of India" value={bankData.bankName} onChange={(e) => setBankData({ ...bankData, bankName: e.target.value })} required />
+                        </BankField>
+                        <BankField label="Account Number" icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="5" width="20" height="14" rx="2" /><line x1="2" y1="10" x2="22" y2="10" /></svg>}>
+                            <input type="text" inputMode="numeric" maxLength="18" style={bankInputStyle} onFocus={handleFocus} onBlur={handleBlur} placeholder="Enter account number" value={bankData.accountNumber} onChange={(e) => setBankData({ ...bankData, accountNumber: e.target.value })} required />
+                        </BankField>
+                        <BankField label="IFSC Code" icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 21V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v16" /><path d="M2 21h20" /><path d="M9 7h6" /><path d="M9 11h6" /><path d="M9 15h6" /></svg>}>
+                            <input type="text" style={{ ...bankInputStyle, textTransform: 'uppercase', letterSpacing: '1px', fontFamily: 'monospace' }} onFocus={handleFocus} onBlur={handleBlur} placeholder="e.g., SBIN0001234" value={bankData.ifscCode} onChange={(e) => setBankData({ ...bankData, ifscCode: e.target.value.toUpperCase() })} required />
+                        </BankField>
+                        <BankField label="Branch Name" icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>}>
+                            <input type="text" style={bankInputStyle} onFocus={handleFocus} onBlur={handleBlur} placeholder="Enter branch name" value={bankData.branchName} onChange={(e) => setBankData({ ...bankData, branchName: e.target.value })} />
                         </BankField>
                     </div>
                 </div>
 
-                {/* Submit */}
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+                {/* UPI Bento */}
+                <div style={{ ...bentoPanelStyle, padding: '2rem', marginBottom: '2.5rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
+                        <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(16, 185, 129, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <Smartphone size={20} color="#10b981" />
+                        </div>
+                        <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: '800', color: 'var(--text-main)' }}>UPI Payment</h3>
+                        <div style={{ marginLeft: 'auto', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '0.4rem 0.8rem', borderRadius: '12px', fontSize: '0.75rem', fontWeight: '800', letterSpacing: '1px', textTransform: 'uppercase' }}>
+                            Instant
+                        </div>
+                    </div>
+
+                    <div style={{ maxWidth: '400px' }}>
+                        <BankField label="UPI ID" icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="4" /><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-3.92 7.94" /></svg>}>
+                            <input type="text" style={bankInputStyle} onFocus={handleFocus} onBlur={handleBlur} placeholder="yourname@upi" value={bankData.upiId} onChange={(e) => setBankData({ ...bankData, upiId: e.target.value })} required />
+                        </BankField>
+                    </div>
+                </div>
+
+                {/* Submit Action */}
+                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                     <button type="submit" className="btn btn-primary" disabled={loading} style={{
-                        padding: '0.75rem 2rem',
-                        borderRadius: '12px',
-                        fontSize: '0.9rem',
-                        fontWeight: '600',
-                        display: 'flex', alignItems: 'center', gap: '0.5rem',
-                        boxShadow: '0 4px 15px rgba(var(--primary-rgb, 99, 102, 241), 0.3)',
-                        transition: 'all 0.3s ease'
-                    }}>
+                        padding: '1rem 2.5rem', borderRadius: '16px', fontSize: '1rem', fontWeight: '700',
+                        display: 'flex', alignItems: 'center', gap: '0.6rem', boxShadow: '0 8px 24px rgba(var(--primary-rgb), 0.3)',
+                        transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
+                    }} onMouseOver={e => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseOut={e => e.currentTarget.style.transform = 'translateY(0)'}>
                         {loading ? (
                             <>
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ animation: 'spin 1s linear infinite' }}><path d="M21 12a9 9 0 11-6.219-8.56" /></svg>
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ animation: 'spin 1s linear infinite' }}><path d="M21 12a9 9 0 11-6.219-8.56" /></svg>
                                 Saving...
                             </>
                         ) : (
                             <>
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" /><polyline points="17 21 17 13 7 13 7 21" /><polyline points="7 3 7 8 15 8" /></svg>
-                                Save Bank Details
+                                <ShieldCheck size={20} />
+                                Save Details
                             </>
                         )}
                     </button>
                 </div>
             </form>
+
+            <style>{`
+                @keyframes fadeIn {
+                    from { opacity: 0; transform: translateY(-5px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+            `}</style>
         </div>
     );
 
@@ -617,7 +507,7 @@ const FinancesTab = ({
                 <div className={`sub-nav-item ${activeSubTab === 'Payslips' ? 'active' : ''}`} onClick={() => setActiveSubTab('Payslips')}>PAYSLIPS</div>
                 <div className={`sub-nav-item ${activeSubTab === 'Bank' ? 'active' : ''}`} onClick={() => setActiveSubTab('Bank')}>BANK INFO</div>
             </div>
-            <div className="page-content">
+            <div className="page-content" style={{ marginTop: '1rem' }}>
                 {activeSubTab === 'Payslips' ? renderPayslips() : renderBankInfo()}
             </div>
         </>
