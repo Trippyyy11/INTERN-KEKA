@@ -25,8 +25,14 @@ const AdminTab = ({
     setModalTab,
     handleShowAttendance
 }) => {
+    const [filterType, setFilterType] = React.useState('All');
+    
     // Filter out pending users for the active employees list
     const pagedUsers = allUsers.filter(u => u.status !== 'Pending');
+
+    const filteredConfigs = filterType === 'All'
+        ? orgConfigs
+        : orgConfigs.filter(c => c.type === filterType);
 
     return (
         <>
@@ -238,16 +244,42 @@ const AdminTab = ({
                         </form>
                     </div>
                     <div className="panel">
-                        <div className="panel-header">Existing Configurations</div>
+                        <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                            <span>Existing Configurations</span>
+                            <div style={{ display: 'flex', gap: '0.5rem', background: 'rgba(255,255,255,0.05)', padding: '0.3rem', borderRadius: '10px', border: '1px solid var(--border-dark)' }}>
+                                {['All', 'Department', 'Designation', 'Holiday'].map(type => (
+                                    <button
+                                        key={type}
+                                        onClick={() => setFilterType(type)}
+                                        style={{
+                                            padding: '0.4rem 0.8rem',
+                                            fontSize: '0.75rem',
+                                            fontWeight: '600',
+                                            borderRadius: '8px',
+                                            background: filterType === type ? 'var(--primary)' : 'transparent',
+                                            color: filterType === type ? 'white' : 'var(--text-muted)',
+                                            transition: 'all 0.2s ease'
+                                        }}
+                                    >
+                                        {type}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
                         <table className="data-table">
                             <thead><tr><th>TYPE</th><th>NAME</th><th>DATE</th><th></th></tr></thead>
                             <tbody>
-                                {orgConfigs.map(c => (
+                                {filteredConfigs.map(c => (
                                     <tr key={c._id}>
                                         <td>{c.type}</td><td>{c.name}</td><td>{c.date ? new Date(c.date).toLocaleDateString() : '-'}</td>
                                         <td><button className="btn btn-sm btn-danger" onClick={() => handleDeleteConfig(c._id)}>Delete</button></td>
                                     </tr>
                                 ))}
+                                {filteredConfigs.length === 0 && (
+                                    <tr>
+                                        <td colSpan="4" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>No configurations found for this filter.</td>
+                                    </tr>
+                                )}
                             </tbody>
                         </table>
                     </div>
