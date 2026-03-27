@@ -125,7 +125,7 @@ const ContextMenu = ({ x, y, node, onClose, onAction, allUsers, canEdit }) => {
     );
 };
 
-export default function OrganizationTree({ user: currentUser }) {
+export default function OrganizationTree({ user: currentUser, isLightMode }) {
     const [users, setUsers] = useState([]);
     const [nodes, setNodes] = useState([]);
     const [edges, setEdges] = useState([]);
@@ -148,6 +148,11 @@ export default function OrganizationTree({ user: currentUser }) {
 
     useEffect(() => { fetchUsers(); }, []);
 
+    // Also re-process hierarchy when theme changes to update node data
+    useEffect(() => {
+        if (users.length > 0) processHierarchy(users);
+    }, [isLightMode]);
+
     const processHierarchy = (allUsers) => {
         const initialNodes = [];
         const initialEdges = [];
@@ -161,7 +166,7 @@ export default function OrganizationTree({ user: currentUser }) {
             initialNodes.push({
                 id: user._id,
                 type: 'custom',
-                data: { ...user },
+                data: { ...user, isLightMode }, // Pass theme to custom node
                 position: { x: 0, y: 0 }
             });
 
@@ -176,8 +181,15 @@ export default function OrganizationTree({ user: currentUser }) {
                     target: user._id,
                     type: 'smoothstep',
                     animated: true,
-                    style: { stroke: isManagerEntry ? '#ffab00' : '#00ffa2', strokeWidth: 2, opacity: 0.6 },
-                    markerEnd: { type: MarkerType.ArrowClosed, color: isManagerEntry ? '#ffab00' : '#00ffa2' }
+                    style: { 
+                        stroke: isManagerEntry ? '#ffab00' : '#00ffa2', 
+                        strokeWidth: 2, 
+                        opacity: isLightMode ? 0.8 : 0.6 
+                    },
+                    markerEnd: { 
+                        type: MarkerType.ArrowClosed, 
+                        color: isManagerEntry ? '#ffab00' : '#00ffa2' 
+                    }
                 });
             }
         });
@@ -284,7 +296,15 @@ export default function OrganizationTree({ user: currentUser }) {
 
     return (
         <div style={{ display: 'flex', height: '100%', width: '100%', gap: '1rem' }} ref={reactFlowWrapper}>
-            <div style={{ width: '280px', background: 'var(--bg-panel)', padding: '1.5rem', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ 
+                width: '280px', 
+                background: isLightMode ? 'rgba(255,255,255,0.7)' : 'rgba(15, 23, 42, 0.5)',
+                backdropFilter: 'blur(16px)',
+                padding: '1.5rem', 
+                borderRadius: '24px', 
+                border: `1px solid ${isLightMode ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.05)'}`, 
+                display: 'flex', flexDirection: 'column' 
+            }}>
                 <h3 style={{ color: 'var(--text-main)', marginBottom: '0.5rem', fontSize: '1.1rem', fontWeight: '800' }}>Directory</h3>
                 <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '1.5rem', lineHeight: '1.5' }}>
                     {canEdit ? "All users are shown on the tree. Use the right-click menu or drag between nodes to manage reporting." : "Overview of the organization structure."}
@@ -292,7 +312,13 @@ export default function OrganizationTree({ user: currentUser }) {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', overflowY: 'auto', flex: 1 }}>
                     {unassignedUsers.map((u) => (
                         <div key={u._id}
-                            style={{ padding: '1rem', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '12px', color: 'var(--text-main)' }}>
+                            style={{ 
+                                padding: '1rem', 
+                                background: isLightMode ? '#fff' : 'rgba(255,255,255,0.03)', 
+                                border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.05)'}`, 
+                                borderRadius: '12px', color: 'var(--text-main)',
+                                boxShadow: isLightMode ? '0 2px 8px rgba(0,0,0,0.02)' : 'none'
+                            }}>
                             <div style={{ fontWeight: '700', fontSize: '0.85rem' }}>{u.name}</div>
                             <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '2px' }}>{u.designation || u.role}</div>
                             <div style={{ fontSize: '0.6rem', color: 'var(--primary)', marginTop: '4px', fontWeight: 'bold' }}>UNASSIGNED</div>
@@ -302,19 +328,34 @@ export default function OrganizationTree({ user: currentUser }) {
                 </div>
             </div>
 
-            <div style={{ flex: 1, background: '#0a0e17', borderRadius: '24px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.05)', position: 'relative' }}>
+            <div style={{ 
+                flex: 1, 
+                background: isLightMode ? '#f8fafc' : '#0a0e17', 
+                borderRadius: '24px', 
+                overflow: 'hidden', 
+                border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.05)'}`, 
+                position: 'relative' 
+            }}>
                 <ReactFlow
                     nodes={nodes} edges={edges}
                     onNodesChange={onNodesChange} onEdgesChange={onEdgesChange}
                     onConnect={onConnect} nodeTypes={nodeTypes}
                     onNodeContextMenu={onNodeContextMenu} onPaneClick={onPaneClick}
-                    fitView colorMode="dark"
+                    fitView colorMode={isLightMode ? 'light' : 'dark'}
                     nodesDraggable={canEdit}
                     elementsSelectable={canEdit}
                     panOnDrag={true}
                 >
-                    <Background variant="lines" gap={50} size={1} color="rgba(255,255,255,0.02)" />
-                    <Controls style={{ background: 'var(--bg-panel)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '8px' }} />
+                    <Background 
+                        variant="lines" gap={50} size={1} 
+                        color={isLightMode ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.02)"} 
+                    />
+                    <Controls style={{ 
+                        background: isLightMode ? '#fff' : 'var(--bg-panel)', 
+                        border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.05)'}`, 
+                        borderRadius: '8px',
+                        color: 'var(--text-main)'
+                    }} />
                     <Panel position="top-right">
                         <button className="btn btn-primary" onClick={onLayout} style={{ borderRadius: '12px', padding: '0.6rem 1.2rem', fontWeight: '700', boxShadow: '0 4px 12px rgba(var(--primary-rgb), 0.3)' }}>Auto Arrange</button>
                     </Panel>

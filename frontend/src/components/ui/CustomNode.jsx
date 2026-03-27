@@ -2,16 +2,21 @@ import React, { memo } from 'react';
 import { Handle, Position } from '@xyflow/react';
 
 const CustomNode = ({ data }) => {
+    const { isLightMode } = data;
     const isManager = data.role === 'Admin' || data.role === 'Super Admin';
 
     return (
         <div style={{
             padding: '12px 16px',
             borderRadius: '16px',
-            background: isManager ? 'rgba(255, 171, 0, 0.1)' : 'rgba(0, 255, 162, 0.05)',
+            background: isLightMode 
+                ? (isManager ? 'rgba(255, 171, 0, 0.15)' : 'rgba(0, 255, 162, 0.1)') 
+                : (isManager ? 'rgba(255, 171, 0, 0.1)' : 'rgba(0, 255, 162, 0.05)'),
             backdropFilter: 'blur(12px)',
             border: `1.5px solid ${isManager ? '#ffab00' : '#00ffa2'}`,
-            boxShadow: `0 8px 32px rgba(0, 0, 0, 0.2), inset 0 0 0 1px rgba(255, 255, 255, 0.05)`,
+            boxShadow: isLightMode 
+                ? `0 4px 20px rgba(0,0,0,0.05)` 
+                : `0 8px 32px rgba(0, 0, 0, 0.2), inset 0 0 0 1px rgba(255, 255, 255, 0.05)`,
             color: 'var(--text-main)',
             width: '220px',
             transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',

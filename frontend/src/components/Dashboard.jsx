@@ -1204,7 +1204,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
                         <div className={`sub-nav-item active`}>ORGANIZATION TREE</div>
                     </div>
                     <div style={{ height: 'calc(100vh - 200px)' }}>
-                        <OrganizationTree user={user} />
+                        <OrganizationTree user={user} isLightMode={isLightMode} />
                     </div>
                 </div>
             );

@@ -177,104 +177,123 @@ const MyTeamTab = ({
             };
         });
 
+        const isToday = (dayNum) => currentMonth.isSame(moment(), 'month') && dayNum === moment().date();
+
+        const statusColors = {
+            present: '#22c33e', // Professional Teal
+            sick: '#3d0707', // Deep Blue (User's choice)
+            paidCasual: '#0f8b94', // Violet/Purple
+            unpaid: '#300f94', // Light Purple
+            wfh: '#ffa5ae', // Light Teal
+            holiday: '#ffe030', // Indigo/Blue
+            weekOff: '#121212', // Sublte Off-white
+            //absent: '#f4654fff', // Slate Gray
+        };
+
+        const getStatusForCell = (member, dateStr, dayNameLong, isWeekend, isPastOrToday) => {
+            const leave = leaves.find(l => l.user?._id === member._id && moment(l.startDate).isSameOrBefore(dateStr, 'day') && moment(l.endDate).isSameOrAfter(dateStr, 'day'));
+            if (leave) {
+                if (leave.type === 'Sick') return { color: statusColors.sick, label: 'S', tooltip: 'Sick Leave' };
+                if (leave.type === 'Paid' || leave.type === 'Casual') return { color: statusColors.paidCasual, label: 'L', tooltip: `${leave.type} Leave` };
+                return { color: statusColors.unpaid, label: 'U', tooltip: 'Unpaid Leave' };
+            }
+            const att = attendance.find(a => a.user === member._id && moment(a.date).isSame(dateStr, 'day'));
+            if (att && (att.status === 'WFH' || att.workingMode === 'Remote')) return { color: statusColors.wfh, label: 'W', tooltip: 'Work From Home' };
+            if (isPastOrToday) {
+                const holiday = holidays.find(hol => moment(hol.date).isSame(dateStr, 'day'));
+                if (holiday) return { color: statusColors.holiday, label: 'H', tooltip: holiday.name };
+                const userWeekOffs = (member.workingSchedule?.weekOffs?.length > 0) ? member.workingSchedule.weekOffs : ['Sunday'];
+                if (userWeekOffs.includes(dayNameLong)) return { color: statusColors.weekOff, label: '', tooltip: 'Week Off' };
+                if (att && att.status === 'Present') return { color: statusColors.present, label: 'P', tooltip: 'Present' };
+                if (!isWeekend) return { color: statusColors.absent, label: 'A', tooltip: 'No Attendance' };
+            }
+            return null;
+        };
+
         return (
             <div style={{ ...bentoPanelStyle, padding: '2rem' }}>
+                {/* Header */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                         <div style={{
                             width: '42px', height: '42px', borderRadius: '14px',
                             background: 'linear-gradient(135deg, rgba(var(--primary-rgb), 0.15), rgba(var(--primary-rgb), 0.05))',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            color: 'var(--primary)',
-                            boxShadow: '0 4px 12px rgba(var(--primary-rgb), 0.15)'
+                            color: 'var(--primary)'
                         }}>
                             <CalendarIcon size={20} />
                         </div>
                         <div>
-                            <h2 style={{ margin: 0, fontSize: '1.2rem', fontWeight: '800', color: 'var(--text-main)', letterSpacing: '-0.3px' }}>Team Calendar</h2>
-                            <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '500', marginTop: '0.15rem' }}>Monthly view of team availability and presence</p>
+                            <h2 style={{ margin: 0, fontSize: '1.15rem', fontWeight: '800', color: 'var(--text-main)', letterSpacing: '-0.3px' }}>Team Calendar</h2>
+                            <p style={{ margin: 0, fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: '500', marginTop: '2px' }}>Monthly availability · {currentMonth.format('MMMM YYYY')}</p>
                         </div>
                     </div>
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: isLightMode ? '#f8fafc' : 'rgba(0,0,0,0.2)', padding: '0.4rem', borderRadius: '12px', border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.06)'}` }}>
-                        <button style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center' }} onClick={handlePrevMonth}><ChevronLeft size={16} /></button>
-                        <span style={{ fontSize: '0.85rem', fontWeight: '700', minWidth: '90px', textAlign: 'center', color: 'var(--text-main)' }}>
-                            {currentMonth.format('MMMM YYYY')}
-                        </span>
-                        <button style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center' }} onClick={handleNextMonth}><ChevronRight size={16} /></button>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', background: isLightMode ? '#f8fafc' : 'rgba(0,0,0,0.2)', padding: '0.35rem', borderRadius: '12px', border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.06)'}` }}>
+                        <button style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '4px', borderRadius: '6px' }} onClick={handlePrevMonth}><ChevronLeft size={16} /></button>
+                        <span style={{ fontSize: '0.85rem', fontWeight: '700', minWidth: '110px', textAlign: 'center', color: 'var(--text-main)' }}>{currentMonth.format('MMMM YYYY')}</span>
+                        <button style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '4px', borderRadius: '6px' }} onClick={handleNextMonth}><ChevronRight size={16} /></button>
                     </div>
                 </div>
 
-                <div style={{ overflowX: 'auto', paddingBottom: '1rem' }}>
-                    <div style={{ minWidth: `${220 + daysInMonth * 28}px` }}>
-                        {/* Headers */}
-                        <div style={{ display: 'flex', marginBottom: '1.5rem', background: isLightMode ? 'rgba(0,0,0,0.02)' : 'rgba(255,255,255,0.02)', borderRadius: '12px', padding: '0.5rem 0' }}>
-                            <div style={{ width: '220px', paddingLeft: '1rem', fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center' }}>Team Member</div>
+                {/* Grid */}
+                <div style={{ overflowX: 'auto', marginBottom: '1.5rem' }}>
+                    <div style={{ minWidth: `${180 + daysInMonth * 30}px` }}>
+                        {/* Day Headers */}
+                        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '0.75rem' }}>
+                            <div style={{ width: '180px', flexShrink: 0 }}></div>
                             <div style={{ flex: 1, display: 'flex' }}>
                                 {dayHeaders.map((h, i) => (
-                                    <div key={i} style={{ flex: 1, textAlign: 'center', minWidth: '28px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-                                        <span style={{ fontSize: '0.65rem', fontWeight: '700', color: h.isWeekend ? 'var(--text-muted)' : 'var(--text-main)', opacity: h.isWeekend ? 0.5 : 1 }}>{h.dayName}</span>
-                                        <span style={{ fontSize: '0.75rem', fontWeight: currentMonth.isSame(moment(), 'month') && h.dayNum === moment().date() ? '800' : '600', color: currentMonth.isSame(moment(), 'month') && h.dayNum === moment().date() ? 'var(--primary)' : (h.isWeekend ? 'var(--text-muted)' : 'var(--text-main)') }}>{h.dayNum}</span>
+                                    <div key={i} style={{ flex: 1, textAlign: 'center', minWidth: '30px' }}>
+                                        <div style={{ fontSize: '0.6rem', fontWeight: '600', color: 'var(--text-muted)', opacity: h.isWeekend ? 0.4 : 0.7 }}>{h.dayName}</div>
+                                        <div style={{
+                                            fontSize: '0.75rem', fontWeight: isToday(h.dayNum) ? '800' : '600',
+                                            color: isToday(h.dayNum) ? 'white' : (h.isWeekend ? 'var(--text-muted)' : 'var(--text-main)'),
+                                            width: '22px', height: '22px', borderRadius: '50%', margin: '2px auto 0',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            background: isToday(h.dayNum) ? 'var(--primary)' : 'transparent'
+                                        }}>{h.dayNum}</div>
                                     </div>
                                 ))}
                             </div>
                         </div>
 
-                        {/* Team Rows */}
+                        {/* Rows */}
                         {teamMembers.map((member) => (
-                            <div key={member._id} style={{ display: 'flex', alignItems: 'center', marginBottom: '0.85rem', padding: '0.5rem', borderRadius: '12px', transition: 'background 0.2s' }} onMouseOver={e => e.currentTarget.style.background = isLightMode ? 'rgba(0,0,0,0.02)' : 'rgba(255,255,255,0.02)'} onMouseOut={e => e.currentTarget.style.background = 'transparent'}>
-                                <div style={{ width: '220px', display: 'flex', alignItems: 'center', gap: '0.85rem', paddingLeft: '0.5rem' }}>
+                            <div key={member._id} style={{
+                                display: 'flex', alignItems: 'center', padding: '0.6rem 0',
+                                borderTop: `1px solid ${isLightMode ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.04)'}`
+                            }}>
+                                <div style={{ width: '180px', flexShrink: 0, display: 'flex', alignItems: 'center', gap: '0.65rem', paddingLeft: '0.25rem' }}>
                                     <div style={{
-                                        width: '32px', height: '32px', borderRadius: '10px', fontSize: '0.75rem', fontWeight: '800', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', overflow: 'hidden',
-                                        background: member.avatar ? 'transparent' : 'linear-gradient(135deg, var(--primary), rgba(var(--primary-rgb), 0.7))',
+                                        width: '30px', height: '30px', borderRadius: '10px', fontSize: '0.7rem', fontWeight: '800',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', overflow: 'hidden', flexShrink: 0,
+                                        background: member.avatar ? 'transparent' : 'linear-gradient(135deg, var(--primary), rgba(var(--primary-rgb), 0.6))',
                                     }}>
                                         {member.avatar ? <img src={member.avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : member.name.substring(0, 2).toUpperCase()}
                                     </div>
-                                    <span style={{ fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{member.name}</span>
+                                    <span style={{ fontSize: '0.82rem', fontWeight: '600', color: 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{member.name}</span>
                                 </div>
                                 <div style={{ flex: 1, display: 'flex' }}>
                                     {dayHeaders.map(h => {
-                                        let dotColor = 'transparent';
-                                        let tooltip = null;
                                         const dateStr = h.fullDate;
                                         const dayNameLong = moment(dateStr).format('dddd');
                                         const isPastOrToday = moment(dateStr).isSameOrBefore(moment(), 'day');
-
-                                        const leave = leaves.find(l => l.user?._id === member._id && moment(l.startDate).isSameOrBefore(dateStr, 'day') && moment(l.endDate).isSameOrAfter(dateStr, 'day'));
-                                        if (leave) {
-                                            if (leave.type === 'Paid' || leave.type === 'Casual') dotColor = '#06b6d4'; // Cyan
-                                            else if (leave.type === 'Sick') dotColor = '#f43f5e'; // Pink
-                                            else dotColor = '#f59e0b'; // Amber/Unpaid
-                                        } else {
-                                            const att = attendance.find(a => a.user === member._id && moment(a.date).isSame(dateStr, 'day'));
-                                            if (att && (att.status === 'WFH' || att.workingMode === 'Remote')) {
-                                                dotColor = '#a855f7'; // Purple
-                                            } else if (isPastOrToday) {
-                                                const holiday = holidays.find(hol => moment(hol.date).isSame(dateStr, 'day'));
-                                                if (holiday) {
-                                                    dotColor = '#3b82f6'; // Blue
-                                                    tooltip = holiday.name;
-                                                } else {
-                                                    const userWeekOffs = (member.workingSchedule?.weekOffs && member.workingSchedule.weekOffs.length > 0)
-                                                        ? member.workingSchedule.weekOffs : ['Sunday'];
-                                                    if (userWeekOffs.includes(dayNameLong)) {
-                                                        dotColor = '#94a3b8'; // Slate
-                                                    } else if (att && att.status === 'Present') {
-                                                        dotColor = '#22c55e'; // Green
-                                                    } else if (!h.isWeekend) {
-                                                        dotColor = '#ef4444'; // Red (Absent/No Atte)
-                                                    }
-                                                }
-                                            }
-                                        }
+                                        const status = getStatusForCell(member, dateStr, dayNameLong, h.isWeekend, isPastOrToday);
 
                                         return (
-                                            <div key={h.dayNum} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '28px' }} title={tooltip || ''}>
-                                                {dotColor !== 'transparent' && (
+                                            <div key={h.dayNum} title={status?.tooltip || ''} style={{
+                                                flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '30px', height: '30px'
+                                            }}>
+                                                {status && (
                                                     <div style={{
-                                                        width: '10px', height: '10px', borderRadius: '50%', background: dotColor,
-                                                        boxShadow: `0 0 8px ${dotColor}60`
-                                                    }}></div>
+                                                        width: '10px', height: '10px', borderRadius: '50%',
+                                                        background: status.color,
+                                                        boxShadow: `0 0 6px ${status.color}50`,
+                                                        transition: 'transform 0.15s',
+                                                    }}
+                                                        onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.4)'}
+                                                        onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                                                    ></div>
                                                 )}
                                             </div>
                                         );
@@ -286,22 +305,20 @@ const MyTeamTab = ({
                 </div>
 
                 {/* Legend */}
-                <div style={{
-                    display: 'flex', flexWrap: 'wrap', gap: '1.25rem', marginTop: '2rem', padding: '1rem',
-                    background: isLightMode ? '#f8fafc' : 'rgba(0,0,0,0.15)', borderRadius: '16px', border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.04)'}`
-                }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.25rem', paddingTop: '1rem', borderTop: `1px solid ${isLightMode ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)'}` }}>
                     {[
-                        { label: 'Work from home', color: '#a855f7' },
-                        { label: 'Present', color: '#22c55e' },
-                        { label: 'Paid/Casual Leave', color: '#06b6d4' },
-                        { label: 'Sick Leave', color: '#f43f5e' },
-                        { label: 'Unpaid Leave', color: '#f59e0b' },
-                        { label: 'No Attendance', color: '#ef4444' },
-                        { label: 'Weekly off', color: '#94a3b8' },
-                        { label: 'Holiday', color: '#3b82f6' }
+                        { label: 'Present', color: statusColors.present },
+                        { label: 'Sick Leave', color: statusColors.sick },
+                        { label: 'Paid/Casual Leave', color: statusColors.paidCasual },
+                        { label: 'WFH', color: statusColors.wfh },
+                        { label: 'Unpaid Leave', color: statusColors.unpaid },
+                        { label: 'Absent', color: statusColors.absent },
+                        { label: 'Holiday', color: statusColors.holiday },
+                        { label: 'Week Off', color: statusColors.weekOff },
                     ].map(l => (
-                        <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', fontWeight: '600', color: 'var(--text-muted)' }}>
-                            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: l.color }}></div> {l.label}
+                        <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.72rem', fontWeight: '600', color: 'var(--text-muted)' }}>
+                            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: l.color }}></div>
+                            {l.label}
                         </div>
                     ))}
                 </div>

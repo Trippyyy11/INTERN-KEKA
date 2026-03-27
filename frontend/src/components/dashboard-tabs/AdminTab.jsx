@@ -345,8 +345,17 @@ const AdminTab = ({
                             ))}
                         </div>
                     ) : (
-                        <div style={{ padding: '5rem 2rem', textAlign: 'center' }}>
-                            <SectionHeader icon={<CheckCircle2 size={48} color="#10b981" />} title="All caught up!" subtitle="No pending approval requests at the moment." />
+                        <div style={{ padding: '6rem 2rem', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                            <div style={{ 
+                                width: '64px', height: '64px', borderRadius: '20px', 
+                                background: 'rgba(16, 185, 129, 0.1)', color: '#10b981',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                marginBottom: '1.25rem'
+                            }}>
+                                <CheckCircle2 size={32} />
+                            </div>
+                            <h3 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '900', color: 'var(--text-main)', letterSpacing: '-0.3px' }}>All caught up!</h3>
+                            <p style={{ margin: '0.4rem 0 0', fontSize: '0.9rem', fontWeight: '500', color: 'var(--text-muted)' }}>No pending approval requests at the moment.</p>
                         </div>
                     )}
                 </div>
