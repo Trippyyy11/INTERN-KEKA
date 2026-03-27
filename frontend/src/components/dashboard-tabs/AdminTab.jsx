@@ -18,8 +18,43 @@ import {
     Layers,
     Heart,
     Briefcase,
-    Sparkles
+    Sparkles,
+    ChevronDown
 } from 'lucide-react';
+
+/* ======= HELPER COMPONENTS (Moved outside to prevent remounting) ======= */
+const InputField = ({ label, children, isLightMode }) => (
+    <div>
+        <label style={{ 
+            display: 'block', fontSize: '0.7rem', fontWeight: '800', 
+            color: isLightMode ? '#64748b' : 'rgba(148,163,184,0.8)', 
+            marginBottom: '0.55rem', textTransform: 'uppercase', letterSpacing: '1px' 
+        }}>
+            {label}
+        </label>
+        {children}
+    </div>
+);
+
+const SectionHeader = ({ icon, title, subtitle, extra }) => (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <div style={{
+                width: '48px', height: '48px', borderRadius: '16px',
+                background: 'linear-gradient(135deg, rgba(var(--primary-rgb),0.2), rgba(var(--primary-rgb),0.05))',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: 'var(--primary)', boxShadow: '0 4px 16px rgba(var(--primary-rgb),0.12)'
+            }}>
+                {icon}
+            </div>
+            <div>
+                <h2 style={{ margin: 0, fontSize: '1.35rem', fontWeight: '900', color: 'var(--text-main)', letterSpacing: '-0.3px' }}>{title}</h2>
+                {subtitle && <p style={{ margin: '3px 0 0', fontSize: '0.82rem', fontWeight: '500', color: 'var(--text-muted)' }}>{subtitle}</p>}
+            </div>
+        </div>
+        {extra}
+    </div>
+);
 
 const AdminTab = ({
     activeSubTab,
@@ -31,6 +66,7 @@ const AdminTab = ({
     allUsers,
     handleApproveUser,
     handleDenyUser,
+    handleDeleteUser,
     orgConfigs,
     handleAddConfig,
     handleDeleteConfig,
@@ -52,16 +88,12 @@ const AdminTab = ({
 
     /* ======= UNIFIED DESIGN TOKENS ======= */
     const glass = {
-        background: isLightMode
-            ? 'rgba(255,255,255,0.75)'
-            : 'rgba(15,23,42,0.55)',
+        background: isLightMode ? 'rgba(255,255,255,0.75)' : 'rgba(15,23,42,0.55)',
         backdropFilter: 'blur(20px) saturate(180%)',
         WebkitBackdropFilter: 'blur(20px) saturate(180%)',
         borderRadius: '28px',
         border: `1px solid ${isLightMode ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.07)'}`,
-        boxShadow: isLightMode
-            ? '0 8px 40px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)'
-            : '0 8px 40px rgba(0,0,0,0.35)',
+        boxShadow: isLightMode ? '0 8px 40px rgba(0,0,0,0.06)' : '0 8px 40px rgba(0,0,0,0.35)',
         transition: 'all 0.35s cubic-bezier(0.4,0,0.2,1)',
         position: 'relative',
         overflow: 'hidden'
@@ -112,13 +144,6 @@ const AdminTab = ({
         );
     };
 
-    const InputField = ({ label, children }) => (
-        <div>
-            <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: '800', color: isLightMode ? '#64748b' : 'rgba(148,163,184,0.8)', marginBottom: '0.55rem', textTransform: 'uppercase', letterSpacing: '1px' }}>{label}</label>
-            {children}
-        </div>
-    );
-
     const makeInput = (props) => (
         <input {...props} style={{
             width: '100%', padding: '0.9rem 1.2rem', fontSize: '0.95rem', fontWeight: '600',
@@ -130,26 +155,6 @@ const AdminTab = ({
         onFocus={e => { e.target.style.borderColor = 'var(--primary)'; e.target.style.boxShadow = '0 0 0 4px rgba(var(--primary-rgb),0.12)'; }}
         onBlur={e => { e.target.style.borderColor = isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.08)'; e.target.style.boxShadow = 'none'; }}
         />
-    );
-
-    const SectionHeader = ({ icon, title, subtitle, extra }) => (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                <div style={{
-                    width: '48px', height: '48px', borderRadius: '16px',
-                    background: 'linear-gradient(135deg, rgba(var(--primary-rgb),0.2), rgba(var(--primary-rgb),0.05))',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    color: 'var(--primary)', boxShadow: '0 4px 16px rgba(var(--primary-rgb),0.12)'
-                }}>
-                    {icon}
-                </div>
-                <div>
-                    <h2 style={{ margin: 0, fontSize: '1.35rem', fontWeight: '900', color: 'var(--text-main)', letterSpacing: '-0.3px' }}>{title}</h2>
-                    {subtitle && <p style={{ margin: '3px 0 0', fontSize: '0.82rem', fontWeight: '500', color: 'var(--text-muted)' }}>{subtitle}</p>}
-                </div>
-            </div>
-            {extra}
-        </div>
     );
 
     const roleBadge = (role) => {
@@ -264,13 +269,22 @@ const AdminTab = ({
                                                     {[
                                                         { icon: Eye, label: 'View Profile', action: () => { setSelectedUser(u); setShowEditModal(true); setEditMode(false); setModalTab('Personal'); setActiveActionMenu(null); } },
                                                         { icon: Edit3, label: 'Edit Details', action: () => { setSelectedUser(u); setEditMode(true); setShowEditModal(true); setModalTab('Personal'); setActiveActionMenu(null); } },
-                                                        { icon: Clock, label: 'Attendance Log', action: () => { handleShowAttendance(u); setActiveActionMenu(null); } }
+                                                        { icon: Clock, label: 'Attendance Log', action: () => { handleShowAttendance(u); setActiveActionMenu(null); } },
+                                                        { icon: Trash2, label: 'Delete User', variant: 'danger', action: () => { handleDeleteUser(u._id); setActiveActionMenu(null); } }
                                                     ].map((item, i) => (
                                                         <div key={i} onClick={item.action} style={{
                                                             display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', borderRadius: '12px',
-                                                            cursor: 'pointer', fontSize: '0.88rem', fontWeight: '600', color: 'var(--text-main)', transition: 'all 0.15s'
-                                                        }} onMouseOver={e => { e.currentTarget.style.background = isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = 'var(--primary)'; }}
-                                                           onMouseOut={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-main)'; }}>
+                                                            cursor: 'pointer', fontSize: '0.88rem', fontWeight: '600', 
+                                                            color: item.variant === 'danger' ? '#ef4444' : 'var(--text-main)', 
+                                                            transition: 'all 0.15s'
+                                                        }} onMouseOver={e => { 
+                                                            e.currentTarget.style.background = item.variant === 'danger' ? 'rgba(239,68,68,0.1)' : (isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.06)'); 
+                                                            if (!item.variant) e.currentTarget.style.color = 'var(--primary)'; 
+                                                        }}
+                                                           onMouseOut={e => { 
+                                                            e.currentTarget.style.background = 'transparent'; 
+                                                            e.currentTarget.style.color = item.variant === 'danger' ? '#ef4444' : 'var(--text-main)'; 
+                                                        }}>
                                                             <item.icon size={16} /> {item.label}
                                                         </div>
                                                     ))}
@@ -332,16 +346,7 @@ const AdminTab = ({
                         </div>
                     ) : (
                         <div style={{ padding: '5rem 2rem', textAlign: 'center' }}>
-                            <div style={{
-                                width: '100px', height: '100px', borderRadius: '28px',
-                                background: isLightMode ? 'linear-gradient(135deg,#ecfdf5,#d1fae5)' : 'linear-gradient(135deg,rgba(16,185,129,0.15),rgba(16,185,129,0.05))',
-                                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                                marginBottom: '1.5rem', boxShadow: '0 10px 30px rgba(16,185,129,0.15)'
-                            }}>
-                                <CheckCircle2 size={48} color="#10b981" />
-                            </div>
-                            <h3 style={{ fontSize: '1.4rem', fontWeight: '900', color: 'var(--text-main)', margin: '0 0 0.5rem' }}>All caught up!</h3>
-                            <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', margin: 0 }}>No pending approval requests at the moment.</p>
+                            <SectionHeader icon={<CheckCircle2 size={48} color="#10b981" />} title="All caught up!" subtitle="No pending approval requests at the moment." />
                         </div>
                     )}
                 </div>
@@ -363,24 +368,34 @@ const AdminTab = ({
                         </div>
 
                         <form onSubmit={handleAddConfig} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                            <InputField label="Type">
-                                <select value={newConfig.type} onChange={e => setNewConfig({ ...newConfig, type: e.target.value })} style={{
-                                    width: '100%', padding: '0.9rem 1.2rem', fontSize: '0.95rem', fontWeight: '600',
-                                    background: isLightMode ? '#f8fafc' : 'rgba(0,0,0,0.2)',
-                                    border: `1.5px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.08)'}`,
-                                    borderRadius: '14px', color: 'var(--text-main)', outline: 'none', cursor: 'pointer',
-                                    appearance: 'none'
-                                }}>
-                                    <option value="Department" style={{ background: isLightMode ? '#fff' : '#1e293b' }}>Department</option>
-                                    <option value="Designation" style={{ background: isLightMode ? '#fff' : '#1e293b' }}>Designation</option>
-                                    <option value="Holiday" style={{ background: isLightMode ? '#fff' : '#1e293b' }}>Holiday</option>
-                                </select>
+                            <InputField label="Type" isLightMode={isLightMode}>
+                                <div style={{ position: 'relative', width: '100%' }}>
+                                    <select value={newConfig.type} onChange={e => setNewConfig({ ...newConfig, type: e.target.value })} style={{
+                                        width: '100%', padding: '0.9rem 2.8rem 0.9rem 1.2rem', fontSize: '0.95rem', fontWeight: '600',
+                                        background: isLightMode ? '#f8fafc' : 'rgba(0,0,0,0.2)',
+                                        border: `1.5px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.08)'}`,
+                                        borderRadius: '14px', color: 'var(--text-main)', outline: 'none', cursor: 'pointer',
+                                        appearance: 'none', position: 'relative', zIndex: 1
+                                    }}
+                                    onFocus={e => { e.target.style.borderColor = 'var(--primary)'; e.target.style.boxShadow = '0 0 0 4px rgba(var(--primary-rgb),0.12)'; }}
+                                    onBlur={e => { e.target.style.borderColor = isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.08)'; e.target.style.boxShadow = 'none'; }}>
+                                        <option value="Department" style={{ background: isLightMode ? '#fff' : '#1e293b' }}>Department</option>
+                                        <option value="Designation" style={{ background: isLightMode ? '#fff' : '#1e293b' }}>Designation</option>
+                                        <option value="Holiday" style={{ background: isLightMode ? '#fff' : '#1e293b' }}>Holiday</option>
+                                    </select>
+                                    <div style={{
+                                        position: 'absolute', right: '1.2rem', top: '50%', transform: 'translateY(-50%)',
+                                        color: 'var(--text-muted)', pointerEvents: 'none', zIndex: 2, display: 'flex', alignItems: 'center'
+                                    }}>
+                                        <ChevronDown size={18} />
+                                    </div>
+                                </div>
                             </InputField>
-                            <InputField label="Name / Title">
+                            <InputField label="Name / Title" isLightMode={isLightMode}>
                                 {makeInput({ required: true, type: 'text', placeholder: 'e.g., Technical Department', value: newConfig.name, onChange: e => setNewConfig({ ...newConfig, name: e.target.value }) })}
                             </InputField>
                             {newConfig.type === 'Holiday' && (
-                                <InputField label="Date">
+                                <InputField label="Date" isLightMode={isLightMode}>
                                     {makeInput({ required: true, type: 'date', value: newConfig.date, onChange: e => setNewConfig({ ...newConfig, date: e.target.value }), style: { colorScheme: isLightMode ? 'light' : 'dark' } })}
                                 </InputField>
                             )}
@@ -443,7 +458,7 @@ const AdminTab = ({
                                                 width: '34px', height: '34px', borderRadius: '10px', border: 'none', cursor: 'pointer',
                                                 background: isLightMode ? '#fef2f2' : 'rgba(239,68,68,0.1)', color: '#ef4444',
                                                 display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', flexShrink: 0
-                                            }} onMouseOver={e => { e.currentTarget.style.background = '#ef4444'; e.currentTarget.style.color = '#fff'; }}
+                                            }} onMouseOver={e => { e.currentTarget.style.background = '#ef4444'; e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = '#ef4444'; }}
                                                onMouseOut={e => { e.currentTarget.style.background = isLightMode ? '#fef2f2' : 'rgba(239,68,68,0.1)'; e.currentTarget.style.color = '#ef4444'; }}>
                                                 <Trash2 size={14} />
                                             </button>
@@ -485,10 +500,10 @@ const AdminTab = ({
                                 <Building2 size={18} color="var(--primary)" /> Organization Info
                             </h3>
                             <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1.5rem' }}>
-                                <InputField label="Company Name">
+                                <InputField label="Company Name" isLightMode={isLightMode}>
                                     {makeInput({ type: 'text', value: systemSettings.companyName || '', onChange: e => setSystemSettings({ ...systemSettings, companyName: e.target.value }) })}
                                 </InputField>
-                                <InputField label="Working Hours / Day">
+                                <InputField label="Working Hours / Day" isLightMode={isLightMode}>
                                     {makeInput({ type: 'number', value: systemSettings.workingHoursPerDay || '', onChange: e => setSystemSettings({ ...systemSettings, workingHoursPerDay: e.target.value }) })}
                                 </InputField>
                             </div>

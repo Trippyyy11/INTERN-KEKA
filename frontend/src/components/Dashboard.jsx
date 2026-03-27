@@ -28,7 +28,10 @@ import {
     Check,
     LogOut,
     Menu,
-    MessageSquare
+    MessageSquare,
+    Eye,
+    Edit3,
+    Landmark
 } from 'lucide-react';
 
 import VantaBackground from './layout/VantaBackground';
@@ -758,6 +761,18 @@ export default function Dashboard({ user, onLogout, setUser }) {
         });
     };
 
+    const handleDeleteUser = async (id) => {
+        showAlert('Are you sure you want to permanently delete this user? This action cannot be undone.', 'confirm', async () => {
+            try {
+                await api.delete(`/admin/users/${id}`);
+                fetchAdminData();
+                showAlert('User deleted successfully.', 'info');
+            } catch (err) { 
+                showAlert(err.response?.data?.message || 'Delete failed', 'info'); 
+            }
+        });
+    };
+
     const fetchStats = async () => {
         try {
             const logsRes = await api.get('/attendance/logs');
@@ -1211,6 +1226,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
                         allUsers={allUsers}
                         handleApproveUser={handleApproveUser}
                         handleDenyUser={handleDenyUser}
+                        handleDeleteUser={handleDeleteUser}
                         orgConfigs={orgConfigs}
                         handleAddConfig={handleAddConfig}
                         handleDeleteConfig={handleDeleteConfig}
@@ -1844,235 +1860,408 @@ export default function Dashboard({ user, onLogout, setUser }) {
         const u = selectedUser;
         const isAdmin = user?.role === 'Admin' || user?.role === 'Super Admin';
 
+        /* ======= LOCAL MODAL STYLES ======= */
+        const modalBentoStyle = {
+            background: isLightMode ? 'rgba(255,255,255,0.85)' : 'rgba(15,23,42,0.7)',
+            backdropFilter: 'blur(24px) saturate(180%)',
+            WebkitBackdropFilter: 'blur(24px) saturate(180%)',
+            borderRadius: '32px',
+            border: `1px solid ${isLightMode ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.08)'}`,
+            boxShadow: isLightMode ? '0 20px 80px rgba(0,0,0,0.1)' : '0 20px 80px rgba(0,0,0,0.4)',
+            width: '94%',
+            maxWidth: '1100px',
+            height: '90vh',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+            animation: 'modalSlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1)'
+        };
+
+        const modalHeaderGrad = isLightMode 
+            ? 'linear-gradient(135deg,rgba(59,130,246,0.1),rgba(37,99,235,0.05))'
+            : 'linear-gradient(135deg,rgba(30,41,59,0.5),rgba(15,23,42,0.8))';
+
+        const glassCard = {
+            background: isLightMode ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.03)',
+            borderRadius: '24px',
+            padding: '1.75rem',
+            border: `1px solid ${isLightMode ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.04)'}`,
+            transition: 'all 0.3s cubic-bezier(0.4,0,0.2,1)'
+        };
+
+        const modalInputStyle = {
+            width: '100%', padding: '0.85rem 1.1rem', fontSize: '0.92rem', fontWeight: '600',
+            background: isLightMode ? '#f8fafc' : 'rgba(0,0,0,0.2)',
+            border: `1.5px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.08)'}`,
+            borderRadius: '14px', color: 'var(--text-main)', outline: 'none',
+            transition: 'all 0.25s', boxSizing: 'border-box'
+        };
+
+        const modalLabelStyle = {
+            display: 'block', fontSize: '0.7rem', fontWeight: '800', 
+            color: isLightMode ? '#64748b' : 'rgba(148,163,184,0.7)', 
+            marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '1px'
+        };
+
+        const getModalAvatar = (name) => {
+            const initials = name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || '??';
+            return (
+                <div style={{
+                    width: '64px', height: '64px', borderRadius: '20px',
+                    background: 'linear-gradient(135deg,#6366f1,#3b82f6)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: '#fff', fontSize: '1.25rem', fontWeight: '900', letterSpacing: '0.5px',
+                    flexShrink: 0, boxShadow: '0 8px 24px rgba(99,102,241,0.3)'
+                }}>
+                    {initials}
+                </div>
+            );
+        };
+
+        const FormField = ({ label, children, full }) => (
+            <div style={{ gridColumn: full ? 'span 2' : 'auto' }}>
+                <label style={modalLabelStyle}>{label}</label>
+                {children}
+            </div>
+        );
+
         return (
-            <div style={{ ...modalOverlay, left: '260px', top: '60px', width: 'calc(100vw - 260px)', height: 'calc(100vh - 60px)', padding: 0, background: 'transparent' }}>
-                <div style={{ ...modalContent, width: '100%', height: '100%', maxWidth: 'none', maxHeight: 'none', borderRadius: 0, padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', borderLeft: '1px solid var(--border-dark)', boxShadow: 'none' }}>
-                    {/* Header */}
-                    <div style={{ padding: '1.5rem 2rem', background: 'var(--primary)', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
-                            <div className="avatar" style={{ width: '50px', height: '50px', fontSize: '1.25rem', background: 'rgba(255,255,255,0.2)', color: 'white', border: '2px solid rgba(255,255,255,0.4)' }}>
-                                {u.name?.substring(0, 1).toUpperCase()}
+            <div style={{ ...modalOverlay, backdropFilter: 'blur(8px)', zIndex: 1100 }}>
+                <div style={modalBentoStyle}>
+                    
+                    {/* ===== MODAL HEADER ISLAND ===== */}
+                    <div style={{ padding: '2rem', background: modalHeaderGrad, borderBottom: `1px solid ${isLightMode ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)'}`, position: 'relative' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+                                {getModalAvatar(u.name)}
+                                <div>
+                                    <h2 style={{ margin: 0, fontSize: '1.6rem', fontWeight: '900', color: 'var(--text-main)', letterSpacing: '-0.5px' }}>{u.name}</h2>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '4px' }}>
+                                        <span style={{ fontSize: '0.9rem', fontWeight: '600', color: 'var(--primary)' }}>{u.designation}</span>
+                                        <span style={{ width: '4px', height: '4px', borderRadius: '50%', background: 'var(--text-muted)', opacity: 0.3 }}></span>
+                                        <span style={{ fontSize: '0.85rem', fontWeight: '500', color: 'var(--text-muted)' }}>{u.department}</span>
+                                    </div>
+                                </div>
                             </div>
-                            <div>
-                                <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '700' }}>{u.name}</h2>
-                                <p style={{ margin: 0, fontSize: '0.85rem', opacity: 0.9 }}>{u.designation} | {u.department}</p>
-                            </div>
-                        </div>
-                        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                            {isAdmin && (
-                                <button
-                                    className="btn btn-sm"
-                                    style={{ background: editMode ? '#ffffff' : 'rgba(255,255,255,0.2)', color: editMode ? 'var(--primary)' : 'white', border: 'none', fontWeight: 'bold' }}
-                                    onClick={() => setEditMode(!editMode)}
+                            
+                            <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'center' }}>
+                                {isAdmin && (
+                                    <div style={{ 
+                                        display: 'flex', background: isLightMode ? '#fff' : 'rgba(255,255,255,0.05)', 
+                                        padding: '0.3rem', borderRadius: '16px', border: `1px solid ${isLightMode ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)'}`,
+                                        boxShadow: isLightMode ? '0 4px 12px rgba(0,0,0,0.04)' : 'none'
+                                    }}>
+                                        <button 
+                                            onClick={() => setEditMode(false)}
+                                            style={{ 
+                                                padding: '0.6rem 1.25rem', borderRadius: '12px', border: 'none', cursor: 'pointer',
+                                                background: !editMode ? 'var(--primary)' : 'transparent',
+                                                color: !editMode ? '#fff' : 'var(--text-muted)',
+                                                fontWeight: '800', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem',
+                                                transition: 'all 0.2s', boxShadow: !editMode ? '0 4px 12px rgba(var(--primary-rgb),0.3)' : 'none'
+                                            }}
+                                        >
+                                            <Eye size={14} /> View
+                                        </button>
+                                        <button 
+                                            onClick={() => setEditMode(true)}
+                                            style={{ 
+                                                padding: '0.6rem 1.25rem', borderRadius: '12px', border: 'none', cursor: 'pointer',
+                                                background: editMode ? 'var(--primary)' : 'transparent',
+                                                color: editMode ? '#fff' : 'var(--text-muted)',
+                                                fontWeight: '800', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem',
+                                                transition: 'all 0.2s', boxShadow: editMode ? '0 4px 12px rgba(var(--primary-rgb),0.3)' : 'none'
+                                            }}
+                                        >
+                                            <Edit3 size={14} /> Edit
+                                        </button>
+                                    </div>
+                                )}
+                                <button 
+                                    onClick={() => setShowEditModal(false)}
+                                    style={{ 
+                                        width: '40px', height: '40px', borderRadius: '14px', border: 'none', cursor: 'pointer',
+                                        background: isLightMode ? '#fff' : 'rgba(255,255,255,0.07)', color: 'var(--text-main)',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        boxShadow: isLightMode ? '0 4px 12px rgba(0,0,0,0.05)' : 'none',
+                                        transition: 'all 0.2s'
+                                    }}
+                                    onMouseOver={e => e.currentTarget.style.transform = 'rotate(90deg)'}
+                                    onMouseOut={e => e.currentTarget.style.transform = 'rotate(0)'}
                                 >
-                                    {editMode ? 'Viewing Mode' : 'Edit Mode'}
+                                    <span style={{ fontSize: '1.25rem', lineHeight: 1 }}>✕</span>
                                 </button>
-                            )}
-                            <span style={{ cursor: 'pointer', fontSize: '1.5rem' }} onClick={() => setShowEditModal(false)}>✕</span>
+                            </div>
                         </div>
                     </div>
 
-                    {/* Tabs */}
-                    <div style={{ display: 'flex', gap: '2rem', padding: '0 2rem', borderBottom: '1px solid var(--border-dark)', background: 'var(--bg-panel)' }}>
-                        {['Personal', 'Work', 'Salary', 'Leaves'].map(t => (
-                            <div
-                                key={t}
-                                onClick={() => setModalTab(t)}
-                                style={{
-                                    padding: '1rem 0',
-                                    fontSize: '0.9rem',
-                                    fontWeight: '600',
-                                    color: modalTab === t ? 'var(--primary)' : 'var(--text-muted)',
-                                    borderBottom: modalTab === t ? '2px solid var(--primary)' : '2px solid transparent',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.2s'
-                                }}
-                            >
-                                {t}
-                            </div>
-                        ))}
+                    {/* ===== PILL NAVIGATION ===== */}
+                    <div style={{ padding: '1rem 2rem', background: isLightMode ? 'rgba(255,255,255,0.4)' : 'transparent', borderBottom: `1px solid ${isLightMode ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.04)'}` }}>
+                        <div style={{ display: 'flex', gap: '0.6rem' }}>
+                            {[
+                                { id: 'Personal', icon: User, label: 'Personal' },
+                                { id: 'Work', icon: Briefcase, label: 'Work' },
+                                { id: 'Salary', icon: Landmark, label: 'Salary' },
+                                { id: 'Leaves', icon: Calendar, label: 'Leaves' }
+                            ].map(t => {
+                                const active = modalTab === t.id;
+                                return (
+                                    <button 
+                                        key={t.id} 
+                                        onClick={() => setModalTab(t.id)}
+                                        style={{
+                                            padding: '0.65rem 1.4rem', borderRadius: '14px', border: 'none', cursor: 'pointer',
+                                            background: active ? (isLightMode ? '#fff' : 'rgba(255,255,255,0.15)') : 'transparent',
+                                            color: active ? 'var(--primary)' : 'var(--text-muted)',
+                                            fontWeight: '800', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.6rem',
+                                            boxShadow: active ? (isLightMode ? '0 4px 12px rgba(0,0,0,0.06)' : '0 4px 12px rgba(0,0,0,0.2)') : 'none',
+                                            transition: 'all 0.2s'
+                                        }}
+                                    >
+                                        <t.icon size={16} /> {t.label}
+                                    </button>
+                                );
+                            })}
+                        </div>
                     </div>
 
-                    {/* Content */}
+                    {/* ===== BENTO CONTENT AREA ===== */}
                     <div style={{ padding: '2rem', flex: 1, overflowY: 'auto' }}>
-                        {modalTab === 'Personal' && (
-                            <div className="grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-                                <div>
-                                    <label style={labelStyle}>Full Name</label>
-                                    {editMode ? (
-                                        <input type="text" value={u.name} onChange={e => setSelectedUser({ ...u, name: e.target.value })} style={inputStyle} />
-                                    ) : <div style={{ fontWeight: '500' }}>{u.name}</div>}
-                                </div>
-                                <div>
-                                    <label style={labelStyle}>Email Address</label>
-                                    <div style={{ fontWeight: '500' }}>{u.email}</div>
-                                </div>
-                                <div>
-                                    <label style={labelStyle}>Phone Number</label>
-                                    {editMode ? (
-                                        <input type="text" value={u.phoneNumber || ''} onChange={e => setSelectedUser({ ...u, phoneNumber: e.target.value })} style={inputStyle} />
-                                    ) : <div style={{ fontWeight: '500' }}>{u.phoneNumber || 'N/A'}</div>}
-                                </div>
-                                <div>
-                                    <label style={labelStyle}>Gender</label>
-                                    {editMode ? (
-                                        <select value={u.gender || ''} onChange={e => setSelectedUser({ ...u, gender: e.target.value })} style={inputStyle}>
-                                            <option value="">Select Gender</option>
-                                            <option value="Male">Male</option>
-                                            <option value="Female">Female</option>
-                                            <option value="Other">Other</option>
-                                        </select>
-                                    ) : <div style={{ fontWeight: '500' }}>{u.gender || 'N/A'}</div>}
-                                </div>
-                                <div>
-                                    <label style={labelStyle}>Date of Birth</label>
-                                    {editMode ? (
-                                        <input type="date" value={u.dob ? u.dob.split('T')[0] : ''} onChange={e => setSelectedUser({ ...u, dob: e.target.value })} style={inputStyle} />
-                                    ) : <div style={{ fontWeight: '500' }}>{u.dob ? new Date(u.dob).toLocaleDateString() : 'N/A'}</div>}
-                                </div>
-                                <div>
-                                    <label style={labelStyle}>Blood Group</label>
-                                    {editMode ? (
-                                        <input type="text" value={u.bloodGroup || ''} onChange={e => setSelectedUser({ ...u, bloodGroup: e.target.value })} style={inputStyle} />
-                                    ) : <div style={{ fontWeight: '500' }}>{u.bloodGroup || 'N/A'}</div>}
-                                </div>
-                            </div>
-                        )}
-
-                        {modalTab === 'Work' && (
-                            <div className="grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-                                <div>
-                                    <label style={labelStyle}>Department</label>
-                                    {editMode ? (
-                                        <input type="text" value={u.department || ''} onChange={e => setSelectedUser({ ...u, department: e.target.value })} style={inputStyle} />
-                                    ) : <div style={{ fontWeight: '500' }}>{u.department}</div>}
-                                </div>
-                                <div>
-                                    <label style={labelStyle}>Designation</label>
-                                    {editMode ? (
-                                        <input type="text" value={u.designation || ''} onChange={e => setSelectedUser({ ...u, designation: e.target.value })} style={inputStyle} />
-                                    ) : <div style={{ fontWeight: '500' }}>{u.designation}</div>}
-                                </div>
-                                <div>
-                                    <label style={labelStyle}>Joining Date</label>
-                                    {editMode ? (
-                                        <input type="date" value={u.joiningDate ? u.joiningDate.split('T')[0] : ''} onChange={e => setSelectedUser({ ...u, joiningDate: e.target.value })} style={inputStyle} />
-                                    ) : <div style={{ fontWeight: '500' }}>{u.joiningDate ? new Date(u.joiningDate).toLocaleDateString() : 'N/A'}</div>}
-                                </div>
-                                <div>
-                                    <label style={labelStyle}>Shift Timings</label>
-                                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                                        {editMode ? (
-                                            <>
-                                                <input type="time" value={u.workingSchedule?.shiftStart || '11:00'} onChange={e => setSelectedUser({ ...u, workingSchedule: { ...u.workingSchedule, shiftStart: e.target.value } })} style={inputStyle} />
-                                                <span style={{ color: 'var(--text-muted)' }}>to</span>
-                                                <input type="time" value={u.workingSchedule?.shiftEnd || '07:00 PM'} onChange={e => setSelectedUser({ ...u, workingSchedule: { ...u.workingSchedule, shiftEnd: e.target.value } })} style={inputStyle} />
-                                            </>
-                                        ) : <div style={{ fontWeight: '500' }}>{u.workingSchedule?.shiftStart || '11:00'} to {u.workingSchedule?.shiftEnd || '07:00 PM'}</div>}
+                        <div style={{ ...glassCard, margin: '0 auto', maxWidth: '900px' }}>
+                            {modalTab === 'Personal' && (
+                                <>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.75rem' }}>
+                                        <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'rgba(99,102,241,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6366f1' }}>
+                                            <User size={18} />
+                                        </div>
+                                        <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '800', color: 'var(--text-main)' }}>Personal Information</h3>
                                     </div>
-                                </div>
-                                <div>
-                                    <label style={labelStyle}>Min. Working Hours / Day</label>
-                                    {editMode ? (
-                                        <input type="number" step="0.5" value={u.workingSchedule?.minHours || 7} onChange={e => setSelectedUser({ ...u, workingSchedule: { ...u.workingSchedule, minHours: parseFloat(e.target.value) } })} style={inputStyle} />
-                                    ) : <div style={{ fontWeight: '500' }}>{u.workingSchedule?.minHours || 7} Hours</div>}
-                                </div>
-                                <div>
-                                    <label style={labelStyle}>Weekly Offs</label>
-                                    {editMode ? (
-                                        <input type="text" value={u.workingSchedule?.weekOffs?.join(', ') || 'Sunday'} onChange={e => setSelectedUser({ ...u, workingSchedule: { ...u.workingSchedule, weekOffs: e.target.value.split(',').map(s => s.trim()) } })} style={inputStyle} placeholder="Sunday, Saturday" />
-                                    ) : <div style={{ fontWeight: '500' }}>{u.workingSchedule?.weekOffs?.join(', ') || 'Sunday'}</div>}
-                                </div>
-                            </div>
-                        )}
+                                    <div className="grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                                        <FormField label="Full Name">
+                                            {editMode ? (
+                                                <input type="text" value={u.name} onChange={e => setSelectedUser({ ...u, name: e.target.value })} style={modalInputStyle} />
+                                            ) : <div style={{ fontSize: '1.05rem', fontWeight: '700', color: 'var(--text-main)' }}>{u.name}</div>}
+                                        </FormField>
+                                        <FormField label="Email Address">
+                                            <div style={{ fontSize: '1.05rem', fontWeight: '700', color: 'var(--text-main)' }}>{u.email}</div>
+                                        </FormField>
+                                        <FormField label="Phone Number">
+                                            {editMode ? (
+                                                <input type="text" value={u.phoneNumber || ''} onChange={e => setSelectedUser({ ...u, phoneNumber: e.target.value })} style={modalInputStyle} placeholder="Add phone number" />
+                                            ) : <div style={{ fontSize: '1.05rem', fontWeight: '700', color: u.phoneNumber ? 'var(--text-main)' : 'var(--text-muted)' }}>{u.phoneNumber || 'Not provided'}</div>}
+                                        </FormField>
+                                        <FormField label="Gender">
+                                            {editMode ? (
+                                                <select value={u.gender || ''} onChange={e => setSelectedUser({ ...u, gender: e.target.value })} style={modalInputStyle}>
+                                                    <option value="">Select Gender</option>
+                                                    <option value="Male">Male</option>
+                                                    <option value="Female">Female</option>
+                                                    <option value="Other">Other</option>
+                                                </select>
+                                            ) : <div style={{ fontSize: '1.05rem', fontWeight: '700', color: 'var(--text-main)' }}>{u.gender || 'Not specified'}</div>}
+                                        </FormField>
+                                        <FormField label="Date of Birth">
+                                            {editMode ? (
+                                                <input type="date" value={u.dob ? u.dob.split('T')[0] : ''} onChange={e => setSelectedUser({ ...u, dob: e.target.value })} style={modalInputStyle} />
+                                            ) : <div style={{ fontSize: '1.05rem', fontWeight: '700', color: 'var(--text-main)' }}>{u.dob ? new Date(u.dob).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Not set'}</div>}
+                                        </FormField>
+                                        <FormField label="Blood Group">
+                                            {editMode ? (
+                                                <input type="text" value={u.bloodGroup || ''} onChange={e => setSelectedUser({ ...u, bloodGroup: e.target.value })} style={modalInputStyle} placeholder="e.g., O+" />
+                                            ) : <div style={{ fontSize: '1.05rem', fontWeight: '700', color: 'var(--text-main)' }}>{u.bloodGroup || 'N/A'}</div>}
+                                        </FormField>
+                                    </div>
+                                </>
+                            )}
 
-                        {modalTab === 'Salary' && (
-                            <div className="grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-                                <div>
-                                    <label style={labelStyle}>Salary Type</label>
-                                    {editMode ? (
-                                        <select value={u.salaryDetails?.type || 'Fixed'} onChange={e => setSelectedUser({ ...u, salaryDetails: { ...u.salaryDetails, type: e.target.value } })} style={inputStyle}>
-                                            <option value="Fixed">Fixed</option>
-                                            <option value="Variable">Variable</option>
-                                        </select>
-                                    ) : <div style={{ fontWeight: '500' }}>{u.salaryDetails?.type || 'Fixed'}</div>}
-                                </div>
-                                <div>
-                                    <label style={labelStyle}>Monthly Amount</label>
-                                    {editMode ? (
-                                        <input type="number" value={u.salaryDetails?.monthlyAmount || 0} onChange={e => setSelectedUser({ ...u, salaryDetails: { ...u.salaryDetails, monthlyAmount: parseFloat(e.target.value) } })} style={inputStyle} />
-                                    ) : <div style={{ fontWeight: '600', color: 'var(--success)' }}>${u.salaryDetails?.monthlyAmount || 0}</div>}
-                                </div>
-                                <div style={{ gridColumn: 'span 2', borderTop: '1px solid var(--border-dark)', paddingTop: '1.5rem', marginTop: '0.5rem' }}>
-                                    <div style={{ fontSize: '0.85rem', fontWeight: '700', marginBottom: '1rem' }}>Salary Breakdown</div>
-                                    <div className="grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                                        <div>
-                                            <label style={labelStyle}>Basic Salary</label>
-                                            {editMode ? (
-                                                <input type="number" value={u.salary?.basic || 0} onChange={e => setSelectedUser({ ...u, salary: { ...u.salary, basic: parseFloat(e.target.value) } })} style={inputStyle} />
-                                            ) : <div style={{ fontWeight: '500' }}>${u.salary?.basic || 0}</div>}
+                            {modalTab === 'Work' && (
+                                <>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.75rem' }}>
+                                        <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'rgba(59,130,246,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3b82f6' }}>
+                                            <Briefcase size={18} />
                                         </div>
-                                        <div>
-                                            <label style={labelStyle}>HRA</label>
+                                        <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '800', color: 'var(--text-main)' }}>Employment Details</h3>
+                                    </div>
+                                    <div className="grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                                        <FormField label="Department">
                                             {editMode ? (
-                                                <input type="number" value={u.salary?.hra || 0} onChange={e => setSelectedUser({ ...u, salary: { ...u.salary, hra: parseFloat(e.target.value) } })} style={inputStyle} />
-                                            ) : <div style={{ fontWeight: '500' }}>${u.salary?.hra || 0}</div>}
+                                                <input type="text" value={u.department || ''} onChange={e => setSelectedUser({ ...u, department: e.target.value })} style={modalInputStyle} />
+                                            ) : <div style={{ fontSize: '1.05rem', fontWeight: '700', color: 'var(--text-main)' }}>{u.department}</div>}
+                                        </FormField>
+                                        <FormField label="Designation">
+                                            {editMode ? (
+                                                <input type="text" value={u.designation || ''} onChange={e => setSelectedUser({ ...u, designation: e.target.value })} style={modalInputStyle} />
+                                            ) : <div style={{ fontSize: '1.05rem', fontWeight: '700', color: 'var(--text-main)' }}>{u.designation}</div>}
+                                        </FormField>
+                                        <FormField label="Joining Date">
+                                            {editMode ? (
+                                                <input type="date" value={u.joiningDate ? u.joiningDate.split('T')[0] : ''} onChange={e => setSelectedUser({ ...u, joiningDate: e.target.value })} style={modalInputStyle} />
+                                            ) : <div style={{ fontSize: '1.05rem', fontWeight: '700', color: 'var(--text-main)' }}>{u.joiningDate ? new Date(u.joiningDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}</div>}
+                                        </FormField>
+                                        <FormField label="Shift Timings">
+                                            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                                                {editMode ? (
+                                                    <>
+                                                        <input type="time" value={u.workingSchedule?.shiftStart || '11:00'} onChange={e => setSelectedUser({ ...u, workingSchedule: { ...u.workingSchedule, shiftStart: e.target.value } })} style={{ ...modalInputStyle, flex: 1 }} />
+                                                        <span style={{ color: 'var(--text-muted)', fontWeight: '700' }}>→</span>
+                                                        <input type="time" value={u.workingSchedule?.shiftEnd || '19:00'} onChange={e => setSelectedUser({ ...u, workingSchedule: { ...u.workingSchedule, shiftEnd: e.target.value } })} style={{ ...modalInputStyle, flex: 1 }} />
+                                                    </>
+                                                ) : <div style={{ fontSize: '1.05rem', fontWeight: '700', color: 'var(--text-main)' }}>{u.workingSchedule?.shiftStart || '10:00 AM'} to {u.workingSchedule?.shiftEnd || '07:00 PM'}</div>}
+                                            </div>
+                                        </FormField>
+                                        <FormField label="Minimum Hours / Day">
+                                            {editMode ? (
+                                                <input type="number" step="0.5" value={u.workingSchedule?.minHours || 8} onChange={e => setSelectedUser({ ...u, workingSchedule: { ...u.workingSchedule, minHours: parseFloat(e.target.value) } })} style={modalInputStyle} />
+                                            ) : <div style={{ fontSize: '1.05rem', fontWeight: '700', color: 'var(--text-main)' }}>{u.workingSchedule?.minHours || 8} Hours</div>}
+                                        </FormField>
+                                        <FormField label="Weekly Offs">
+                                            {editMode ? (
+                                                <input type="text" value={u.workingSchedule?.weekOffs?.join(', ') || 'Sunday'} onChange={e => setSelectedUser({ ...u, workingSchedule: { ...u.workingSchedule, weekOffs: e.target.value.split(',').map(s => s.trim()) } })} style={modalInputStyle} placeholder="Sunday, Saturday" />
+                                            ) : <div style={{ fontSize: '1.05rem', fontWeight: '700', color: 'var(--text-main)' }}>{u.workingSchedule?.weekOffs?.join(', ') || 'Sunday'}</div>}
+                                        </FormField>
+                                    </div>
+                                </>
+                            )}
+
+                            {modalTab === 'Salary' && (
+                                <>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.75rem' }}>
+                                        <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'rgba(16,185,129,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10b981' }}>
+                                            <Landmark size={18} />
                                         </div>
-                                        <div>
-                                            <label style={labelStyle}>Allowances</label>
-                                            {editMode ? (
-                                                <input type="number" value={u.salary?.allowance || 0} onChange={e => setSelectedUser({ ...u, salary: { ...u.salary, allowance: parseFloat(e.target.value) } })} style={inputStyle} />
-                                            ) : <div style={{ fontWeight: '500' }}>${u.salary?.allowance || 0}</div>}
+                                        <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '800', color: 'var(--text-main)' }}>Salary Configuration</h3>
+                                    </div>
+                                    <div className="grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                                            <FormField label="Salary Type">
+                                                {editMode ? (
+                                                    <select value={u.salaryDetails?.type || 'Fixed'} onChange={e => setSelectedUser({ ...u, salaryDetails: { ...u.salaryDetails, type: e.target.value } })} style={modalInputStyle}>
+                                                        <option value="Fixed">Fixed</option>
+                                                        <option value="Variable">Variable</option>
+                                                    </select>
+                                                ) : <div style={{ fontSize: '1.05rem', fontWeight: '700', color: 'var(--text-main)' }}>{u.salaryDetails?.type || 'Fixed'}</div>}
+                                            </FormField>
+                                            <FormField label="Monthly Amount">
+                                                {editMode ? (
+                                                    <div style={{ position: 'relative' }}>
+                                                        <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', fontWeight: '700', color: 'var(--text-muted)' }}>₹</span>
+                                                        <input type="number" value={u.salaryDetails?.monthlyAmount || 0} onChange={e => setSelectedUser({ ...u, salaryDetails: { ...u.salaryDetails, monthlyAmount: parseFloat(e.target.value) } })} style={{ ...modalInputStyle, paddingLeft: '2.25rem' }} />
+                                                    </div>
+                                                ) : <div style={{ fontSize: '1.4rem', fontWeight: '900', color: '#10b981' }}>₹{u.salaryDetails?.monthlyAmount?.toLocaleString() || 0}</div>}
+                                            </FormField>
                                         </div>
-                                        <div>
-                                            <label style={labelStyle}>Deductions</label>
-                                            {editMode ? (
-                                                <input type="number" value={u.salary?.deductions || 0} onChange={e => setSelectedUser({ ...u, salary: { ...u.salary, deductions: parseFloat(e.target.value) } })} style={inputStyle} />
-                                            ) : <div style={{ fontWeight: '500', color: '#ff4757' }}>-${u.salary?.deductions || 0}</div>}
+                                        <div style={{ 
+                                            background: isLightMode ? '#f8fafc' : 'rgba(0,0,0,0.15)', 
+                                            padding: '1.5rem', borderRadius: '20px', 
+                                            border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.05)'}` 
+                                        }}>
+                                            <div style={{ fontSize: '0.8rem', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '1.25rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Breakdown</div>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                                {[
+                                                    { label: 'Basic Salary', key: 'basic', icon: '💰' },
+                                                    { label: 'HRA', key: 'hra', icon: '🏠' },
+                                                    { label: 'Allowances', key: 'allowance', icon: '✨' },
+                                                    { label: 'Deductions', key: 'deductions', icon: '📉', red: true }
+                                                ].map(item => (
+                                                    <div key={item.key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                        <div style={{ fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                            <span>{item.icon}</span> {item.label}
+                                                        </div>
+                                                        {editMode ? (
+                                                            <input 
+                                                                type="number" 
+                                                                value={u.salary?.[item.key] || 0} 
+                                                                onChange={e => setSelectedUser({ ...u, salary: { ...u.salary, [item.key]: parseFloat(e.target.value) } })} 
+                                                                style={{ ...modalInputStyle, padding: '0.4rem 0.75rem', width: '100px', textAlign: 'right', fontSize: '0.85rem' }} 
+                                                            />
+                                                        ) : (
+                                                            <div style={{ fontWeight: '700', color: item.red ? '#ef4444' : 'var(--text-main)' }}>
+                                                                {item.red ? '-' : ''}₹{u.salary?.[item.key]?.toLocaleString() || 0}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            </div>
-                        )}
+                                </>
+                            )}
 
-                        {modalTab === 'Leaves' && (
-                            <div className="grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-                                <div>
-                                    <label style={labelStyle}>Paid Leave Quota</label>
-                                    {editMode ? (
-                                        <input type="number" value={u.leaveQuotas?.paid || 0} onChange={e => setSelectedUser({ ...u, leaveQuotas: { ...u.leaveQuotas, paid: parseInt(e.target.value) } })} style={inputStyle} />
-                                    ) : <div style={{ fontWeight: '500' }}>{u.leaveQuotas?.paid || 0} Days</div>}
-                                </div>
-                                <div>
-                                    <label style={labelStyle}>Sick Leave Quota</label>
-                                    {editMode ? (
-                                        <input type="number" value={u.leaveQuotas?.sick || 0} onChange={e => setSelectedUser({ ...u, leaveQuotas: { ...u.leaveQuotas, sick: parseInt(e.target.value) } })} style={inputStyle} />
-                                    ) : <div style={{ fontWeight: '500' }}>{u.leaveQuotas?.sick || 0} Days</div>}
-                                </div>
-                                <div>
-                                    <label style={labelStyle}>Casual Leave Quota</label>
-                                    {editMode ? (
-                                        <input type="number" value={u.leaveQuotas?.casual || 0} onChange={e => setSelectedUser({ ...u, leaveQuotas: { ...u.leaveQuotas, casual: parseInt(e.target.value) } })} style={inputStyle} />
-                                    ) : <div style={{ fontWeight: '500' }}>{u.leaveQuotas?.casual || 0} Days</div>}
-                                </div>
-                                <div>
-                                    <label style={labelStyle}>Comp Off Quota</label>
-                                    {editMode ? (
-                                        <input type="number" value={u.leaveQuotas?.compOff || 0} onChange={e => setSelectedUser({ ...u, leaveQuotas: { ...u.leaveQuotas, compOff: parseInt(e.target.value) } })} style={inputStyle} />
-                                    ) : <div style={{ fontWeight: '500' }}>{u.leaveQuotas?.compOff || 0} Days</div>}
-                                </div>
-                            </div>
-                        )}
+                            {modalTab === 'Leaves' && (
+                                <>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.75rem' }}>
+                                        <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'rgba(245,158,11,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f59e0b' }}>
+                                            <Calendar size={18} />
+                                        </div>
+                                        <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '800', color: 'var(--text-main)' }}>Leave Quotas (Annual)</h3>
+                                    </div>
+                                    <div className="grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.25rem' }}>
+                                        {[
+                                            { label: 'Paid Leave', key: 'paid', color: '#6366f1' },
+                                            { label: 'Sick Leave', key: 'sick', color: '#ef4444' },
+                                            { label: 'Casual Leave', key: 'casual', color: '#10b981' },
+                                            { label: 'Comp Off', key: 'compOff', color: '#f59e0b' }
+                                        ].map(item => (
+                                            <div key={item.key} style={{
+                                                background: isLightMode ? '#fff' : 'rgba(0,0,0,0.2)',
+                                                border: `1.5px solid ${isLightMode ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)'}`,
+                                                borderRadius: '20px', padding: '1.25rem', textAlign: 'center'
+                                            }}>
+                                                <div style={{ fontSize: '0.7rem', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '0.75rem', textTransform: 'uppercase' }}>{item.label}</div>
+                                                {editMode ? (
+                                                    <input 
+                                                        type="number" 
+                                                        value={u.leaveQuotas?.[item.key] || 0} 
+                                                        onChange={e => setSelectedUser({ ...u, leaveQuotas: { ...u.leaveQuotas, [item.key]: parseInt(e.target.value) } })} 
+                                                        style={{ ...modalInputStyle, textAlign: 'center', fontSize: '1.25rem', padding: '0.3rem' }} 
+                                                    />
+                                                ) : (
+                                                    <div style={{ fontSize: '1.5rem', fontWeight: '900', color: item.color }}>{u.leaveQuotas?.[item.key] || 0}</div>
+                                                )}
+                                                <div style={{ fontSize: '0.65rem', fontWeight: '600', color: 'var(--text-muted)', marginTop: '0.25rem' }}>Days</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </>
+                            )}
+                        </div>
                     </div>
 
-                    {/* Footer */}
-                    <div style={{ padding: '1.5rem 2rem', borderTop: '1px solid var(--border-dark)', background: 'var(--bg-main)', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
-                        <button className="btn btn-secondary" onClick={() => setShowEditModal(false)}>Close</button>
+                    {/* ===== FLOATING FOOTER ===== */}
+                    <div style={{ padding: '1.5rem 2.5rem', background: isLightMode ? '#fff' : '#1e293b', borderTop: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.05)'}`, display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+                        <button 
+                            className="btn" 
+                            style={{ 
+                                padding: '0.75rem 2rem', borderRadius: '16px', border: `1.5px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.1)'}`, 
+                                background: 'transparent', color: 'var(--text-main)', fontWeight: '700', fontSize: '0.9rem', cursor: 'pointer'
+                            }} 
+                            onClick={() => setShowEditModal(false)}
+                        >
+                            Close
+                        </button>
                         {editMode && (
-                            <button className="btn btn-primary" onClick={handleUpdateUser}>Update Employee</button>
+                            <button 
+                                className="btn" 
+                                style={{ 
+                                    padding: '0.75rem 2.5rem', borderRadius: '16px', border: 'none', 
+                                    background: 'linear-gradient(135deg,#6366f1,#3b82f6)', color: '#fff', 
+                                    fontWeight: '800', fontSize: '0.9rem', cursor: 'pointer',
+                                    boxShadow: '0 8px 20px rgba(99,102,241,0.3)'
+                                }} 
+                                onClick={handleUpdateUser}
+                            >
+                                Update Employee
+                            </button>
                         )}
                     </div>
                 </div>
+
+                <style>{`
+                    @keyframes modalSlideIn {
+                        from { opacity: 0; transform: scale(0.95) translateY(20px); }
+                        to { opacity: 1; transform: scale(1) translateY(0); }
+                    }
+                `}</style>
             </div>
         );
     };

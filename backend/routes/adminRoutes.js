@@ -3,6 +3,7 @@ import {
     getUsers,
     approveUser,
     denyUser,
+    deleteUser,
     updateUserDetails,
     getOrgConfigs,
     createOrgConfig,
@@ -26,6 +27,7 @@ router.get('/users', getUsers);
 router.put('/users/:id/approve', approveUser);
 router.put('/users/:id/deny', denyUser);
 router.put('/users/:id/details', updateUserDetails);
+router.delete('/users/:id', deleteUser);
 router.put('/users/:id/manager', assignManager);
 
 // Configuration Management
