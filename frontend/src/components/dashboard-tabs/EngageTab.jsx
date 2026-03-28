@@ -16,6 +16,35 @@ import {
 } from 'lucide-react';
 import api from '../../api/axios';
 
+const CustomTabPill = ({ icon: Icon, label, active, onClick, colorScheme }) => {
+    const colors = {
+        amber: { bg: 'rgba(245, 158, 11, 0.15)', text: '#f59e0b', hover: 'rgba(245, 158, 11, 0.25)' },
+        cyan: { bg: 'rgba(6, 182, 212, 0.15)', text: '#06b6d4', hover: 'rgba(6, 182, 212, 0.25)' },
+        blue: { bg: 'rgba(59, 130, 246, 0.15)', text: '#3b82f6', hover: 'rgba(59, 130, 246, 0.25)' },
+        purple: { bg: 'rgba(168, 85, 247, 0.15)', text: '#a855f7', hover: 'rgba(168, 85, 247, 0.25)' }
+    }[colorScheme] || { bg: 'rgba(var(--primary-rgb), 0.15)', text: 'var(--primary)', hover: 'rgba(var(--primary-rgb), 0.25)' };
+
+    return (
+        <div
+            onClick={onClick}
+            style={{
+                display: 'flex', alignItems: 'center', gap: '0.5rem',
+                padding: '0.6rem 1.2rem', borderRadius: '14px', cursor: 'pointer',
+                background: active ? colors.bg : 'transparent',
+                color: active ? colors.text : 'var(--text-muted)',
+                fontWeight: active ? '700' : '600',
+                fontSize: '0.9rem',
+                transition: 'all 0.2s',
+                border: active ? `1px solid ${colors.bg}` : `1px solid transparent`
+            }}
+            onMouseOver={e => !active && (e.currentTarget.style.color = 'var(--text-main)')}
+            onMouseOut={e => !active && (e.currentTarget.style.color = 'var(--text-muted)')}
+        >
+            {Icon && <Icon size={18} />} {label}
+        </div>
+    );
+};
+
 export default function EngageTab({
     user,
     engageTab, setEngageTab,
@@ -33,23 +62,20 @@ export default function EngageTab({
 }) {
 
     const bentoPanelStyle = {
-        background: isLightMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(15, 23, 42, 0.5)',
-        backdropFilter: 'blur(16px)',
+        background: isLightMode ? '#ffffff' : 'rgba(255,255,255,0.03)',
         borderRadius: '24px',
-        border: `1px solid ${isLightMode ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)'}`,
-        padding: '2rem',
-        boxShadow: isLightMode ? '0 4px 24px rgba(0,0,0,0.04)' : '0 4px 24px rgba(0,0,0,0.2)',
-        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-        position: 'relative'
+        border: isLightMode ? '1px solid #e2e8f0' : '1px solid rgba(255,255,255,0.05)',
+        boxShadow: isLightMode ? '0 4px 20px rgba(0,0,0,0.03)' : 'none',
+        position: 'relative',
+        overflow: 'hidden'
     };
 
     const inputWrapperStyle = {
         background: isLightMode ? '#f8fafc' : 'rgba(0,0,0,0.2)',
-        border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.06)'}`,
+        border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.08)'}`,
         borderRadius: '16px',
-        overflow: 'hidden',
-        transition: 'all 0.3s ease',
-        boxShadow: isLightMode ? 'inset 0 2px 4px rgba(0,0,0,0.02)' : 'inset 0 2px 4px rgba(0,0,0,0.2)'
+        padding: '1rem',
+        transition: 'all 0.3s'
     };
 
     const inputStyle = {
@@ -65,46 +91,17 @@ export default function EngageTab({
     };
 
     const handleFocus = (e) => {
-        e.currentTarget.parentElement.style.borderColor = 'var(--primary)';
-        e.currentTarget.parentElement.style.background = isLightMode ? '#ffffff' : 'rgba(0,0,0,0.4)';
-        e.currentTarget.parentElement.style.boxShadow = isLightMode
-            ? '0 0 0 4px rgba(var(--primary-rgb), 0.1)'
-            : '0 0 0 4px rgba(var(--primary-rgb), 0.2)';
+        if (e.currentTarget && e.currentTarget.parentElement) {
+            e.currentTarget.parentElement.style.borderColor = 'var(--primary)';
+            e.currentTarget.parentElement.style.boxShadow = isLightMode ? '0 0 0 3px rgba(59, 130, 246, 0.1)' : '0 0 0 3px rgba(59, 130, 246, 0.2)';
+        }
     };
 
     const handleBlur = (e) => {
-        e.currentTarget.parentElement.style.borderColor = isLightMode ? '#e2e8f0' : 'rgba(255, 255, 255, 0.06)';
-        e.currentTarget.parentElement.style.background = isLightMode ? '#f8fafc' : 'rgba(0,0,0,0.2)';
-        e.currentTarget.parentElement.style.boxShadow = isLightMode ? 'inset 0 2px 4px rgba(0,0,0,0.02)' : 'inset 0 2px 4px rgba(0,0,0,0.2)';
-    };
-
-    const CustomTabPill = ({ icon: Icon, label, active, onClick, colorScheme }) => {
-        const colors = {
-            amber: { bg: 'rgba(245, 158, 11, 0.15)', text: '#f59e0b', hover: 'rgba(245, 158, 11, 0.25)' },
-            cyan: { bg: 'rgba(6, 182, 212, 0.15)', text: '#06b6d4', hover: 'rgba(6, 182, 212, 0.25)' },
-            blue: { bg: 'rgba(59, 130, 246, 0.15)', text: '#3b82f6', hover: 'rgba(59, 130, 246, 0.25)' },
-            purple: { bg: 'rgba(168, 85, 247, 0.15)', text: '#a855f7', hover: 'rgba(168, 85, 247, 0.25)' }
-        }[colorScheme] || { bg: 'rgba(var(--primary-rgb), 0.15)', text: 'var(--primary)', hover: 'rgba(var(--primary-rgb), 0.25)' };
-
-        return (
-            <div
-                onClick={onClick}
-                style={{
-                    display: 'flex', alignItems: 'center', gap: '0.5rem',
-                    padding: '0.6rem 1.2rem', borderRadius: '14px', cursor: 'pointer',
-                    background: active ? colors.bg : 'transparent',
-                    color: active ? colors.text : 'var(--text-muted)',
-                    fontWeight: active ? '700' : '600',
-                    fontSize: '0.9rem',
-                    transition: 'all 0.2s',
-                    border: active ? `1px solid ${colors.bg}` : `1px solid transparent`
-                }}
-                onMouseOver={e => !active && (e.currentTarget.style.color = 'var(--text-main)')}
-                onMouseOut={e => !active && (e.currentTarget.style.color = 'var(--text-muted)')}
-            >
-                {Icon && <Icon size={18} />} {label}
-            </div>
-        );
+        if (e.currentTarget && e.currentTarget.parentElement) {
+            e.currentTarget.parentElement.style.borderColor = isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.08)';
+            e.currentTarget.parentElement.style.boxShadow = 'none';
+        }
     };
 
     return (

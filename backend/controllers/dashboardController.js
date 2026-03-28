@@ -64,11 +64,12 @@ export const getDashboardStats = async (req, res) => {
 
         // 4. New Joinees (Last 7 days)
         const sevenDaysAgo = moment().subtract(7, 'days').startOf('day');
+        const endOfToday = moment().endOf('day');
         const newJoinees = await User.find({
             $or: [
-                { joiningDate: { $gte: sevenDaysAgo.toDate() } },
-                { joiningDate: { $eq: null }, createdAt: { $gte: sevenDaysAgo.toDate() } },
-                { joiningDate: { $exists: false }, createdAt: { $gte: sevenDaysAgo.toDate() } }
+                { joiningDate: { $gte: sevenDaysAgo.toDate(), $lte: endOfToday.toDate() } },
+                { joiningDate: { $eq: null }, createdAt: { $gte: sevenDaysAgo.toDate(), $lte: endOfToday.toDate() } },
+                { joiningDate: { $exists: false }, createdAt: { $gte: sevenDaysAgo.toDate(), $lte: endOfToday.toDate() } }
             ],
             isDeleted: { $ne: true }
         }).select('name joiningDate createdAt department avatar profilePicture gender place bloodGroup dob welcomeProfile designation phoneNumber');

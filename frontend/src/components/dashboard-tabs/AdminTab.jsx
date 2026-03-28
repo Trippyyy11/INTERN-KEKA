@@ -56,6 +56,64 @@ const SectionHeader = ({ icon, title, subtitle, extra }) => (
     </div>
 );
 
+const AdminAvatar = ({ name, idx, gradientColors }) => {
+    const grad = gradientColors[idx % gradientColors.length];
+    const initials = name?.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase() || '??';
+    return (
+        <div style={{
+            width: '38px', height: '38px', borderRadius: '12px', background: grad,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: '#fff', fontSize: '0.75rem', fontWeight: '900', letterSpacing: '0.5px',
+            flexShrink: 0, boxShadow: '0 2px 10px rgba(0,0,0,0.15)'
+        }}>
+            {initials}
+        </div>
+    );
+};
+
+const FormInput = ({ isLightMode, ...props }) => {
+    const { style, onFocus, onBlur, ...rest } = props;
+    return (
+        <input 
+            {...rest} 
+            style={{
+                width: '100%', padding: '0.9rem 1.2rem', fontSize: '0.95rem', fontWeight: '600',
+                background: isLightMode ? '#f8fafc' : 'rgba(0,0,0,0.2)',
+                border: `1.5px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.08)'}`,
+                borderRadius: '14px', color: 'var(--text-main)', outline: 'none',
+                transition: 'all 0.25s', boxSizing: 'border-box', ...(style || {})
+            }}
+            onFocus={e => { 
+                e.target.style.borderColor = 'var(--primary)'; 
+                e.target.style.boxShadow = '0 0 0 4px rgba(var(--primary-rgb),0.12)';
+                if (onFocus) onFocus(e);
+            }}
+            onBlur={e => { 
+                e.target.style.borderColor = isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.08)'; 
+                e.target.style.boxShadow = 'none';
+                if (onBlur) onBlur(e);
+            }}
+        />
+    );
+};
+
+const RoleBadge = ({ role, isLightMode }) => {
+    const isSA = role === 'Super Admin';
+    const isAdmin = role === 'Admin';
+    const bg = isSA ? 'linear-gradient(135deg,#6366f1,#8b5cf6)' : isAdmin ? 'linear-gradient(135deg,#3b82f6,#06b6d4)' : (isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.06)');
+    const color = (isSA || isAdmin) ? '#fff' : 'var(--text-muted)';
+    return (
+        <span style={{
+            background: bg, color, padding: '0.3rem 0.75rem', borderRadius: '10px',
+            fontSize: '0.65rem', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.8px',
+            whiteSpace: 'nowrap', display: 'inline-block',
+            boxShadow: (isSA || isAdmin) ? '0 2px 8px rgba(99,102,241,0.25)' : 'none'
+        }}>
+            {role}
+        </span>
+    );
+};
+
 const AdminTab = ({
     activeSubTab,
     setActiveSubTab,
@@ -148,50 +206,6 @@ const AdminTab = ({
         'linear-gradient(135deg,#8b5cf6,#d946ef)'
     ];
 
-    const getAvatar = (name, idx) => {
-        const grad = gradientColors[idx % gradientColors.length];
-        const initials = name?.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase() || '??';
-        return (
-            <div style={{
-                width: '38px', height: '38px', borderRadius: '12px', background: grad,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: '#fff', fontSize: '0.75rem', fontWeight: '900', letterSpacing: '0.5px',
-                flexShrink: 0, boxShadow: '0 2px 10px rgba(0,0,0,0.15)'
-            }}>
-                {initials}
-            </div>
-        );
-    };
-
-    const makeInput = (props) => (
-        <input {...props} style={{
-            width: '100%', padding: '0.9rem 1.2rem', fontSize: '0.95rem', fontWeight: '600',
-            background: isLightMode ? '#f8fafc' : 'rgba(0,0,0,0.2)',
-            border: `1.5px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.08)'}`,
-            borderRadius: '14px', color: 'var(--text-main)', outline: 'none',
-            transition: 'all 0.25s', boxSizing: 'border-box', ...(props.style || {})
-        }}
-        onFocus={e => { e.target.style.borderColor = 'var(--primary)'; e.target.style.boxShadow = '0 0 0 4px rgba(var(--primary-rgb),0.12)'; }}
-        onBlur={e => { e.target.style.borderColor = isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.08)'; e.target.style.boxShadow = 'none'; }}
-        />
-    );
-
-    const roleBadge = (role) => {
-        const isSA = role === 'Super Admin';
-        const isAdmin = role === 'Admin';
-        const bg = isSA ? 'linear-gradient(135deg,#6366f1,#8b5cf6)' : isAdmin ? 'linear-gradient(135deg,#3b82f6,#06b6d4)' : (isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.06)');
-        const color = (isSA || isAdmin) ? '#fff' : 'var(--text-muted)';
-        return (
-            <span style={{
-                background: bg, color, padding: '0.3rem 0.75rem', borderRadius: '10px',
-                fontSize: '0.65rem', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.8px',
-                whiteSpace: 'nowrap', display: 'inline-block',
-                boxShadow: (isSA || isAdmin) ? '0 2px 8px rgba(99,102,241,0.25)' : 'none'
-            }}>
-                {role}
-            </span>
-        );
-    };
 
     return (
         <div style={{ paddingBottom: '2rem' }}>
@@ -258,7 +272,7 @@ const AdminTab = ({
                                         onMouseOut={e => e.currentTarget.style.background = 'transparent'}>
                                         <td style={{ ...tdStyle, paddingLeft: '2rem' }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                                {getAvatar(u.name, idx)}
+                                                <AdminAvatar name={u.name} idx={idx} gradientColors={gradientColors} />
                                                 <div>
                                                     <div style={{ fontWeight: '700', fontSize: '0.95rem', color: 'var(--text-main)', lineHeight: '1.3' }}>{u.name}</div>
                                                     <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '400' }}>{u.email}</div>
@@ -267,7 +281,7 @@ const AdminTab = ({
                                         </td>
                                         <td style={tdStyle}>{u.designation || <span style={{ color: 'var(--text-muted)', opacity: 0.5 }}>—</span>}</td>
                                         <td style={tdStyle}>{u.department || <span style={{ color: 'var(--text-muted)', opacity: 0.5 }}>—</span>}</td>
-                                        <td style={tdStyle}>{roleBadge(u.role)}</td>
+                                        <td style={tdStyle}><RoleBadge role={u.role} isLightMode={isLightMode} /></td>
                                         <td style={{ ...tdStyle, textAlign: 'center', paddingRight: '2rem', position: 'relative' }}>
                                             <button 
                                                 data-action-menu="trigger"
@@ -352,7 +366,7 @@ const AdminTab = ({
                                             onMouseOut={e => e.currentTarget.style.background = 'transparent'}>
                                             <td style={{ ...tdStyle, paddingLeft: '2rem' }}>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                                    {getAvatar(log.user?.name || 'User', idx)}
+                                                    <AdminAvatar name={log.user?.name || 'User'} idx={idx} gradientColors={gradientColors} />
                                                     <div>
                                                         <div style={{ fontWeight: '700', fontSize: '0.9rem', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                                             {log.user?.name || 'Deleted User'}
@@ -422,7 +436,7 @@ const AdminTab = ({
                                     borderRadius: '20px', border: `1px solid ${isLightMode ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.04)'}`,
                                     transition: 'all 0.2s'
                                 }} onMouseOver={e => e.currentTarget.style.borderColor = 'var(--primary)'} onMouseOut={e => e.currentTarget.style.borderColor = isLightMode ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.04)'}>
-                                    {getAvatar(u.name, idx)}
+                                    <AdminAvatar name={u.name} idx={idx} gradientColors={gradientColors} />
                                     <div style={{ flex: 1, minWidth: 0 }}>
                                         <div style={{ fontWeight: '700', fontSize: '0.95rem', color: 'var(--text-main)' }}>{u.name}</div>
                                         <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'flex', gap: '1rem', flexWrap: 'wrap', marginTop: '2px' }}>
@@ -510,11 +524,11 @@ const AdminTab = ({
                                 </div>
                             </InputField>
                             <InputField label="Name / Title" isLightMode={isLightMode}>
-                                {makeInput({ required: true, type: 'text', placeholder: 'e.g., Technical Department', value: newConfig.name, onChange: e => setNewConfig({ ...newConfig, name: e.target.value }) })}
+                                <FormInput isLightMode={isLightMode} required={true} type="text" placeholder="e.g., Technical Department" value={newConfig.name} onChange={e => setNewConfig({ ...newConfig, name: e.target.value })} />
                             </InputField>
                             {newConfig.type === 'Holiday' && (
                                 <InputField label="Date" isLightMode={isLightMode}>
-                                    {makeInput({ required: true, type: 'date', value: newConfig.date, onChange: e => setNewConfig({ ...newConfig, date: e.target.value }), style: { colorScheme: isLightMode ? 'light' : 'dark' } })}
+                                    <FormInput isLightMode={isLightMode} required={true} type="date" value={newConfig.date} onChange={e => setNewConfig({ ...newConfig, date: e.target.value })} style={{ colorScheme: isLightMode ? 'light' : 'dark' }} />
                                 </InputField>
                             )}
                             <button type="submit" style={{
@@ -619,10 +633,10 @@ const AdminTab = ({
                             </h3>
                             <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1.5rem' }}>
                                 <InputField label="Company Name" isLightMode={isLightMode}>
-                                    {makeInput({ type: 'text', value: systemSettings.companyName || '', onChange: e => setSystemSettings({ ...systemSettings, companyName: e.target.value }) })}
+                                    <FormInput isLightMode={isLightMode} type="text" value={systemSettings.companyName || ''} onChange={e => setSystemSettings({ ...systemSettings, companyName: e.target.value })} />
                                 </InputField>
                                 <InputField label="Working Hours / Day" isLightMode={isLightMode}>
-                                    {makeInput({ type: 'number', value: systemSettings.workingHoursPerDay || '', onChange: e => setSystemSettings({ ...systemSettings, workingHoursPerDay: e.target.value }) })}
+                                    <FormInput isLightMode={isLightMode} type="number" value={systemSettings.workingHoursPerDay || ''} onChange={e => setSystemSettings({ ...systemSettings, workingHoursPerDay: e.target.value })} />
                                 </InputField>
                             </div>
                         </div>
@@ -710,7 +724,7 @@ const AdminTab = ({
                                         onMouseOut={e => e.currentTarget.style.background = 'transparent'}>
                                         <td style={{ ...tdStyle, paddingLeft: '2rem' }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
-                                                {getAvatar(u.name, idx)}
+                                                <AdminAvatar name={u.name} idx={idx} gradientColors={gradientColors} />
                                                 <div>
                                                     <div style={{ fontWeight: '700', fontSize: '0.9rem' }}>{u.name}</div>
                                                     <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{u.email}</div>
@@ -793,7 +807,7 @@ const AdminTab = ({
                                             onMouseOut={e => e.currentTarget.style.background = 'transparent'}>
                                             <td style={{ ...tdStyle, paddingLeft: '2rem' }}>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
-                                                    {getAvatar(u.name, idx)}
+                                                    <AdminAvatar name={u.name} idx={idx} gradientColors={gradientColors} />
                                                     <div>
                                                         <div style={{ fontWeight: '700', fontSize: '0.9rem' }}>{u.name}</div>
                                                         <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{u.designation}</div>

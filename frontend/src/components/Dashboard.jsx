@@ -49,6 +49,72 @@ import EngageTab from './dashboard-tabs/EngageTab';
 import SlackTab from './dashboard-tabs/SlackTab';
 import OrganizationTree from './OrganizationTree';
 
+// Dashboard-wide styling constants
+const modalOverlay = { position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', justifyContent: 'center', alignItems: 'center' };
+const alertOverlay = { position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.8)', zIndex: 9999, display: 'flex', justifyContent: 'center', alignItems: 'center' };
+const modalContent = { background: 'var(--bg-panel)', padding: '2rem', borderRadius: 'var(--radius-lg)', width: '90%', maxWidth: '700px', boxShadow: '0 20px 50px rgba(0,0,0,0.5)', border: '1px solid var(--border-dark)' };
+
+const getModalBentoStyle = (isLightMode) => ({
+    background: isLightMode ? 'rgba(255,255,255,0.85)' : 'rgba(15,23,42,0.7)',
+    backdropFilter: 'blur(24px) saturate(180%)',
+    WebkitBackdropFilter: 'blur(24px) saturate(180%)',
+    borderRadius: '32px',
+    border: `1px solid ${isLightMode ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.08)'}`,
+    boxShadow: isLightMode ? '0 20px 80px rgba(0,0,0,0.1)' : '0 20px 80px rgba(0,0,0,0.4)',
+    width: '94%',
+    maxWidth: '1100px',
+    height: '90vh',
+    display: 'flex',
+    flexDirection: 'column',
+    overflow: 'hidden',
+    animation: 'modalSlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1)'
+});
+
+const getModalInputStyle = (isLightMode) => ({
+    width: '100%', padding: '0.85rem 1.1rem', fontSize: '0.92rem', fontWeight: '600',
+    background: isLightMode ? '#f8fafc' : 'rgba(0,0,0,0.2)',
+    border: `1.5px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.08)'}`,
+    borderRadius: '14px', color: 'var(--text-main)', outline: 'none',
+    transition: 'all 0.25s', boxSizing: 'border-box'
+});
+
+const getModalLabelStyle = (isLightMode) => ({
+    display: 'block', fontSize: '0.7rem', fontWeight: '800', 
+    color: isLightMode ? '#64748b' : 'rgba(148,163,184,0.7)', 
+    marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '1px'
+});
+
+const getGlassCardStyle = (isLightMode) => ({
+    background: isLightMode ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.03)',
+    borderRadius: '24px',
+    padding: '1.75rem',
+    border: `1px solid ${isLightMode ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.04)'}`,
+    transition: 'all 0.3s cubic-bezier(0.4,0,0.2,1)'
+});
+
+// Stable sub-components to prevent remounting
+const ModalAvatar = ({ name }) => {
+    const initials = name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || '??';
+    return (
+        <div style={{
+            width: '64px', height: '64px', borderRadius: '20px',
+            background: 'linear-gradient(135deg,#6366f1,#3b82f6)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: '#fff', fontSize: '1.25rem', fontWeight: '900', letterSpacing: '0.5px',
+            flexShrink: 0, boxShadow: '0 8px 24px rgba(99,102,241,0.3)'
+        }}>
+            {initials}
+        </div>
+    );
+};
+
+const FormField = ({ label, children, full, isLightMode }) => (
+    <div style={{ gridColumn: full ? 'span 2' : 'auto' }}>
+        <label style={getModalLabelStyle(isLightMode)}>{label}</label>
+        {children}
+    </div>
+);
+
 export default function Dashboard({ user, onLogout, setUser }) {
     // Persistence helper
     const getSavedState = (key, defaultVal) => {
@@ -2166,70 +2232,13 @@ export default function Dashboard({ user, onLogout, setUser }) {
         const u = selectedUser;
         const isAdmin = user?.role === 'Admin' || user?.role === 'Super Admin';
 
-        /* ======= LOCAL MODAL STYLES ======= */
-        const modalBentoStyle = {
-            background: isLightMode ? 'rgba(255,255,255,0.85)' : 'rgba(15,23,42,0.7)',
-            backdropFilter: 'blur(24px) saturate(180%)',
-            WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-            borderRadius: '32px',
-            border: `1px solid ${isLightMode ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.08)'}`,
-            boxShadow: isLightMode ? '0 20px 80px rgba(0,0,0,0.1)' : '0 20px 80px rgba(0,0,0,0.4)',
-            width: '94%',
-            maxWidth: '1100px',
-            height: '90vh',
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden',
-            animation: 'modalSlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1)'
-        };
-
+        const modalBentoStyle = getModalBentoStyle(isLightMode);
         const modalHeaderGrad = isLightMode 
             ? 'linear-gradient(135deg,rgba(59,130,246,0.1),rgba(37,99,235,0.05))'
             : 'linear-gradient(135deg,rgba(30,41,59,0.5),rgba(15,23,42,0.8))';
 
-        const glassCard = {
-            background: isLightMode ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.03)',
-            borderRadius: '24px',
-            padding: '1.75rem',
-            border: `1px solid ${isLightMode ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.04)'}`,
-            transition: 'all 0.3s cubic-bezier(0.4,0,0.2,1)'
-        };
-
-        const modalInputStyle = {
-            width: '100%', padding: '0.85rem 1.1rem', fontSize: '0.92rem', fontWeight: '600',
-            background: isLightMode ? '#f8fafc' : 'rgba(0,0,0,0.2)',
-            border: `1.5px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.08)'}`,
-            borderRadius: '14px', color: 'var(--text-main)', outline: 'none',
-            transition: 'all 0.25s', boxSizing: 'border-box'
-        };
-
-        const modalLabelStyle = {
-            display: 'block', fontSize: '0.7rem', fontWeight: '800', 
-            color: isLightMode ? '#64748b' : 'rgba(148,163,184,0.7)', 
-            marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '1px'
-        };
-
-        const getModalAvatar = (name) => {
-            const initials = name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || '??';
-            return (
-                <div style={{
-                    width: '64px', height: '64px', borderRadius: '20px',
-                    background: 'linear-gradient(135deg,#6366f1,#3b82f6)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    color: '#fff', fontSize: '1.25rem', fontWeight: '900', letterSpacing: '0.5px',
-                    flexShrink: 0, boxShadow: '0 8px 24px rgba(99,102,241,0.3)'
-                }}>
-                    {initials}
-                </div>
-            );
-        };
-
-        const FormField = ({ label, children, full }) => (
-            <div style={{ gridColumn: full ? 'span 2' : 'auto' }}>
-                <label style={modalLabelStyle}>{label}</label>
-                {children}
-            </div>
-        );
+        const glassCard = getGlassCardStyle(isLightMode);
+        const modalInputStyle = getModalInputStyle(isLightMode);
 
         return (
             <div style={{ ...modalOverlay, backdropFilter: 'blur(8px)', zIndex: 1100 }}>
@@ -2239,7 +2248,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
                     <div style={{ padding: '2rem', background: modalHeaderGrad, borderBottom: `1px solid ${isLightMode ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)'}`, position: 'relative' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-                                {getModalAvatar(u.name)}
+                                <ModalAvatar name={u.name} />
                                 <div>
                                     <h2 style={{ margin: 0, fontSize: '1.6rem', fontWeight: '900', color: 'var(--text-main)', letterSpacing: '-0.5px' }}>{u.name}</h2>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '4px' }}>
@@ -2343,20 +2352,20 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                         <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '800', color: 'var(--text-main)' }}>Personal Information</h3>
                                     </div>
                                     <div className="grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-                                        <FormField label="Full Name">
+                                        <FormField isLightMode={isLightMode} label="Full Name">
                                             {editMode ? (
                                                 <input type="text" value={u.name} onChange={e => setSelectedUser({ ...u, name: e.target.value })} style={modalInputStyle} />
                                             ) : <div style={{ fontSize: '1.05rem', fontWeight: '700', color: 'var(--text-main)' }}>{u.name}</div>}
                                         </FormField>
-                                        <FormField label="Email Address">
+                                        <FormField isLightMode={isLightMode} label="Email Address">
                                             <div style={{ fontSize: '1.05rem', fontWeight: '700', color: 'var(--text-main)' }}>{u.email}</div>
                                         </FormField>
-                                        <FormField label="Phone Number">
+                                        <FormField isLightMode={isLightMode} label="Phone Number">
                                             {editMode ? (
                                                 <input type="text" value={u.phoneNumber || ''} onChange={e => setSelectedUser({ ...u, phoneNumber: e.target.value })} style={modalInputStyle} placeholder="Add phone number" />
                                             ) : <div style={{ fontSize: '1.05rem', fontWeight: '700', color: u.phoneNumber ? 'var(--text-main)' : 'var(--text-muted)' }}>{u.phoneNumber || 'Not provided'}</div>}
                                         </FormField>
-                                        <FormField label="Gender">
+                                        <FormField isLightMode={isLightMode} label="Gender">
                                             {editMode ? (
                                                 <select value={u.gender || ''} onChange={e => setSelectedUser({ ...u, gender: e.target.value })} style={modalInputStyle}>
                                                     <option value="">Select Gender</option>
@@ -2366,12 +2375,12 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                                 </select>
                                             ) : <div style={{ fontSize: '1.05rem', fontWeight: '700', color: 'var(--text-main)' }}>{u.gender || 'Not specified'}</div>}
                                         </FormField>
-                                        <FormField label="Date of Birth">
+                                        <FormField isLightMode={isLightMode} label="Date of Birth">
                                             {editMode ? (
                                                 <input type="date" value={u.dob ? u.dob.split('T')[0] : ''} onChange={e => setSelectedUser({ ...u, dob: e.target.value })} style={modalInputStyle} />
                                             ) : <div style={{ fontSize: '1.05rem', fontWeight: '700', color: 'var(--text-main)' }}>{u.dob ? new Date(u.dob).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Not set'}</div>}
                                         </FormField>
-                                        <FormField label="Blood Group">
+                                        <FormField isLightMode={isLightMode} label="Blood Group">
                                             {editMode ? (
                                                 <input type="text" value={u.bloodGroup || ''} onChange={e => setSelectedUser({ ...u, bloodGroup: e.target.value })} style={modalInputStyle} placeholder="e.g., O+" />
                                             ) : <div style={{ fontSize: '1.05rem', fontWeight: '700', color: 'var(--text-main)' }}>{u.bloodGroup || 'N/A'}</div>}
@@ -2389,22 +2398,22 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                         <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '800', color: 'var(--text-main)' }}>Employment Details</h3>
                                     </div>
                                     <div className="grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-                                        <FormField label="Department">
+                                        <FormField isLightMode={isLightMode} label="Department">
                                             {editMode ? (
                                                 <input type="text" value={u.department || ''} onChange={e => setSelectedUser({ ...u, department: e.target.value })} style={modalInputStyle} />
                                             ) : <div style={{ fontSize: '1.05rem', fontWeight: '700', color: 'var(--text-main)' }}>{u.department}</div>}
                                         </FormField>
-                                        <FormField label="Designation">
+                                        <FormField isLightMode={isLightMode} label="Designation">
                                             {editMode ? (
                                                 <input type="text" value={u.designation || ''} onChange={e => setSelectedUser({ ...u, designation: e.target.value })} style={modalInputStyle} />
                                             ) : <div style={{ fontSize: '1.05rem', fontWeight: '700', color: 'var(--text-main)' }}>{u.designation}</div>}
                                         </FormField>
-                                        <FormField label="Joining Date">
+                                        <FormField isLightMode={isLightMode} label="Joining Date">
                                             {editMode ? (
                                                 <input type="date" value={u.joiningDate ? u.joiningDate.split('T')[0] : ''} onChange={e => setSelectedUser({ ...u, joiningDate: e.target.value })} style={modalInputStyle} />
                                             ) : <div style={{ fontSize: '1.05rem', fontWeight: '700', color: 'var(--text-main)' }}>{u.joiningDate ? new Date(u.joiningDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}</div>}
                                         </FormField>
-                                        <FormField label="Shift Timings">
+                                        <FormField isLightMode={isLightMode} label="Shift Timings">
                                             <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
                                                 {editMode ? (
                                                     <>
@@ -2415,12 +2424,12 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                                 ) : <div style={{ fontSize: '1.05rem', fontWeight: '700', color: 'var(--text-main)' }}>{u.workingSchedule?.shiftStart || '10:00 AM'} to {u.workingSchedule?.shiftEnd || '07:00 PM'}</div>}
                                             </div>
                                         </FormField>
-                                        <FormField label="Minimum Hours / Day">
+                                        <FormField isLightMode={isLightMode} label="Minimum Hours / Day">
                                             {editMode ? (
                                                 <input type="number" step="0.5" value={u.workingSchedule?.minHours || 8} onChange={e => setSelectedUser({ ...u, workingSchedule: { ...u.workingSchedule, minHours: parseFloat(e.target.value) } })} style={modalInputStyle} />
                                             ) : <div style={{ fontSize: '1.05rem', fontWeight: '700', color: 'var(--text-main)' }}>{u.workingSchedule?.minHours || 8} Hours</div>}
                                         </FormField>
-                                        <FormField label="Weekly Offs">
+                                        <FormField isLightMode={isLightMode} label="Weekly Offs">
                                             {editMode ? (
                                                 <input type="text" value={u.workingSchedule?.weekOffs?.join(', ') || 'Sunday'} onChange={e => setSelectedUser({ ...u, workingSchedule: { ...u.workingSchedule, weekOffs: e.target.value.split(',').map(s => s.trim()) } })} style={modalInputStyle} placeholder="Sunday, Saturday" />
                                             ) : <div style={{ fontSize: '1.05rem', fontWeight: '700', color: 'var(--text-main)' }}>{u.workingSchedule?.weekOffs?.join(', ') || 'Sunday'}</div>}
@@ -2439,7 +2448,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                     </div>
                                     <div className="grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                                            <FormField label="Salary Type">
+                                            <FormField isLightMode={isLightMode} label="Salary Type">
                                                 {editMode ? (
                                                     <select value={u.salaryDetails?.type || 'Fixed'} onChange={e => setSelectedUser({ ...u, salaryDetails: { ...u.salaryDetails, type: e.target.value } })} style={modalInputStyle}>
                                                         <option value="Fixed">Fixed</option>
@@ -2447,7 +2456,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                                     </select>
                                                 ) : <div style={{ fontSize: '1.05rem', fontWeight: '700', color: 'var(--text-main)' }}>{u.salaryDetails?.type || 'Fixed'}</div>}
                                             </FormField>
-                                            <FormField label="Monthly Amount">
+                                            <FormField isLightMode={isLightMode} label="Monthly Amount">
                                                 {editMode ? (
                                                     <div style={{ position: 'relative' }}>
                                                         <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', fontWeight: '700', color: 'var(--text-muted)' }}>₹</span>
@@ -2732,7 +2741,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
                 <div style={{ flex: 1, overflowY: 'auto', paddingBottom: '1rem' }}>
                     <nav className="sidebar-nav">
                     {sidebarItems.filter(item => {
-                        if (item.name === 'My Team' && teammates.length === 0) return false;
+                        // if (item.name === 'My Team' && teammates.length === 0) return false; // Removed to always show My Team
                         if (item.name === 'Admin' && !(user?.role === 'Admin' || user?.role === 'Super Admin')) return false;
                         if (item.name === 'Slack' && !(user?.role === 'Admin' || user?.role === 'Super Admin')) return false;
                         return true;
@@ -3059,7 +3068,4 @@ export default function Dashboard({ user, onLogout, setUser }) {
 
 const inputStyle = { background: 'var(--bg-panel)', color: 'var(--text-main)', border: '1px solid var(--border-dark)', padding: '0.5rem', borderRadius: '4px', outline: 'none', width: '100%', boxSizing: 'border-box' };
 const labelStyle = { fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.3rem', display: 'block' };
-const modalOverlay = { position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', justifyContent: 'center', alignItems: 'center' };
-const alertOverlay = { position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.8)', zIndex: 9999, display: 'flex', justifyContent: 'center', alignItems: 'center' };
-const modalContent = { background: 'var(--bg-panel)', padding: '2rem', borderRadius: 'var(--radius-lg)', width: '90%', maxWidth: '700px', boxShadow: '0 20px 50px rgba(0,0,0,0.5)', border: '1px solid var(--border-dark)' };
 
