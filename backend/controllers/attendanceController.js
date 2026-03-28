@@ -7,7 +7,7 @@ import Request from '../models/Request.js';
 // @access  Private
 export const clockIn = async (req, res) => {
     try {
-        const { workingMode } = req.body;
+        const { workingMode, message } = req.body;
         const today = new Date();
         today.setHours(0, 0, 0, 0); // Normalize to start of day
 
@@ -39,11 +39,13 @@ export const clockIn = async (req, res) => {
                 user: req.user._id,
                 date: today,
                 clockInTime: new Date(),
+                clockInMessage: message || '',
                 status: workingMode === 'Remote' ? 'WFH' : 'Present',
                 workingMode: workingMode || 'On-site'
             });
         } else {
             record.clockInTime = new Date();
+            record.clockInMessage = message || '';
             record.workingMode = workingMode || 'On-site';
             record.status = workingMode === 'Remote' ? 'WFH' : 'Present';
             await record.save();
@@ -60,6 +62,7 @@ export const clockIn = async (req, res) => {
 // @access  Private
 export const clockOut = async (req, res) => {
     try {
+        const { message } = req.body;
         // Find the latest active session (clocked in but not clocked out)
         let record = await Attendance.findOne({
             user: req.user._id,
@@ -80,6 +83,7 @@ export const clockOut = async (req, res) => {
 
         const clockOutTime = new Date();
         record.clockOutTime = clockOutTime;
+        record.clockOutMessage = message || '';
 
         // Calculate total hours
         const diffMs = clockOutTime - record.clockInTime;

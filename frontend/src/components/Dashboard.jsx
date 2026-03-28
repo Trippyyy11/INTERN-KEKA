@@ -164,6 +164,9 @@ export default function Dashboard({ user, onLogout, setUser }) {
     const [attendanceLogs, setAttendanceLogs] = useState([]);
     const [payslips, setPayslips] = useState([]);
     const [showClockInModal, setShowClockInModal] = useState(false);
+    const [showClockOutModal, setShowClockOutModal] = useState(false);
+    const [clockMessage, setClockMessage] = useState('');
+    const [clockOutStatsMsg, setClockOutStatsMsg] = useState('');
     const [selectedWorkingMode, setSelectedWorkingMode] = useState('On-site');
     const [activeLog, setActiveLog] = useState(null);
     const [showLogInfo, setShowLogInfo] = useState(null);
@@ -874,22 +877,14 @@ export default function Dashboard({ user, onLogout, setUser }) {
                 let message = `You have completed ${timeWorked.text}.`;
                 if (completed) {
                     message += `\nGreat job! You have completed your working hours. 🌟✅🥳`;
-                    showAlert(message, 'confirm', async () => {
-                        await api.post('/attendance/clock-out');
-                        fetchStats();
-                        showAlert('Successfully clocked out! 🎉', 'info');
-                    });
                 } else {
                     const remainingMins = targetMins - timeWorked.totalMins;
                     const rHrs = Math.floor(remainingMins / 60);
                     const rMins = remainingMins % 60;
                     message += `\nRemaining time: ${rHrs}h ${rMins}m. Are you sure you want to clock out?`;
-                    showAlert(message, 'confirm', async () => {
-                        await api.post('/attendance/clock-out');
-                        fetchStats();
-                        showAlert('Successfully clocked out! See you tomorrow.', 'info');
-                    });
                 }
+                setClockOutStatsMsg(message);
+                setShowClockOutModal(true);
             } else {
                 setShowClockInModal(true);
             }
@@ -900,8 +895,9 @@ export default function Dashboard({ user, onLogout, setUser }) {
 
     const confirmClockIn = async () => {
         try {
-            const res = await api.post('/attendance/clock-in', { workingMode: selectedWorkingMode });
+            const res = await api.post('/attendance/clock-in', { workingMode: selectedWorkingMode, message: clockMessage });
             setShowClockInModal(false);
+            setClockMessage('');
 
             // Update state immediately
             setIsClockedIn(true);
@@ -912,6 +908,18 @@ export default function Dashboard({ user, onLogout, setUser }) {
             showAlert(`Successfully clocked in as ${selectedWorkingMode}! Have a productive day! 🚀`, 'info');
         } catch (error) {
             showAlert(error.response?.data?.message || 'Error occurred while clocking in.', 'info');
+        }
+    };
+
+    const confirmClockOut = async () => {
+        try {
+            await api.post('/attendance/clock-out', { message: clockMessage });
+            setShowClockOutModal(false);
+            setClockMessage('');
+            fetchStats();
+            showAlert('Successfully clocked out! 🎉', 'info');
+        } catch (error) {
+            showAlert(error.response?.data?.message || 'Error occurred while clocking out.', 'info');
         }
     };
 
@@ -1383,6 +1391,22 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                 <span style={{ fontSize: '0.85rem' }}>{showLogInfo.status || 'Active'}</span>
                             </div>
                         </div>
+                        {(showLogInfo.clockInMessage || showLogInfo.clockOutMessage) && (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                {showLogInfo.clockInMessage && (
+                                    <div style={{ padding: '1rem', background: 'var(--bg-main)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-dark)' }}>
+                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Clock In Message</div>
+                                        <div style={{ fontSize: '0.9rem', color: 'var(--text-main)', whiteSpace: 'pre-line' }}>{showLogInfo.clockInMessage}</div>
+                                    </div>
+                                )}
+                                {showLogInfo.clockOutMessage && (
+                                    <div style={{ padding: '1rem', background: 'var(--bg-main)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-dark)' }}>
+                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Clock Out Message</div>
+                                        <div style={{ fontSize: '0.9rem', color: 'var(--text-main)', whiteSpace: 'pre-line' }}>{showLogInfo.clockOutMessage}</div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
                     <div style={{ marginTop: '2rem' }}>
                         <button className="btn btn-primary" style={{ width: '100%' }} onClick={() => setShowLogInfo(null)}>Close</button>
@@ -2866,8 +2890,52 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                     <div style={{ fontWeight: '500' }}>Working Remotely</div>
                                     <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Working from home or another location.</div>
                                 </div>
-                                <button className="btn btn-primary" style={{ marginTop: '1rem' }} onClick={confirmClockIn}>
+                                <div style={{ marginTop: '0.5rem' }}>
+                                    <label style={labelStyle}>Message (Optional)</label>
+                                    <textarea
+                                        value={clockMessage}
+                                        onChange={(e) => setClockMessage(e.target.value)}
+                                        placeholder="Add a note to your clock in..."
+                                        style={{
+                                            ...inputStyle,
+                                            height: '60px', resize: 'none'
+                                        }}
+                                    />
+                                </div>
+                                <button className="btn btn-primary" style={{ marginTop: '0.5rem' }} onClick={confirmClockIn}>
                                     Confirm Clock In
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
+            {
+                showClockOutModal && (
+                    <div style={modalOverlay}>
+                        <div style={{ ...modalContent, maxWidth: '400px' }}>
+                            <div className="panel-header" style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between' }}>
+                                <span>Clock Out</span>
+                                <span style={{ cursor: 'pointer' }} onClick={() => setShowClockOutModal(false)}>✕</span>
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                <div style={{ whiteSpace: 'pre-line', color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
+                                    {clockOutStatsMsg}
+                                </div>
+                                <div>
+                                    <label style={labelStyle}>Message (Optional)</label>
+                                    <textarea
+                                        value={clockMessage}
+                                        onChange={(e) => setClockMessage(e.target.value)}
+                                        placeholder="Add a note to your clock out..."
+                                        style={{
+                                            ...inputStyle,
+                                            height: '60px', resize: 'none'
+                                        }}
+                                    />
+                                </div>
+                                <button className="btn btn-danger" style={{ marginTop: '0.5rem' }} onClick={confirmClockOut}>
+                                    Confirm Clock Out
                                 </button>
                             </div>
                         </div>
