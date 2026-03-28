@@ -5,7 +5,9 @@ const attendanceSchema = new mongoose.Schema(
         user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
         date: { type: Date, required: true }, // Store the day of attendance (e.g. 2026-03-06)
         clockInTime: { type: Date },
+        clockInMessage: { type: String, default: '' },
         clockOutTime: { type: Date },
+        clockOutMessage: { type: String, default: '' },
         status: { type: String, enum: ['Present', 'Absent', 'WFH', 'Leave', 'Holiday'], default: 'Present' },
         workingMode: { type: String, enum: ['On-site', 'Remote'], default: 'On-site' },
         totalHours: { type: Number, default: 0 },
