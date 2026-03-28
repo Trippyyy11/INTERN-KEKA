@@ -62,9 +62,15 @@ export const getDashboardStats = async (req, res) => {
         // Filter out records where user didn't match the department filter
         const teamWorkingRemotely = workingRemotely.filter(w => w.user !== null);
 
-        // 4. New Joinees (Last 30 days) - use createdAt (always set by timestamps) as primary
+        // 4. New Joinees (Last 7 days)
+        const sevenDaysAgo = moment().subtract(7, 'days').startOf('day');
         const newJoinees = await User.find({
-            createdAt: { $gte: thirtyDaysAgo.toDate() }
+            $or: [
+                { joiningDate: { $gte: sevenDaysAgo.toDate() } },
+                { joiningDate: { $eq: null }, createdAt: { $gte: sevenDaysAgo.toDate() } },
+                { joiningDate: { $exists: false }, createdAt: { $gte: sevenDaysAgo.toDate() } }
+            ],
+            isDeleted: false
         }).select('name joiningDate createdAt department avatar profilePicture gender place bloodGroup dob welcomeProfile designation phoneNumber');
 
         // 5. Team Activity Stats (Today)

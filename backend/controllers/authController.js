@@ -17,7 +17,7 @@ export const registerInit = async (req, res) => {
         const { name, email } = req.body;
         if (!name || !email) return res.status(400).json({ message: 'Name and Email are required' });
 
-        const userExists = await User.findOne({ email });
+        const userExists = await User.findOne({ email, isDeleted: { $ne: true } });
         if (userExists && userExists.isVerified && userExists.password) {
             return res.status(400).json({ message: 'User already exists and is verified.' });
         }
@@ -185,7 +185,7 @@ export const updateProfile = async (req, res) => {
 export const loginUser = async (req, res) => {
     try {
         const { email, password } = req.body;
-        const user = await User.findOne({ email }).populate('reportingManager', 'name email');
+        const user = await User.findOne({ email, isDeleted: { $ne: true } }).populate('reportingManager', 'name email');
 
         if (user && user.password && (await user.matchPassword(password))) {
             // isVerified check disabled for improvement period

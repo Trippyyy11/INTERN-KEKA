@@ -180,23 +180,17 @@ const MyTeamTab = ({
         const isToday = (dayNum) => currentMonth.isSame(moment(), 'month') && dayNum === moment().date();
 
         const statusColors = {
-            present: '#22c33e', // Professional Teal
-            sick: '#3d0707', // Deep Blue (User's choice)
-            paidCasual: '#0f8b94', // Violet/Purple
-            unpaid: '#300f94', // Light Purple
-            wfh: '#ffa5ae', // Light Teal
-            holiday: '#ffe030', // Indigo/Blue
-            weekOff: '#121212', // Sublte Off-white
-            //absent: '#f4654fff', // Slate Gray
+            present: '#22c33e',
+            leave: '#ef4444', 
+            wfh: '#ffa5ae',
+            holiday: '#ffe030',
+            weekOff: '#121212',
         };
 
         const getStatusForCell = (member, dateStr, dayNameLong, isWeekend, isPastOrToday) => {
             const leave = leaves.find(l => l.user?._id === member._id && moment(l.startDate).isSameOrBefore(dateStr, 'day') && moment(l.endDate).isSameOrAfter(dateStr, 'day'));
-            if (leave) {
-                if (leave.type === 'Sick') return { color: statusColors.sick, label: 'S', tooltip: 'Sick Leave' };
-                if (leave.type === 'Paid' || leave.type === 'Casual') return { color: statusColors.paidCasual, label: 'L', tooltip: `${leave.type} Leave` };
-                return { color: statusColors.unpaid, label: 'U', tooltip: 'Unpaid Leave' };
-            }
+            if (leave) return { color: statusColors.leave, label: 'L', tooltip: 'Leave' };
+
             const att = attendance.find(a => a.user === member._id && moment(a.date).isSame(dateStr, 'day'));
             if (att && (att.status === 'WFH' || att.workingMode === 'Remote')) return { color: statusColors.wfh, label: 'W', tooltip: 'Work From Home' };
             if (isPastOrToday) {
@@ -205,7 +199,6 @@ const MyTeamTab = ({
                 const userWeekOffs = (member.workingSchedule?.weekOffs?.length > 0) ? member.workingSchedule.weekOffs : ['Sunday'];
                 if (userWeekOffs.includes(dayNameLong)) return { color: statusColors.weekOff, label: '', tooltip: 'Week Off' };
                 if (att && att.status === 'Present') return { color: statusColors.present, label: 'P', tooltip: 'Present' };
-                if (!isWeekend) return { color: statusColors.absent, label: 'A', tooltip: 'No Attendance' };
             }
             return null;
         };
@@ -308,11 +301,8 @@ const MyTeamTab = ({
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.25rem', paddingTop: '1rem', borderTop: `1px solid ${isLightMode ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)'}` }}>
                     {[
                         { label: 'Present', color: statusColors.present },
-                        { label: 'Sick Leave', color: statusColors.sick },
-                        { label: 'Paid/Casual Leave', color: statusColors.paidCasual },
+                        { label: 'Leave', color: statusColors.leave },
                         { label: 'WFH', color: statusColors.wfh },
-                        { label: 'Unpaid Leave', color: statusColors.unpaid },
-                        { label: 'Absent', color: statusColors.absent },
                         { label: 'Holiday', color: statusColors.holiday },
                         { label: 'Week Off', color: statusColors.weekOff },
                     ].map(l => (

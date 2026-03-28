@@ -404,7 +404,7 @@ const AttendanceTab = ({
                         }}>
                             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '0.5rem', fontWeight: '700' }}>Daily Shift Requirement</div>
                             <div style={{ fontSize: '1.75rem', fontWeight: '800', color: 'var(--text-main)', letterSpacing: '-0.5px' }}>{user?.workingSchedule?.shiftStart || '11:00'} - {user?.workingSchedule?.shiftEnd || '07:00 PM'}</div>
-                            <div style={{ fontSize: '0.85rem', color: 'var(--primary)', marginTop: '0.75rem', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'rgba(var(--primary-rgb), 0.1)', display: 'inline-flex', padding: '0.4rem 0.8rem', borderRadius: '12px' }}>
+                            <div style={{ fontSize: '0.85rem', color: 'var(--primary)', marginTop: '0.75rem', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '0.4rem', background: 'rgba(var(--primary-rgb), 0.1)', padding: '0.4rem 0.8rem', borderRadius: '12px' }}>
                                 Target: {user?.workingSchedule?.minHours || 7.0} Effective Hours
                             </div>
                         </div>
@@ -449,13 +449,11 @@ const AttendanceTab = ({
                                 <div style={{ marginTop: '1.5rem', background: isLightMode ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: '16px', border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.05)'}` }}>
                                     <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.25rem', fontWeight: '700' }}>Total Hours <HelpCircle size={12} /></div>
                                     <div style={{ fontSize: '1.25rem', color: 'var(--text-main)' }}>
-                                        Effective: <span style={{ fontWeight: '800' }}>{isClockedIn ? calculateElapsedTime(activeLog?.clockInTime).text : '0h 0m'}</span>
-                                    </div>
-                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.25rem', fontWeight: '500' }}>
-                                        Gross: {isClockedIn ? calculateElapsedTime(activeLog?.clockInTime).text : '0h 0m'}
+                                        Gross: <span style={{ fontWeight: '800' }}>{isClockedIn ? calculateElapsedTime(activeLog?.clockInTime).text : '0h 0m'}</span>
                                     </div>
                                 </div>
                             </div>
+                            {renderHourglass()}
                         </div>
 
                         <div style={{ marginTop: '2rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -498,8 +496,7 @@ const AttendanceTab = ({
                                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', fontWeight: '600' }}>
                                     {isClockedIn ? (
                                         <>
-                                            <span style={{ background: 'var(--success)', width: '8px', height: '8px', borderRadius: '50%', marginRight: '8px', boxShadow: '0 0 8px var(--success)' }} className="timer-pulse"></span>
-                                            {calculateElapsedTime(activeLog?.clockInTime).text} Since Last Login
+                                            {/* Green dot removed */}
                                         </>
                                     ) : (
                                         <>

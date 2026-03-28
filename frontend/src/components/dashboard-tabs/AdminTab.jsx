@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     MoreVertical,
     Users,
@@ -88,6 +88,18 @@ const AdminTab = ({
     const [filterType, setFilterType] = useState('All');
     const pagedUsers = allUsers.filter(u => u.status !== 'Pending');
     const filteredConfigs = filterType === 'All' ? orgConfigs : orgConfigs.filter(c => c.type === filterType);
+    
+    /* ======= CLICK OUTSIDE HANDLER ======= */
+    useEffect(() => {
+        const handleClickAway = (e) => {
+            if (activeActionMenu && !e.target.closest('[data-action-menu]')) {
+                setActiveActionMenu(null);
+            }
+        };
+        document.addEventListener('mousedown', handleClickAway);
+        return () => document.removeEventListener('mousedown', handleClickAway);
+    }, [activeActionMenu, setActiveActionMenu]);
+
 
     /* ======= UNIFIED DESIGN TOKENS ======= */
     const glass = {
@@ -220,7 +232,7 @@ const AdminTab = ({
 
             {/* ===== USERS ===== */}
             {activeSubTab === 'Leave' && (
-                <div style={{ ...glass, padding: '2rem' }}>
+                <div style={{ ...glass, padding: '2rem', overflow: activeActionMenu ? 'visible' : 'hidden' }}>
                     <SectionHeader icon={<Users size={24} />} title="Active Employees" subtitle={`${pagedUsers.length} team members in your organization`} />
 
                     <div style={{ overflowX: 'auto', margin: '0 -2rem -2rem', borderBottomLeftRadius: '28px', borderBottomRightRadius: '28px' }}>
@@ -252,24 +264,30 @@ const AdminTab = ({
                                         <td style={tdStyle}>{u.department || <span style={{ color: 'var(--text-muted)', opacity: 0.5 }}>—</span>}</td>
                                         <td style={tdStyle}>{roleBadge(u.role)}</td>
                                         <td style={{ ...tdStyle, textAlign: 'center', paddingRight: '2rem', position: 'relative' }}>
-                                            <button onClick={() => setActiveActionMenu(activeActionMenu === u._id ? null : u._id)} style={{
-                                                width: '38px', height: '38px', borderRadius: '12px', border: 'none', cursor: 'pointer',
-                                                background: activeActionMenu === u._id ? (isLightMode ? '#eff6ff' : 'rgba(99,102,241,0.15)') : 'transparent',
-                                                color: activeActionMenu === u._id ? 'var(--primary)' : 'var(--text-muted)',
-                                                display: 'inline-flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s'
-                                            }} onMouseOver={e => { if (activeActionMenu !== u._id) { e.currentTarget.style.background = isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.06)'; } }}
-                                               onMouseOut={e => { if (activeActionMenu !== u._id) { e.currentTarget.style.background = 'transparent'; } }}>
+                                            <button 
+                                                data-action-menu="trigger"
+                                                onClick={() => setActiveActionMenu(activeActionMenu === u._id ? null : u._id)} 
+                                                style={{
+                                                    width: '38px', height: '38px', borderRadius: '12px', border: 'none', cursor: 'pointer',
+                                                    background: activeActionMenu === u._id ? (isLightMode ? '#eff6ff' : 'rgba(99,102,241,0.15)') : 'transparent',
+                                                    color: activeActionMenu === u._id ? 'var(--primary)' : 'var(--text-muted)',
+                                                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s'
+                                                }} onMouseOver={e => { if (activeActionMenu !== u._id) { e.currentTarget.style.background = isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.06)'; } }}
+                                                onMouseOut={e => { if (activeActionMenu !== u._id) { e.currentTarget.style.background = 'transparent'; } }}>
                                                 <MoreVertical size={18} />
                                             </button>
 
                                             {activeActionMenu === u._id && (
-                                                <div style={{
-                                                    position: 'absolute', top: 'calc(100% - 8px)', right: '1.5rem', zIndex: 200, minWidth: '200px',
-                                                    background: isLightMode ? '#ffffff' : '#1e293b',
-                                                    borderRadius: '18px', padding: '0.6rem',
-                                                    boxShadow: '0 20px 60px rgba(0,0,0,0.25), 0 0 0 1px rgba(0,0,0,0.05)',
-                                                    animation: 'dropdownIn 0.2s ease-out'
-                                                }}>
+                                                <div 
+                                                    data-action-menu="panel"
+                                                    style={{
+                                                        position: 'absolute', top: '50%', right: '3.5rem', zIndex: 200, minWidth: '200px',
+                                                        background: isLightMode ? '#ffffff' : '#1e293b',
+                                                        borderRadius: '18px', padding: '0.6rem',
+                                                        boxShadow: '0 20px 60px rgba(0,0,0,0.25), 0 0 0 1px rgba(0,0,0,0.05)',
+                                                        animation: 'flyoutIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                                                        transform: 'translateY(-50%)'
+                                                    }}>
                                                     {[
                                                         { icon: Eye, label: 'View Profile', action: () => { setSelectedUser(u); setShowEditModal(true); setEditMode(false); setModalTab('Personal'); setActiveActionMenu(null); } },
                                                         { icon: Edit3, label: 'Edit Details', action: () => { setSelectedUser(u); setEditMode(true); setShowEditModal(true); setModalTab('Personal'); setActiveActionMenu(null); } },
@@ -331,7 +349,12 @@ const AdminTab = ({
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                                                     {getAvatar(log.user?.name || 'User', idx)}
                                                     <div>
-                                                        <div style={{ fontWeight: '700', fontSize: '0.9rem', color: 'var(--text-main)' }}>{log.user?.name || 'Deleted User'}</div>
+                                                        <div style={{ fontWeight: '700', fontSize: '0.9rem', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                            {log.user?.name || 'Deleted User'}
+                                                            {log.user?.isDeleted && (
+                                                                <span style={{ fontSize: '0.65rem', padding: '2px 6px', borderRadius: '4px', border: '1.5px solid #ef4444', color: '#ef4444', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Terminated</span>
+                                                            )}
+                                                        </div>
                                                         <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{log.user?.department || 'N/A'}</div>
                                                     </div>
                                                 </div>
@@ -704,6 +727,10 @@ const AdminTab = ({
             )}
 
             <style>{`
+                @keyframes flyoutIn {
+                    from { opacity: 0; transform: translateY(-50%) translateX(15px) scale(0.95); }
+                    to { opacity: 1; transform: translateY(-50%) translateX(0) scale(1); }
+                }
                 @keyframes dropdownIn {
                     from { opacity: 0; transform: translateY(-6px) scale(0.97); }
                     to { opacity: 1; transform: translateY(0) scale(1); }

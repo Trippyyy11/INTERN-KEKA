@@ -417,38 +417,31 @@ export default function HomeTab({
                                 </div>
                             )}
 
-                            {orgActivityTab === 'NewJoinees' && (() => {
-                                const sevenDaysAgo = new Date();
-                                sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-                                const recentJoinees = (dashData.newJoinees || []).filter(j =>
-                                    new Date(j.joiningDate || j.createdAt) >= sevenDaysAgo
-                                );
-                                return (
-                                    <div className="animate-in fade-in slide-in-from-bottom-2 duration-300" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '1.25rem' }}>
-                                        {recentJoinees.length > 0 ? recentJoinees.map(j => (
-                                            <div
-                                                key={j._id}
-                                                onClick={() => setSelectedProfile(j)}
-                                                className="hover:shadow-lg transition-all"
-                                                style={{ textAlign: 'center', background: isLightMode ? '#ffffff' : 'rgba(255,255,255,0.02)', border: isLightMode ? '1px solid #e2e8f0' : '1px solid rgba(255,255,255,0.05)', padding: '1.5rem 1rem', borderRadius: '16px', cursor: 'pointer' }}
-                                            >
-                                                <div style={{ margin: '0 auto 0.8rem', display: 'flex', justifyContent: 'center' }}>
-                                                    <GenderAvatar gender={j.gender} profilePicture={j.profilePicture} size={60} style={{ border: '3px solid #10b981', boxShadow: '0 4px 12px rgba(16,185,129,0.25)' }} />
-                                                </div>
-                                                <div style={{ fontSize: '0.9rem', fontWeight: '800', color: 'var(--text-main)' }}>{j.name?.split(' ')[0]}</div>
-                                                <div style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--primary)', marginTop: '0.5rem', background: 'rgba(59, 130, 246, 0.1)', display: 'inline-block', padding: '0.3rem 0.8rem', borderRadius: '12px' }}>
-                                                    {j.department || 'New Joinee'}
-                                                </div>
-                                                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.6rem', fontWeight: '500' }}>
-                                                    Joined {new Date(j.joiningDate || j.createdAt).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}
-                                                </div>
+                            {orgActivityTab === 'NewJoinees' && (
+                                <div className="animate-in fade-in slide-in-from-bottom-2 duration-300" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '1.25rem' }}>
+                                    {dashData.newJoinees && dashData.newJoinees.length > 0 ? dashData.newJoinees.map(j => (
+                                        <div
+                                            key={j._id}
+                                            onClick={() => setSelectedProfile(j)}
+                                            className="hover:shadow-lg transition-all"
+                                            style={{ textAlign: 'center', background: isLightMode ? '#ffffff' : 'rgba(255,255,255,0.02)', border: isLightMode ? '1px solid #e2e8f0' : '1px solid rgba(255,255,255,0.05)', padding: '1.5rem 1rem', borderRadius: '16px', cursor: 'pointer' }}
+                                        >
+                                            <div style={{ margin: '0 auto 0.8rem', display: 'flex', justifyContent: 'center' }}>
+                                                <GenderAvatar gender={j.gender} profilePicture={j.profilePicture} size={60} style={{ border: '3px solid #10b981', boxShadow: '0 4px 12px rgba(16,185,129,0.25)' }} />
                                             </div>
-                                        )) : (
-                                            <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '3rem', color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: '500' }}>No new joinees in the last 7 days.</div>
-                                        )}
-                                    </div>
-                                );
-                            })()}
+                                            <div style={{ fontSize: '0.9rem', fontWeight: '800', color: 'var(--text-main)' }}>{j.name?.split(' ')[0]}</div>
+                                            <div style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--primary)', marginTop: '0.5rem', background: 'rgba(59, 130, 246, 0.1)', display: 'inline-block', padding: '0.3rem 0.8rem', borderRadius: '12px' }}>
+                                                {j.department || 'New Joinee'}
+                                            </div>
+                                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.6rem', fontWeight: '500' }}>
+                                                Joined {new Date(j.joiningDate || j.createdAt).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}
+                                            </div>
+                                        </div>
+                                    )) : (
+                                        <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '3rem', color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: '500' }}>No new joinees in the last 7 days.</div>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     </div>
 

@@ -56,6 +56,7 @@ const userSchema = new mongoose.Schema(
             branchName: { type: String, default: '' },
             upiId: { type: String, default: '' }
         },
+        isDeleted: { type: Boolean, default: false },
         profilePicture: { type: String, default: '' },
         slackBotToken: { type: String, default: '' }
     },

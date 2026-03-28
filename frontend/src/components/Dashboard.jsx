@@ -716,7 +716,9 @@ export default function Dashboard({ user, onLogout, setUser }) {
         try {
             const res = await api.put(`/attendance/logs/${logId}`, editForm);
             setUserAttendanceLogs(prev => prev.map(l => l._id === logId ? res.data : l));
+            setAllAttendanceLogs(prev => prev.map(l => l._id === logId ? res.data : l));
             setEditLogId(null);
+            fetchStats();
             showAlert('Attendance record updated successfully', 'success');
         } catch (err) {
             showAlert(err.response?.data?.message || 'Failed to update attendance', 'error');
@@ -1649,23 +1651,23 @@ export default function Dashboard({ user, onLogout, setUser }) {
         return (
             <div
                 style={{
-                    position: 'absolute',
+                    position: 'fixed',
                     top: 0,
                     left: 0,
-                    width: '100%',
-                    height: '100%',
-                    zIndex: 100,
+                    width: '100vw',
+                    height: '100vh',
+                    zIndex: 9999,
                     display: 'flex',
                     justifyContent: 'flex-end',
-                    background: 'rgba(0,0,0,0.15)',
-                    backdropFilter: 'blur(2px)'
+                    background: 'rgba(0,0,0,0.4)',
+                    backdropFilter: 'blur(4px)'
                 }}
-                onClick={() => setShowUserAttendanceModal(false)}
+                onClick={() => { setShowUserAttendanceModal(false); setEditLogId(null); }}
             >
                 <div
                     className="panel"
                     style={{
-                        width: '750px',
+                        width: '1100px',
                         height: '100%',
                         overflow: 'hidden',
                         display: 'flex',
@@ -1673,52 +1675,105 @@ export default function Dashboard({ user, onLogout, setUser }) {
                         background: 'var(--bg-panel)',
                         color: 'var(--text-main)',
                         borderLeft: '1px solid var(--border-dark)',
-                        boxShadow: 'var(--glow-panel)',
-                        animation: 'slideInRight 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                        boxShadow: '-10px 0 50px rgba(0,0,0,0.3)',
+                        animation: 'slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+                        borderRadius: 0
                     }}
                     onClick={e => e.stopPropagation()}
                 >
-                    <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.5rem 2rem', borderBottom: '1px solid var(--border-dark)', background: 'var(--bg-panel)' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
-                            <div className="avatar" style={{ width: '48px', height: '48px', fontSize: '1.1rem', background: 'var(--primary)', color: 'white', fontWeight: 'bold', boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)' }}>
+                    <div className="panel-header" style={{ 
+                        display: 'flex', 
+                        justifyContent: 'space-between', 
+                        alignItems: 'center', 
+                        padding: '1.5rem 2.5rem', 
+                        borderBottom: '1px solid var(--border-dark)', 
+                        background: isLightMode ? '#ffffff' : 'rgba(30, 41, 59, 0.5)',
+                        backdropFilter: 'blur(10px)'
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+                            <div className="avatar" style={{ 
+                                width: '56px', height: '56px', fontSize: '1.4rem', 
+                                background: 'linear-gradient(135deg, var(--primary), #6366f1)', 
+                                color: 'white', fontWeight: 'bold', 
+                                boxShadow: '0 8px 16px rgba(59, 130, 246, 0.25)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                borderRadius: '16px'
+                            }}>
                                 {selectedUser.name.substring(0, 2).toUpperCase()}
                             </div>
                             <div>
-                                <div style={{ fontSize: '1.25rem', fontWeight: '700', color: 'var(--text-main)', letterSpacing: '-0.5px' }}>{selectedUser.name}'s Attendance</div>
-                                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '500' }}>{selectedUser.email} • {selectedUser.department}</div>
+                                <div style={{ fontSize: '1.4rem', fontWeight: '800', color: 'var(--text-main)', letterSpacing: '-0.5px' }}>{selectedUser.name}'s Attendance</div>
+                                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '500', display: 'flex', gap: '0.75rem', marginTop: '0.2rem' }}>
+                                    <span>{selectedUser.email}</span>
+                                    <span>•</span>
+                                    <span style={{ color: 'var(--primary)', fontWeight: '600' }}>{selectedUser.department}</span>
+                                </div>
                             </div>
                         </div>
-                        <button className="btn-icon" style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', transition: 'color 0.2s' }} onMouseOver={e => e.target.style.color = 'var(--text-main)'} onMouseOut={e => e.target.style.color = 'var(--text-muted)'} onClick={() => setShowUserAttendanceModal(false)}>
-                            <X size={24} />
+                        <button 
+                            className="btn-icon" 
+                            style={{ 
+                                background: isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.05)', 
+                                border: 'none', color: 'var(--text-muted)', 
+                                cursor: 'pointer', transition: 'all 0.2s',
+                                width: '40px', height: '40px', borderRadius: '50%',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center'
+                            }} 
+                            onMouseOver={e => { e.currentTarget.style.background = '#ef4444'; e.currentTarget.style.color = 'white'; }} 
+                            onMouseOut={e => { e.currentTarget.style.background = isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = 'var(--text-muted)'; }} 
+                            onClick={() => { setShowUserAttendanceModal(false); setEditLogId(null); }}
+                        >
+                            <X size={20} />
                         </button>
                     </div>
 
-                    <div style={{ padding: '2rem', overflowY: 'auto', flex: 1, background: 'var(--bg-panel)' }}>
+                    <div style={{ padding: '2.5rem', overflowY: 'auto', flex: 1, background: isLightMode ? '#f8fafc' : 'transparent' }}>
+                        <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '700', color: 'var(--text-main)' }}>Recent Logs</h3>
+                            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Showing logs from current period</div>
+                        </div>
+
                         {userAttendanceLogs.length > 0 ? (
-                            <div style={{ background: 'var(--bg-main)', borderRadius: '12px', border: '1px solid var(--border-dark)', overflow: 'hidden' }}>
+                            <div style={{ 
+                                background: 'var(--bg-panel)', 
+                                borderRadius: '20px', 
+                                border: '1px solid var(--border-dark)', 
+                                overflow: 'hidden',
+                                boxShadow: '0 4px 20px rgba(0,0,0,0.05)'
+                            }}>
                                 <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
-                                    <thead>
-                                        <tr style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px', borderBottom: '1px solid var(--border-dark)', background: 'rgba(255,255,255,0.02)' }}>
-                                            <th style={{ padding: '1.25rem 1rem', textAlign: 'left' }}>Date</th>
-                                            <th style={{ padding: '1.25rem 1rem', textAlign: 'left' }}>Status</th>
-                                            <th style={{ padding: '1.25rem 1rem', textAlign: 'left' }}>Clock-In</th>
-                                            <th style={{ padding: '1.25rem 1rem', textAlign: 'left' }}>Clock-Out</th>
-                                            <th style={{ padding: '1.25rem 1rem', textAlign: 'left' }}>Hours</th>
-                                            <th style={{ padding: '1.25rem 1rem', textAlign: 'left' }}>Mode</th>
+                                    <thead style={{ background: isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.02)' }}>
+                                        <tr style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                                            <th style={{ padding: '1.25rem 2rem', textAlign: 'left', fontWeight: '800', width: '160px' }}>Date</th>
+                                            <th style={{ padding: '1.25rem 1rem', textAlign: 'left', fontWeight: '800', width: '140px' }}>Status</th>
+                                            <th style={{ padding: '1.25rem 1rem', textAlign: 'left', fontWeight: '800', minWidth: '200px' }}>Clock-In</th>
+                                            <th style={{ padding: '1.25rem 1rem', textAlign: 'left', fontWeight: '800', minWidth: '200px' }}>Clock-Out</th>
+                                            <th style={{ padding: '1.25rem 1rem', textAlign: 'left', fontWeight: '800', width: '120px' }}>Total</th>
+                                            <th style={{ padding: '1.25rem 2rem', textAlign: 'right', fontWeight: '800' }}>Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {userAttendanceLogs.map(log => (
                                             <tr key={log._id} style={{ borderBottom: '1px solid var(--border-dark)', transition: 'background 0.2s' }} className="hover-row">
-                                                <td style={{ padding: '1.25rem 1rem', fontWeight: '600', color: 'var(--text-main)' }}>
-                                                    {new Date(log.date).toLocaleDateString('en-US', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}
+                                                <td style={{ padding: '1.5rem 2rem', fontWeight: '600', color: 'var(--text-main)', fontSize: '1rem' }}>
+                                                    {new Date(log.date).toLocaleDateString('en-US', { weekday: 'short', day: '2-digit', month: 'short' })}
                                                 </td>
-                                                <td style={{ padding: '1.25rem 1rem' }}>
+                                                <td style={{ padding: '1.5rem 1rem' }}>
                                                     {editLogId === log._id ? (
                                                         <select 
                                                             value={editForm.status} 
                                                             onChange={(e) => setEditForm({...editForm, status: e.target.value})}
-                                                            style={{ padding: '0.3rem', borderRadius: '4px', background: 'var(--bg-panel)', color: 'var(--text-main)', border: '1px solid var(--border-dark)' }}
+                                                            style={{ 
+                                                                padding: '0.5rem 0.75rem', 
+                                                                borderRadius: '10px', 
+                                                                background: 'var(--bg-main)', 
+                                                                color: 'var(--text-main)', 
+                                                                border: '1px solid var(--primary)',
+                                                                outline: 'none',
+                                                                fontSize: '0.9rem',
+                                                                width: '100%',
+                                                                boxShadow: '0 0 0 2px rgba(59, 130, 246, 0.1)'
+                                                            }}
                                                         >
                                                             <option value="Present">Present</option>
                                                             <option value="WFH">Remote</option>
@@ -1726,59 +1781,100 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                                         </select>
                                                     ) : (
                                                         <span style={{
-                                                            padding: '0.3rem 0.75rem',
-                                                            borderRadius: '20px',
-                                                            fontSize: '0.65rem',
-                                                            fontWeight: '800',
+                                                            padding: '0.4rem 0.85rem',
+                                                            borderRadius: '10px',
+                                                            fontSize: '0.7rem',
+                                                            fontWeight: '700',
                                                             textTransform: 'uppercase',
                                                             letterSpacing: '0.5px',
-                                                            background: log.status === 'WFH' ? 'rgba(96, 165, 250, 0.15)' : 'rgba(52, 211, 153, 0.15)',
-                                                            color: log.status === 'WFH' ? '#60a5fa' : '#34d399',
-                                                            border: `1px solid ${log.status === 'WFH' ? 'rgba(96, 165, 250, 0.2)' : 'rgba(52, 211, 153, 0.2)'}`
+                                                            background: log.status === 'WFH' ? 'rgba(99, 102, 241, 0.12)' : (log.status === 'On Leave' ? 'rgba(239, 68, 68, 0.12)' : 'rgba(16, 185, 129, 0.12)'),
+                                                            color: log.status === 'WFH' ? '#6366f1' : (log.status === 'On Leave' ? '#ef4444' : '#10b981'),
+                                                            border: `1px solid ${log.status === 'WFH' ? 'rgba(99, 102, 241, 0.2)' : (log.status === 'On Leave' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(16, 185, 129, 0.2)')}`
                                                         }}>
                                                             {log.status === 'WFH' ? 'Remote' : log.status}
                                                         </span>
                                                     )}
                                                 </td>
-                                                <td style={{ padding: '1.25rem 1rem', color: 'var(--text-main)', fontSize: '0.9rem' }}>
+                                                <td style={{ padding: '1.5rem 1rem', color: 'var(--text-main)', fontSize: '0.9rem' }}>
                                                     {editLogId === log._id ? (
                                                         <input 
                                                             type="datetime-local" 
                                                             value={editForm.clockInTime ? new Date(new Date(editForm.clockInTime).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ''} 
                                                             onChange={(e) => setEditForm({...editForm, clockInTime: e.target.value})}
-                                                            style={{ padding: '0.3rem', borderRadius: '4px', background: 'var(--bg-panel)', color: 'var(--text-main)', border: '1px solid var(--border-dark)', fontSize: '0.8rem' }}
+                                                            style={{ 
+                                                                padding: '0.6rem 0.8rem', 
+                                                                borderRadius: '12px', 
+                                                                background: 'var(--bg-main)', 
+                                                                color: 'var(--text-main)', 
+                                                                border: '1px solid var(--border-dark)', 
+                                                                fontSize: '0.95rem',
+                                                                width: '100%',
+                                                                outline: 'none',
+                                                                transition: 'border-color 0.2s'
+                                                            }}
                                                         />
                                                     ) : (
-                                                        log.clockInTime ? new Date(log.clockInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'
+                                                        <span style={{ fontWeight: '500' }}>{log.clockInTime ? new Date(log.clockInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}</span>
                                                     )}
                                                 </td>
-                                                <td style={{ padding: '1.25rem 1rem', color: 'var(--text-main)', fontSize: '0.9rem' }}>
+                                                <td style={{ padding: '1.5rem 1rem', color: 'var(--text-main)', fontSize: '0.9rem' }}>
                                                     {editLogId === log._id ? (
                                                         <input 
                                                             type="datetime-local" 
                                                             value={editForm.clockOutTime ? new Date(new Date(editForm.clockOutTime).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ''} 
                                                             onChange={(e) => setEditForm({...editForm, clockOutTime: e.target.value})}
-                                                            style={{ padding: '0.3rem', borderRadius: '4px', background: 'var(--bg-panel)', color: 'var(--text-main)', border: '1px solid var(--border-dark)', fontSize: '0.8rem' }}
+                                                            style={{ 
+                                                                padding: '0.6rem 0.8rem', 
+                                                                borderRadius: '12px', 
+                                                                background: 'var(--bg-main)', 
+                                                                color: 'var(--text-main)', 
+                                                                border: '1px solid var(--border-dark)', 
+                                                                fontSize: '0.95rem',
+                                                                width: '100%',
+                                                                outline: 'none',
+                                                                transition: 'border-color 0.2s'
+                                                            }}
                                                         />
                                                     ) : (
-                                                        log.clockOutTime ? new Date(log.clockOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : (log.clockInTime ? <span style={{ color: 'var(--primary)', fontWeight: '600' }}>Ongoing</span> : '-')
+                                                        log.clockOutTime ? 
+                                                        <span style={{ fontWeight: '500' }}>{new Date(log.clockOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span> : 
+                                                        (log.clockInTime ? <span style={{ color: 'var(--primary)', fontWeight: '700', fontSize: '0.8rem', textTransform: 'uppercase' }}>Ongoing</span> : '-')
                                                     )}
                                                 </td>
-                                                <td style={{ padding: '1.25rem 1rem', fontWeight: '700', color: 'var(--primary)', fontSize: '0.95rem' }}>
+                                                <td style={{ padding: '1.5rem 1rem', fontWeight: '800', color: 'var(--primary)', fontSize: '1rem' }}>
                                                     {log.totalHours ? `${Math.floor(log.totalHours)}h ${Math.round((log.totalHours % 1) * 60)}m` : '-'}
                                                 </td>
-                                                <td style={{ padding: '1.25rem 1rem', textAlign: 'right' }}>
+                                                <td style={{ padding: '1.5rem 1.5rem', textAlign: 'right' }}>
                                                     {editLogId === log._id ? (
-                                                        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                                                        <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
                                                             <button 
                                                                 onClick={() => handleSaveAttendanceEdit(log._id)}
-                                                                style={{ padding: '0.4rem 0.8rem', borderRadius: '8px', background: 'var(--primary)', color: 'white', border: 'none', cursor: 'pointer', fontSize: '0.75rem', fontWeight: '700' }}
+                                                                style={{ 
+                                                                    padding: '0.5rem 1.25rem', 
+                                                                    borderRadius: '12px', 
+                                                                    background: 'linear-gradient(135deg, var(--primary), #6366f1)', 
+                                                                    color: 'white', border: 'none', cursor: 'pointer', 
+                                                                    fontSize: '0.8rem', fontWeight: '700',
+                                                                    boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)',
+                                                                    transition: 'all 0.2s'
+                                                                }}
+                                                                onMouseOver={e => e.currentTarget.style.transform = 'translateY(-2px)'}
+                                                                onMouseOut={e => e.currentTarget.style.transform = 'translateY(0)'}
                                                             >
-                                                                Save
+                                                                Save Changes
                                                             </button>
                                                             <button 
                                                                 onClick={() => setEditLogId(null)}
-                                                                style={{ padding: '0.4rem 0.8rem', borderRadius: '8px', background: 'rgba(255,255,255,0.1)', color: 'var(--text-main)', border: 'none', cursor: 'pointer', fontSize: '0.75rem', fontWeight: '700' }}
+                                                                style={{ 
+                                                                    padding: '0.5rem 1rem', 
+                                                                    borderRadius: '12px', 
+                                                                    background: isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.08)', 
+                                                                    color: 'var(--text-main)', border: 'none', cursor: 'pointer', 
+                                                                    fontSize: '0.8rem', fontWeight: '600',
+                                                                    transition: 'all 0.2s'
+                                                                }}
+                                                                onMouseOver={e => e.currentTarget.style.background = isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.12)'}
+                                                                onMouseOut={e => e.currentTarget.style.background = isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.08)'}
                                                             >
                                                                 Cancel
                                                             </button>
@@ -1793,9 +1889,24 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                                                     status: log.status || 'Present'
                                                                 });
                                                             }}
-                                                            style={{ background: 'transparent', border: 'none', color: 'var(--primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.8rem', fontWeight: '600' }}
+                                                            style={{ 
+                                                                background: 'transparent', 
+                                                                border: '1px solid var(--primary)', 
+                                                                color: 'var(--primary)', 
+                                                                cursor: 'pointer', 
+                                                                display: 'inline-flex', 
+                                                                alignItems: 'center', 
+                                                                gap: '0.5rem', 
+                                                                fontSize: '0.8rem', 
+                                                                fontWeight: '700',
+                                                                padding: '0.5rem 1rem',
+                                                                borderRadius: '12px',
+                                                                transition: 'all 0.2s'
+                                                            }}
+                                                            onMouseOver={e => { e.currentTarget.style.background = 'var(--primary)'; e.currentTarget.style.color = 'white'; }}
+                                                            onMouseOut={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--primary)'; }}
                                                         >
-                                                            <Edit3 size={14} /> Edit
+                                                            <Edit3 size={14} /> Edit Log
                                                         </button>
                                                     )}
                                                 </td>
@@ -1805,34 +1916,32 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                 </table>
                             </div>
                         ) : (
-                            <div style={{ textAlign: 'center', padding: '6rem 2rem', color: 'var(--text-muted)' }}>
-                                <div style={{ display: 'inline-flex', padding: '1.5rem', background: 'var(--bg-main)', borderRadius: '50%', marginBottom: '1.5rem' }}>
-                                    <Clock size={48} style={{ opacity: 0.3 }} />
-                                </div>
-                                <div style={{ fontSize: '1.1rem', fontWeight: '600', color: 'var(--text-main)', marginBottom: '0.5rem' }}>No Attendance Found</div>
-                                <div style={{ fontSize: '0.9rem' }}>This user hasn't recorded any attendance logs yet.</div>
+                            <div style={{ textAlign: 'center', padding: '5rem 2rem', background: 'var(--bg-panel)', borderRadius: '24px', border: '1px dotted var(--border-dark)' }}>
+                                <div style={{ fontSize: '3rem', marginBottom: '1rem', opacity: 0.3 }}>📅</div>
+                                <h3 style={{ margin: 0, color: 'var(--text-muted)' }}>No logs found for this period</h3>
                             </div>
                         )}
                     </div>
 
-                    <div style={{ padding: '1.5rem 2rem', borderTop: '1px solid var(--border-dark)', display: 'flex', justifyContent: 'flex-end', gap: '1rem', background: 'var(--bg-panel)' }}>
-                        <button
-                            className="btn"
-                            style={{
+                    <div style={{ padding: '1.5rem 2.5rem', borderTop: '1px solid var(--border-dark)', display: 'flex', justifyContent: 'flex-end', background: isLightMode ? '#ffffff' : 'rgba(30, 41, 59, 0.5)' }}>
+                        <button 
+                            className="btn" 
+                            style={{ 
+                                padding: '0.75rem 2rem', 
+                                borderRadius: '15px', 
+                                border: '1px solid var(--border-dark)', 
                                 background: 'transparent',
-                                border: '1px solid var(--border-dark)',
                                 color: 'var(--text-main)',
-                                padding: '0.75rem 2rem',
-                                borderRadius: '10px',
+                                fontWeight: '700',
+                                fontSize: '0.9rem',
                                 cursor: 'pointer',
-                                fontWeight: '600',
                                 transition: 'all 0.2s'
                             }}
-                            onMouseOver={e => e.target.style.background = 'var(--bg-main)'}
-                            onMouseOut={e => e.target.style.background = 'transparent'}
-                            onClick={() => setShowUserAttendanceModal(false)}
+                            onMouseOver={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                            onMouseOut={e => e.currentTarget.style.background = 'transparent'}
+                            onClick={() => { setShowUserAttendanceModal(false); setEditLogId(null); }}
                         >
-                            Close
+                            Close Panel
                         </button>
                     </div>
                 </div>
