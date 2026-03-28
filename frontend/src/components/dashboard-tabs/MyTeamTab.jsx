@@ -160,8 +160,22 @@ const MyTeamTab = ({
 
     const renderCalendar = () => {
         if (loading) return <div style={{ ...bentoPanelStyle, padding: '4rem', textAlign: 'center', color: 'var(--text-muted)' }}>Loading calendar...</div>;
-        if (!calendarData || calendarData.teamMembers.length === 0) {
-            return <div style={{ ...bentoPanelStyle, padding: '4rem', textAlign: 'center', color: 'var(--text-muted)' }}>No data available for this month</div>;
+        const myDept = user.department || 'No Department';
+        if (!calendarData || !calendarData.teamMembers || calendarData.teamMembers.length === 0) {
+            return (
+                <div style={{ ...bentoPanelStyle, padding: '4rem', textAlign: 'center' }}>
+                    <div style={{ color: 'var(--text-muted)', marginBottom: '1rem' }}>No team members found for your department: <strong>{myDept}</strong></div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', opacity: 0.7 }}>
+                        Check your department settings or ask an admin to assign you to a department.
+                    </div>
+                    <button 
+                        onClick={() => fetchCalendarData()}
+                        style={{ marginTop: '1.5rem', padding: '0.6rem 1.25rem', borderRadius: '12px', background: 'var(--primary)', color: 'white', border: 'none', fontWeight: '700', cursor: 'pointer' }}
+                    >
+                        Retry Load
+                    </button>
+                </div>
+            );
         }
 
         const { teamMembers, attendance, leaves, holidays, daysInMonth } = calendarData;
@@ -181,17 +195,24 @@ const MyTeamTab = ({
 
         const statusColors = {
             present: '#22c33e',
-            leave: '#ef4444', 
+            leave: '#ef4444',
             wfh: '#ffa5ae',
             holiday: '#ffe030',
             weekOff: '#121212',
         };
 
         const getStatusForCell = (member, dateStr, dayNameLong, isWeekend, isPastOrToday) => {
-            const leave = leaves.find(l => l.user?._id === member._id && moment(l.startDate).isSameOrBefore(dateStr, 'day') && moment(l.endDate).isSameOrAfter(dateStr, 'day'));
+            const memberId = member._id?.toString();
+            const leave = leaves.find(l => {
+                const leaveUserId = l.user?._id?.toString() || l.user?.toString();
+                return leaveUserId === memberId && moment(l.startDate).isSameOrBefore(dateStr, 'day') && moment(l.endDate).isSameOrAfter(dateStr, 'day');
+            });
             if (leave) return { color: statusColors.leave, label: 'L', tooltip: 'Leave' };
 
-            const att = attendance.find(a => a.user === member._id && moment(a.date).isSame(dateStr, 'day'));
+            const att = attendance.find(a => {
+                const attUserId = a.user?._id?.toString() || a.user?.toString();
+                return attUserId === memberId && moment(a.date).isSame(dateStr, 'day');
+            });
             if (att && (att.status === 'WFH' || att.workingMode === 'Remote')) return { color: statusColors.wfh, label: 'W', tooltip: 'Work From Home' };
             if (isPastOrToday) {
                 const holiday = holidays.find(hol => moment(hol.date).isSame(dateStr, 'day'));

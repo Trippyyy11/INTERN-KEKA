@@ -58,8 +58,8 @@ const generate = async () => {
                             professionalTax: deductions
                         },
                         netPay,
-                        status: 'Paid',
-                        paidAt: new Date(year, month === 'February' ? 1 : 2, 28),
+                        status: 'Unpaid',
+                        paidAt: null,
                         paymentMethod: 'Bank Transfer',
                         pdfUrl: '' // No PDF generated for this bulk script
                     });

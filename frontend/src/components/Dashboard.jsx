@@ -251,8 +251,6 @@ export default function Dashboard({ user, onLogout, setUser }) {
         if (user?.role === 'Admin' || user?.role === 'Super Admin') {
             fetchAdminData();
             fetchOrgConfigs();
-        }
-        if (user?.role === 'Super Admin') {
             fetchGlobalFinances();
         }
         fetchPublicData();
@@ -939,6 +937,16 @@ export default function Dashboard({ user, onLogout, setUser }) {
         }
     };
 
+    const handleUpdatePayslipStatus = async (payslipId, status) => {
+        try {
+            await api.put(`/payslips/${payslipId}`, { status });
+            fetchGlobalFinances();
+            showAlert(`Payslip marked as ${status}`, 'success');
+        } catch (err) {
+            showAlert(err.response?.data?.message || 'Failed to update payslip status', 'error');
+        }
+    };
+
     const sidebarItems = [
         { name: 'Home', icon: <Home size={20} /> },
         { name: 'Me', icon: <User size={20} /> },
@@ -1270,6 +1278,8 @@ export default function Dashboard({ user, onLogout, setUser }) {
                         setModalTab={setModalTab}
                         handleShowAttendance={handleShowAttendance}
                         isLightMode={isLightMode}
+                        globalPayslips={globalPayslips}
+                        handleUpdatePayslipStatus={handleUpdatePayslipStatus}
                     />
                 </div>
             );

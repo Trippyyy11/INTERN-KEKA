@@ -70,7 +70,7 @@ export const getDashboardStats = async (req, res) => {
                 { joiningDate: { $eq: null }, createdAt: { $gte: sevenDaysAgo.toDate() } },
                 { joiningDate: { $exists: false }, createdAt: { $gte: sevenDaysAgo.toDate() } }
             ],
-            isDeleted: false
+            isDeleted: { $ne: true }
         }).select('name joiningDate createdAt department avatar profilePicture gender place bloodGroup dob welcomeProfile designation phoneNumber');
 
         // 5. Team Activity Stats (Today)
@@ -156,12 +156,10 @@ export const getTeamCalendarStats = async (req, res) => {
         const endOfMonth = targetDate.clone().endOf('month');
 
         const myDept = req.user.department;
-        // Fetch teammates (same department) and self
-        const query = { isActive: true };
+        const query = { isActive: true, isDeleted: { $ne: true } };
         if (myDept) {
-            query.department = myDept;
+            query.department = { $regex: `^${myDept.trim()}$`, $options: 'i' };
         } else {
-            // If no department assigned, at least show the current user
             query._id = req.user._id;
         }
 

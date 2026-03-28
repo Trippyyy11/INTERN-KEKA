@@ -83,9 +83,13 @@ const AdminTab = ({
     setEditMode,
     setModalTab,
     handleShowAttendance,
-    isLightMode
+    isLightMode,
+    globalPayslips = [],
+    handleUpdatePayslipStatus
 }) => {
     const [filterType, setFilterType] = useState('All');
+    const [payrollMonth, setPayrollMonth] = useState(new Intl.DateTimeFormat('en-US', { month: 'long' }).format(new Date()));
+    const [payrollYear, setPayrollYear] = useState(new Date().getFullYear());
     const pagedUsers = allUsers.filter(u => u.status !== 'Pending');
     const filteredConfigs = filterType === 'All' ? orgConfigs : orgConfigs.filter(c => c.type === filterType);
     
@@ -204,7 +208,8 @@ const AdminTab = ({
                     { key: 'Approvals', label: 'APPROVALS', count: pendingUsers.length },
                     { key: 'Configs', label: 'ORG CONFIGS' },
                     { key: 'Settings', label: 'SYSTEM SETTINGS' },
-                    { key: 'Bank', label: 'BANK INFO' }
+                    { key: 'Bank', label: 'BANK INFO' },
+                    { key: 'Payroll', label: 'PAYROLL' }
                 ].map(t => {
                     const active = activeSubTab === t.key;
                     return (
@@ -720,6 +725,126 @@ const AdminTab = ({
                                         <td style={{ ...tdStyle, paddingRight: '2rem', fontWeight: '700', color: '#10b981' }}>{u.bankDetails?.upiId || <span style={{ opacity: 0.3, color: 'var(--text-muted)' }}>—</span>}</td>
                                     </tr>
                                 ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
+
+            {/* ===== PAYROLL ===== */}
+            {activeSubTab === 'Payroll' && (
+                <div style={{ ...glass, padding: '2rem' }}>
+                    <SectionHeader 
+                        icon={<Landmark size={24} />} 
+                        title="Payroll Management" 
+                        subtitle="Review and update payout status for all employees" 
+                        extra={
+                            <div style={{ display: 'flex', gap: '1rem' }}>
+                                <select 
+                                    value={payrollMonth} 
+                                    onChange={(e) => setPayrollMonth(e.target.value)}
+                                    style={{
+                                        padding: '0.6rem 1rem', borderRadius: '12px',
+                                        background: isLightMode ? '#f8fafc' : 'rgba(255,255,255,0.05)',
+                                        border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.1)'}`,
+                                        color: 'var(--text-main)', fontWeight: '700', outline: 'none'
+                                    }}
+                                >
+                                    {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map(m => (
+                                        <option key={m} value={m} style={{ background: isLightMode ? '#fff' : '#1e293b' }}>{m}</option>
+                                    ))}
+                                </select>
+                                <select 
+                                    value={payrollYear} 
+                                    onChange={(e) => setPayrollYear(parseInt(e.target.value))}
+                                    style={{
+                                        padding: '0.6rem 1rem', borderRadius: '12px',
+                                        background: isLightMode ? '#f8fafc' : 'rgba(255,255,255,0.05)',
+                                        border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.1)'}`,
+                                        color: 'var(--text-main)', fontWeight: '700', outline: 'none'
+                                    }}
+                                >
+                                    {[2024, 2025, 2026].map(y => (
+                                        <option key={y} value={y} style={{ background: isLightMode ? '#fff' : '#1e293b' }}>{y}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        }
+                    />
+                    
+                    <div style={{ overflowX: 'auto', margin: '0 -2rem -2rem', borderBottomLeftRadius: '28px', borderBottomRightRadius: '28px' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '950px' }}>
+                            <thead>
+                                <tr>
+                                    <th style={{ ...thStyle, paddingLeft: '2rem' }}>EMPLOYEE</th>
+                                    <th style={thStyle}>NET PAY</th>
+                                    <th style={thStyle}>STATUS</th>
+                                    <th style={thStyle}>PAID ON</th>
+                                    <th style={thStyle}>BANK / UPI</th>
+                                    <th style={{ ...thStyle, textAlign: 'center', paddingRight: '2rem' }}>ACTION</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {allUsers.map((u, idx) => {
+                                    const payslip = globalPayslips.find(p => p.user?._id === u._id && p.month === payrollMonth && parseInt(p.year) === payrollYear);
+                                    return (
+                                        <tr key={u._id} style={{ borderTop: rowBorder, transition: 'background 0.2s' }}
+                                            onMouseOver={e => e.currentTarget.style.background = isLightMode ? 'rgba(99,102,241,0.03)' : 'rgba(255,255,255,0.02)'}
+                                            onMouseOut={e => e.currentTarget.style.background = 'transparent'}>
+                                            <td style={{ ...tdStyle, paddingLeft: '2rem' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+                                                    {getAvatar(u.name, idx)}
+                                                    <div>
+                                                        <div style={{ fontWeight: '700', fontSize: '0.9rem' }}>{u.name}</div>
+                                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{u.designation}</div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td style={{ ...tdStyle, fontWeight: '800', color: 'var(--primary)' }}>
+                                                {payslip ? `₹${payslip.netPay.toLocaleString()}` : <span style={{ opacity: 0.3 }}>Not Generated</span>}
+                                            </td>
+                                            <td style={tdStyle}>
+                                                {payslip ? (
+                                                    <span style={{
+                                                        padding: '0.3rem 0.75rem', borderRadius: '10px',
+                                                        fontSize: '0.65rem', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '0.8px',
+                                                        background: payslip.status === 'Paid' ? 'rgba(16, 185, 129, 0.12)' : 'rgba(245, 158, 11, 0.12)',
+                                                        color: payslip.status === 'Paid' ? '#10b981' : '#f59e0b',
+                                                        border: `1px solid ${payslip.status === 'Paid' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)'}`
+                                                    }}>
+                                                        {payslip.status}
+                                                    </span>
+                                                ) : <span style={{ opacity: 0.3 }}>—</span>}
+                                            </td>
+                                            <td style={tdStyle}>
+                                                {payslip?.paidAt ? new Date(payslip.paidAt).toLocaleDateString() : <span style={{ opacity: 0.3 }}>—</span>}
+                                            </td>
+                                            <td style={tdStyle}>
+                                                <div style={{ fontSize: '0.8rem', fontWeight: '600' }}>{u.bankDetails?.bankName || 'N/A'}</div>
+                                                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontFamily: 'monospace' }}>{u.bankDetails?.accountNumber || u.bankDetails?.upiId || ''}</div>
+                                            </td>
+                                            <td style={{ ...tdStyle, textAlign: 'center', paddingRight: '2rem' }}>
+                                                {payslip ? (
+                                                    <button 
+                                                        onClick={() => handleUpdatePayslipStatus(payslip._id, payslip.status === 'Paid' ? 'Unpaid' : 'Paid')}
+                                                        style={{
+                                                            padding: '0.5rem 1rem', borderRadius: '10px', border: 'none', cursor: 'pointer',
+                                                            background: payslip.status === 'Paid' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)',
+                                                            color: payslip.status === 'Paid' ? '#ef4444' : '#10b981',
+                                                            fontSize: '0.75rem', fontWeight: '800', transition: 'all 0.2s'
+                                                        }}
+                                                        onMouseOver={e => { e.currentTarget.style.background = payslip.status === 'Paid' ? '#ef4444' : '#10b981'; e.currentTarget.style.color = '#fff'; }}
+                                                        onMouseOut={e => { e.currentTarget.style.background = payslip.status === 'Paid' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)'; e.currentTarget.style.color = payslip.status === 'Paid' ? '#ef4444' : '#10b981'; }}
+                                                    >
+                                                        {payslip.status === 'Paid' ? 'Mark Unpaid' : 'Mark Paid'}
+                                                    </button>
+                                                ) : (
+                                                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Action N/A</span>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
                             </tbody>
                         </table>
                     </div>
