@@ -1221,6 +1221,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
                             <RequestTab
                                 user={user}
                                 allUsers={allUsers}
+                                leaveStats={leaveStats}
                                 isLightMode={isLightMode}
                                 requestType={requestType}
                                 setRequestType={setRequestType}

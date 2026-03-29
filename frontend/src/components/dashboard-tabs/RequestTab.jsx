@@ -1,9 +1,111 @@
-import { ChevronDown, X, Send, Info, FileText, Clock } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { ChevronDown, X, Send, Info, FileText, Clock, Calendar as CalIcon, Home, Zap, AlertCircle } from 'lucide-react';
+
+const CustomDropdown = ({ label, value, options, onChange, isLightMode, placeholder = "Select...", error = false }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const dropdownRef = useRef(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                setIsOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const selectedOption = options.find(opt => opt.value === value);
+
+    return (
+        <div style={{ marginBottom: '1.5rem', position: 'relative' }} ref={dropdownRef}>
+            {label && (
+                <label style={{
+                    display: 'block', fontSize: '0.75rem', fontWeight: '800',
+                    color: 'var(--text-muted)', marginBottom: '0.6rem',
+                    textTransform: 'uppercase', letterSpacing: '0.8px'
+                }}>{label}</label>
+            )}
+            <div 
+                onClick={() => setIsOpen(!isOpen)}
+                style={{
+                    width: '100%', padding: '0.9rem 1.1rem', borderRadius: '16px',
+                    border: `1.5px solid ${isOpen ? 'var(--primary)' : (error ? '#ef4444' : (isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.08)'))}`,
+                    background: isLightMode ? '#fff' : 'rgba(15, 23, 42, 0.4)',
+                    color: selectedOption ? 'var(--text-main)' : 'var(--text-muted)',
+                    fontSize: '0.92rem', fontWeight: '600', cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                    boxShadow: isOpen ? '0 0 0 4px rgba(99, 102, 241, 0.1)' : 'none'
+                }}
+            >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    {selectedOption?.icon && <span style={{ fontSize: '1.1rem' }}>{selectedOption.icon}</span>}
+                    <span>{selectedOption ? selectedOption.label : placeholder}</span>
+                </div>
+                <ChevronDown size={18} style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.3s' }} />
+            </div>
+
+            {isOpen && (
+                <div style={{
+                    position: 'absolute', top: 'calc(100% + 8px)', left: 0, right: 0,
+                    background: isLightMode ? '#fff' : 'rgba(15, 23, 42, 0.95)',
+                    backdropFilter: 'blur(12px)', borderRadius: '18px',
+                    border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.1)'}`,
+                    boxShadow: '0 12px 40px rgba(0,0,0,0.2)', zIndex: 100,
+                    overflow: 'hidden', animation: 'dropdownFadeIn 0.2s ease-out'
+                }}>
+                    <div style={{ maxHeight: '250px', overflowY: 'auto' }}>
+                        {options.map((opt) => (
+                            <div 
+                                key={opt.value}
+                                onClick={() => { onChange(opt.value); setIsOpen(false); }}
+                                style={{
+                                    padding: '0.9rem 1.25rem', cursor: 'pointer',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                    background: value === opt.value ? 'rgba(var(--primary-rgb), 0.08)' : 'transparent',
+                                    transition: 'all 0.15s'
+                                }}
+                                onMouseEnter={e => e.currentTarget.style.background = isLightMode ? '#f8fafc' : 'rgba(255,255,255,0.03)'}
+                                onMouseLeave={e => e.currentTarget.style.background = value === opt.value ? 'rgba(var(--primary-rgb), 0.08)' : 'transparent'}
+                            >
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                    {opt.icon && <span style={{ fontSize: '1.1rem' }}>{opt.icon}</span>}
+                                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                        <span style={{ fontSize: '0.9rem', fontWeight: '700', color: value === opt.value ? 'var(--primary)' : 'var(--text-main)' }}>{opt.label}</span>
+                                        {opt.subLabel && <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: '500' }}>{opt.subLabel}</span>}
+                                    </div>
+                                </div>
+                                {opt.balance !== undefined && (
+                                    <div style={{ 
+                                        padding: '4px 10px', borderRadius: '10px', 
+                                        background: opt.balance <= 0 ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)',
+                                        color: opt.balance <= 0 ? '#ef4444' : '#10b981',
+                                        fontSize: '0.75rem', fontWeight: '800'
+                                    }}>
+                                        {opt.balance} Left
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+            <style>{`
+                @keyframes dropdownFadeIn {
+                    from { opacity: 0; transform: translateY(-10px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+            `}</style>
+        </div>
+    );
+};
 
 const RequestTab = ({
     user,
     allUsers,
     myLeaves,
+    leaveStats,
     requestType,
     setRequestType,
     requestLeaveType,
@@ -32,6 +134,44 @@ const RequestTab = ({
     getStatusStyle,
     isLightMode
 }) => {
+
+    const [durationText, setDurationText] = useState('');
+    const [balanceError, setBalanceError] = useState('');
+
+    const calculateRequestedDuration = () => {
+        if (!requestStartDate || !requestEndDate) return 0;
+        const start = new Date(requestStartDate);
+        const end = new Date(requestEndDate);
+        if (end < start) return 0;
+        return Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+    };
+
+    useEffect(() => {
+        const duration = calculateRequestedDuration();
+        if (duration > 0 && requestType !== 'Half Day') {
+            setDurationText(`Requested: ${duration} Day${duration > 1 ? 's' : ''}`);
+            
+            // Validate balance
+            if (['Leave Application', 'Comp Off'].includes(requestType)) {
+                const targetType = requestType === 'Comp Off' ? 'Comp Off' : (requestLeaveType || 'Casual');
+                if (targetType !== 'Unpaid') {
+                    const balance = leaveStats?.balances?.[targetType]?.total - leaveStats?.balances?.[targetType]?.consumed || 0;
+                    if (duration > balance) {
+                        setBalanceError(`Insufficient Balance! You only have ${balance} days left for ${targetType}.`);
+                    } else {
+                        setBalanceError('');
+                    }
+                } else {
+                    setBalanceError('');
+                }
+            } else {
+                setBalanceError('');
+            }
+        } else {
+            setDurationText('');
+            setBalanceError('');
+        }
+    }, [requestStartDate, requestEndDate, requestType, requestLeaveType, leaveStats]);
 
     const searchRecipients = (q) => {
         setRecipientSearch(q);
@@ -73,7 +213,7 @@ const RequestTab = ({
         padding: '0.9rem 1rem',
         borderRadius: '16px',
         border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.08)'}`,
-        background: isLightMode ? '#f8fafc' : 'rgba(0,0,0,0.2)',
+        background: isLightMode ? '#fff' : 'rgba(15, 23, 42, 0.4)',
         color: 'var(--text-main)',
         fontSize: '0.9rem',
         fontWeight: '500',
@@ -81,11 +221,20 @@ const RequestTab = ({
         transition: 'border-color 0.2s, box-shadow 0.2s',
     };
 
-    const selectStyle = {
-        ...inputStyle,
-        appearance: 'none',
-        cursor: 'pointer',
-    };
+    const requestTypeOptions = [
+        { label: 'Leave Application', value: 'Leave Application', icon: '🏖️' },
+        { label: 'Work From Home', value: 'Work From Home', icon: '🏠' },
+        { label: 'Half Day', value: 'Half Day', icon: '⏰' },
+        { label: 'Comp Off', value: 'Comp Off', icon: '🔄', balance: leaveStats?.balances?.['Comp Off']?.total - leaveStats?.balances?.['Comp Off']?.consumed },
+        { label: 'Leave Cancellation', value: 'Leave Cancellation', icon: '🚫' }
+    ];
+
+    const leaveTypeOptions = [
+        { label: 'Paid Leave', value: 'Paid', icon: '💰', balance: leaveStats?.balances?.['Paid']?.total - leaveStats?.balances?.['Paid']?.consumed },
+        { label: 'Sick Leave', value: 'Sick', icon: '🤒', balance: leaveStats?.balances?.['Sick']?.total - leaveStats?.balances?.['Sick']?.consumed },
+        { label: 'Casual Leave', value: 'Casual', icon: '✨', balance: leaveStats?.balances?.['Casual']?.total - leaveStats?.balances?.['Casual']?.consumed },
+        { label: 'Unpaid Leave', value: 'Unpaid', icon: '🏳️' }
+    ];
 
     return (
         <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '1.5rem', padding: '1.5rem' }}>
@@ -108,43 +257,22 @@ const RequestTab = ({
                 </div>
 
                 {/* Request Type */}
-                <div style={{ marginBottom: '1.5rem' }}>
-                    <label style={labelStyle}>Request Type *</label>
-                    <div style={{ position: 'relative' }}>
-                        <select
-                            value={requestType}
-                            onChange={e => setRequestType(e.target.value)}
-                            style={selectStyle}
-                        >
-                            <option value="">Select request type...</option>
-                            <option value="Leave Application">🏖️ Leave Application</option>
-                            <option value="Work From Home">🏠 Work From Home</option>
-                            <option value="Half Day">⏰ Half Day</option>
-                            <option value="Comp Off">🔄 Comp Off</option>
-                            <option value="Leave Cancellation">🚫 Leave Cancellation</option>
-                        </select>
-                        <ChevronDown size={16} color="var(--text-muted)" style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
-                    </div>
-                </div>
+                <CustomDropdown 
+                    label="Request Type *"
+                    value={requestType}
+                    options={requestTypeOptions}
+                    onChange={setRequestType}
+                    isLightMode={isLightMode}
+                />
 
                 {requestType === 'Leave Application' && (
-                    <div style={{ marginBottom: '1.5rem' }}>
-                        <label style={labelStyle}>Leave Type *</label>
-                        <div style={{ position: 'relative' }}>
-                            <select
-                                value={requestLeaveType}
-                                onChange={e => setRequestLeaveType(e.target.value)}
-                                style={selectStyle}
-                            >
-                                <option value="">Select leave type...</option>
-                                <option value="Paid">Paid</option>
-                                <option value="Sick">Sick</option>
-                                <option value="Casual">Casual</option>
-                                <option value="Unpaid">Unpaid</option>
-                            </select>
-                            <ChevronDown size={16} color="var(--text-muted)" style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
-                        </div>
-                    </div>
+                    <CustomDropdown 
+                        label="Leave Type *"
+                        value={requestLeaveType}
+                        options={leaveTypeOptions}
+                        onChange={setRequestLeaveType}
+                        isLightMode={isLightMode}
+                    />
                 )}
 
                 {requestType === 'Leave Cancellation' && (
@@ -157,7 +285,7 @@ const RequestTab = ({
                                 setSelectedLeaveForCancel(leave);
                                 setDatesToCancel([]);
                             }}
-                            style={{ ...selectStyle, marginBottom: '1rem' }}
+                            style={{ ...inputStyle, marginBottom: '1rem' }}
                         >
                             <option value="">Select leave to cancel...</option>
                             {myLeaves.filter(l => l.status === 'Approved' && new Date(l.endDate) >= new Date()).map(l => (
@@ -225,7 +353,7 @@ const RequestTab = ({
                         border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.08)'}`,
                         borderRadius: '16px',
                         padding: '0.6rem',
-                        background: isLightMode ? '#f8fafc' : 'rgba(0,0,0,0.2)',
+                        background: isLightMode ? '#fff' : 'rgba(15, 23, 42, 0.4)',
                         minHeight: '52px',
                         transition: 'border-color 0.2s',
                     }}>
@@ -295,7 +423,7 @@ const RequestTab = ({
                 </div>
 
                 {/* Date Range */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '0.5rem' }}>
                     <div>
                         <label style={labelStyle}>From Date *</label>
                         <input type="date" value={requestStartDate} onChange={e => setRequestStartDate(e.target.value)} style={inputStyle} />
@@ -306,6 +434,16 @@ const RequestTab = ({
                     </div>
                 </div>
 
+                {/* Duration/Balance Info */}
+                <div style={{ marginBottom: '1.5rem', minHeight: '20px' }}>
+                    {durationText && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', fontWeight: '800', color: balanceError ? '#ef4444' : 'var(--primary)' }}>
+                            {balanceError ? <AlertCircle size={14} /> : <Zap size={14} />}
+                            {balanceError || durationText}
+                        </div>
+                    )}
+                </div>
+
                 {/* Message */}
                 <div style={{ marginBottom: '2rem' }}>
                     <label style={labelStyle}>Message</label>
@@ -313,7 +451,7 @@ const RequestTab = ({
                         value={requestMessage}
                         onChange={e => setRequestMessage(e.target.value)}
                         placeholder="Add a reason or additional details for your request..."
-                        rows={4}
+                        rows={3}
                         style={{
                             ...inputStyle,
                             resize: 'vertical',
@@ -327,17 +465,18 @@ const RequestTab = ({
                 <button
                     className="btn btn-primary"
                     onClick={submitRequest}
-                    disabled={requestSubmitting}
+                    disabled={requestSubmitting || balanceError !== ''}
                     style={{
                         width: '100%', padding: '1.1rem', borderRadius: '16px',
                         fontSize: '0.95rem', fontWeight: '800', letterSpacing: '0.3px',
                         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
-                        opacity: requestSubmitting ? 0.7 : 1,
+                        opacity: (requestSubmitting || balanceError !== '') ? 0.7 : 1,
+                        cursor: (requestSubmitting || balanceError !== '') ? 'not-allowed' : 'pointer',
                         boxShadow: '0 8px 24px rgba(var(--primary-rgb), 0.35)',
                         transform: 'translateY(0)',
                         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                     }}
-                    onMouseOver={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 12px 28px rgba(var(--primary-rgb), 0.45)'; }}
+                    onMouseOver={e => { if(!requestSubmitting && !balanceError) { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 12px 28px rgba(var(--primary-rgb), 0.45)'; } }}
                     onMouseOut={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(var(--primary-rgb), 0.35)'; }}
                 >
                     <Send size={16} />
@@ -393,6 +532,7 @@ const RequestTab = ({
                                     <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.6rem', fontWeight: '500' }}>
                                         {new Date(req.startDate).toLocaleDateString()}
                                         {req.startDate !== req.endDate && ` - ${new Date(req.endDate).toLocaleDateString()}`}
+                                        {req.type === 'Leave Application' && req.leaveType && <span style={{ marginLeft: '0.5rem', color: 'var(--primary)', fontWeight: '700' }}>• {req.leaveType}</span>}
                                     </div>
                                     <div
                                         onClick={() => {

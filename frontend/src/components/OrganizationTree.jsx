@@ -173,7 +173,15 @@ export default function OrganizationTree({ user: currentUser, isLightMode }) {
             if (user.reportingManager) {
                 const managerId = typeof user.reportingManager === 'object' ? user.reportingManager._id : user.reportingManager;
                 const manager = allUsers.find(u => u._id === managerId);
-                const isManagerEntry = manager && (manager.role === 'Reporting Manager' || manager.role === 'Super Admin');
+                
+                // Colors should match CustomNode role styles
+                const getRoleColor = (role) => {
+                    if (role === 'Super Admin') return '#8b5cf6';
+                    if (role === 'Reporting Manager') return '#0ea5e9';
+                    return '#10b981';
+                };
+                
+                const edgeColor = manager ? getRoleColor(manager.role) : '#10b981';
 
                 initialEdges.push({
                     id: `e-${managerId}-${user._id}`,
@@ -182,13 +190,13 @@ export default function OrganizationTree({ user: currentUser, isLightMode }) {
                     type: 'smoothstep',
                     animated: true,
                     style: { 
-                        stroke: isManagerEntry ? '#ffab00' : '#00ffa2', 
+                        stroke: edgeColor,
                         strokeWidth: 2, 
                         opacity: isLightMode ? 0.8 : 0.6 
                     },
                     markerEnd: { 
                         type: MarkerType.ArrowClosed, 
-                        color: isManagerEntry ? '#ffab00' : '#00ffa2' 
+                        color: edgeColor
                     }
                 });
             }

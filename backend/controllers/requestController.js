@@ -10,17 +10,61 @@ export const createRequest = async (req, res) => {
     try {
         const { type, leaveType, startDate, endDate, message, recipients, associatedLeave, cancelDates } = req.body;
 
-        if (!type || !startDate || !endDate || !recipients || recipients.length === 0) {
-            return res.status(400).json({ message: 'Type, dates, and at least one recipient are required.' });
+        // Determine requested duration
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        let requestedDuration = 0;
+
+        if (type === 'Leave Application' || type === 'Comp Off') {
+            requestedDuration = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+        }
+
+        // Quota Validation
+        if (['Leave Application', 'Comp Off'].includes(type)) {
+            const targetLeaveType = type === 'Comp Off' ? 'Comp Off' : (leaveType || 'Casual');
+            
+            // Skip validation for Unpaid or if leaveType is missing for Half Day (though we should enforce it)
+            if (targetLeaveType !== 'Unpaid') {
+                const user = await User.findById(req.user._id);
+                const approvedLeaves = await Leave.find({ 
+                    user: req.user._id, 
+                    type: targetLeaveType, 
+                    status: 'Approved' 
+                });
+
+                let totalConsumed = 0;
+                approvedLeaves.forEach(leave => {
+                    let currentDate = new Date(leave.startDate);
+                    const leaveEnd = new Date(leave.endDate);
+                    while (currentDate <= leaveEnd) {
+                        const dateStr = currentDate.toISOString().split('T')[0];
+                        const isCancelled = leave.cancelledDates?.some(d => new Date(d).toISOString().split('T')[0] === dateStr);
+                        if (!isCancelled) {
+                            totalConsumed += (leave.type === 'Half Day' ? 0.5 : 1);
+                        }
+                        currentDate.setDate(currentDate.getDate() + 1);
+                    }
+                });
+
+                const quotaKey = targetLeaveType === 'Comp Off' ? 'compOff' : targetLeaveType.toLowerCase();
+                const totalQuota = user.leaveQuotas[quotaKey] || 0;
+                const availableBalance = totalQuota - totalConsumed;
+
+                if (requestedDuration > availableBalance) {
+                    return res.status(400).json({ 
+                        message: `Insufficient balance for ${targetLeaveType}. Available: ${availableBalance} days, Requested: ${requestedDuration} days.` 
+                    });
+                }
+            }
         }
 
         if (type !== 'Leave Cancellation') {
-            const start = new Date(startDate);
+            const startCheck = new Date(startDate);
             const today = new Date();
             today.setHours(0, 0, 0, 0);
-            start.setHours(0, 0, 0, 0);
+            startCheck.setHours(0, 0, 0, 0);
 
-            const diffTime = start.getTime() - today.getTime();
+            const diffTime = startCheck.getTime() - today.getTime();
             const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
 
             if (diffDays === 0 || diffDays === 1) {
@@ -122,10 +166,10 @@ export const updateRequestStatus = async (req, res) => {
         }
         const updated = await request.save();
 
-        if (status === 'Approved' && (updated.type === 'Leave Application' || updated.type === 'Comp Off')) {
+        if (status === 'Approved' && (updated.type === 'Leave Application' || updated.type === 'Comp Off' || updated.type === 'Half Day')) {
             await Leave.create({
                 user: updated.user,
-                type: updated.type === 'Comp Off' ? 'Comp Off' : (updated.leaveType || 'Casual'),
+                type: updated.type === 'Comp Off' ? 'Comp Off' : (updated.type === 'Half Day' ? 'Half Day' : (updated.leaveType || 'Casual')),
                 startDate: updated.startDate,
                 endDate: updated.endDate,
                 reason: updated.message || '',

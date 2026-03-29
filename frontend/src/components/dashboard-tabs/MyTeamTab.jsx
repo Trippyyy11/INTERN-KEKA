@@ -31,6 +31,7 @@ const MyTeamTab = ({
     const [filterStatus, setFilterStatus] = useState('All');
     // activeMenu is unused but kept to preserve existing state
     const [activeMenu, setActiveMenu] = useState(null);
+    const [hoveredTooltip, setHoveredTooltip] = useState(null);
 
     const triggerAlert = (msg) => {
         setAppAlert(msg);
@@ -199,15 +200,29 @@ const MyTeamTab = ({
             wfh: '#ffa5ae',
             holiday: '#ffe030',
             weekOff: '#121212',
+            halfDay: '#fb923c', // Amber 400
         };
 
         const getStatusForCell = (member, dateStr, dayNameLong, isWeekend, isPastOrToday) => {
             const memberId = member._id?.toString();
             const leave = leaves.find(l => {
                 const leaveUserId = l.user?._id?.toString() || l.user?.toString();
-                return leaveUserId === memberId && moment(l.startDate).isSameOrBefore(dateStr, 'day') && moment(l.endDate).isSameOrAfter(dateStr, 'day');
+                const fitsDate = leaveUserId === memberId && moment(l.startDate).isSameOrBefore(dateStr, 'day') && moment(l.endDate).isSameOrAfter(dateStr, 'day');
+                if (!fitsDate) return false;
+
+                // Check for cancellations
+                const isCancelled = l.cancelledDates && l.cancelledDates.some(d => moment(d).isSame(dateStr, 'day'));
+                return !isCancelled;
             });
-            if (leave) return { color: statusColors.leave, label: 'L', tooltip: 'Leave' };
+
+            if (leave) {
+                const isHalfDay = leave.type === 'Half Day';
+                return {
+                    color: isHalfDay ? statusColors.halfDay : statusColors.leave,
+                    label: isHalfDay ? 'H' : 'L',
+                    tooltip: isHalfDay ? 'Half Day' : `${leave.type || 'Leave'}`
+                };
+            }
 
             const att = attendance.find(a => {
                 const attUserId = a.user?._id?.toString() || a.user?.toString();
@@ -295,9 +310,22 @@ const MyTeamTab = ({
                                         const status = getStatusForCell(member, dateStr, dayNameLong, h.isWeekend, isPastOrToday);
 
                                         return (
-                                            <div key={h.dayNum} title={status?.tooltip || ''} style={{
+                                            <div key={h.dayNum} style={{
                                                 flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '30px', height: '30px'
-                                            }}>
+                                            }}
+                                                onMouseEnter={(e) => {
+                                                    if (status?.tooltip) {
+                                                        const rect = e.currentTarget.getBoundingClientRect();
+                                                        setHoveredTooltip({
+                                                            content: status.tooltip,
+                                                            x: rect.left + rect.width / 2,
+                                                            y: rect.top - 10,
+                                                            color: status.color
+                                                        });
+                                                    }
+                                                }}
+                                                onMouseLeave={() => setHoveredTooltip(null)}
+                                            >
                                                 {status && (
                                                     <div style={{
                                                         width: '10px', height: '10px', borderRadius: '50%',
@@ -323,6 +351,7 @@ const MyTeamTab = ({
                     {[
                         { label: 'Present', color: statusColors.present },
                         { label: 'Leave', color: statusColors.leave },
+                        { label: 'Half Day', color: statusColors.halfDay },
                         { label: 'WFH', color: statusColors.wfh },
                         { label: 'Holiday', color: statusColors.holiday },
                         { label: 'Week Off', color: statusColors.weekOff },
@@ -648,7 +677,55 @@ const MyTeamTab = ({
                 </div>
             )}
 
+            {/* ── Custom Smooth Tooltip ── */}
+            {hoveredTooltip && (
+                <div style={{
+                    position: 'fixed',
+                    left: hoveredTooltip.x,
+                    top: hoveredTooltip.y,
+                    transform: 'translate(-50%, -100%)',
+                    background: isLightMode ? 'rgba(255, 255, 255, 0.95)' : 'rgba(30, 41, 59, 0.95)',
+                    backdropFilter: 'blur(12px)',
+                    padding: '0.6rem 1.1rem',
+                    borderRadius: '12px',
+                    boxShadow: isLightMode ? '0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)' : '0 10px 25px -5px rgba(0,0,0,0.4), 0 8px 10px -6px rgba(0,0,0,0.4)',
+                    border: `1px solid ${isLightMode ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.08)'}`,
+                    zIndex: 9999,
+                    pointerEvents: 'none',
+                    animation: 'tooltipFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.6rem',
+                    whiteSpace: 'nowrap'
+                }}>
+                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: hoveredTooltip.color }}></div>
+                    <span style={{ 
+                        fontSize: '0.88rem', 
+                        fontWeight: '700', 
+                        color: 'var(--text-main)', 
+                        letterSpacing: '-0.2px' 
+                    }}>
+                        {hoveredTooltip.content}
+                    </span>
+                    <div style={{
+                        position: 'absolute',
+                        bottom: '-5px',
+                        left: '50%',
+                        transform: 'translateX(-50%) rotate(45deg)',
+                        width: '10px',
+                        height: '10px',
+                        background: isLightMode ? 'rgba(255, 255, 255, 0.95)' : 'rgba(30, 41, 59, 0.95)',
+                        borderRight: `1px solid ${isLightMode ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.08)'}`,
+                        borderBottom: `1px solid ${isLightMode ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.08)'}`
+                    }}></div>
+                </div>
+            )}
+
             <style>{`
+                @keyframes tooltipFadeIn {
+                    from { opacity: 0; transform: translate(-50%, -90%) scale(0.95); }
+                    to { opacity: 1; transform: translate(-50%, -100%) scale(1); }
+                }
                 @keyframes slideInRight {
                     from { transform: translateX(100%); opacity: 0; }
                     to { transform: translateX(0); opacity: 1; }
