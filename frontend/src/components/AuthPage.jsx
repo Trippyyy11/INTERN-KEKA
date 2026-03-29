@@ -26,74 +26,12 @@ import {
 import api from '../api/axios';
 
 export default function AuthPage({ onLogin }) {
-    const [isSignUp, setIsSignUp] = useState(false);
-    const [step, setStep] = useState(1); // 1: Init, 2: OTP, 3: Profile, 4: Success
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
-    const [message, setMessage] = useState('');
-
+    
     const [formData, setFormData] = useState({
-        name: '', email: '', password: '', confirmPassword: '',
-        designation: '', department: '', joiningDate: '', dob: '',
-        place: '', phoneNumber: '', gender: ''
+        email: '', password: ''
     });
-    const [otp, setOtp] = useState('');
-    const [options, setOptions] = useState({ departments: [], designations: [] });
-
-    useEffect(() => {
-        if (isSignUp && step === 3) {
-            fetchOptions();
-        }
-    }, [isSignUp, step]);
-
-    const fetchOptions = async () => {
-        try {
-            const res = await api.get('/auth/options');
-            setOptions(res.data);
-        } catch (err) { console.error('Failed to fetch org options'); }
-    };
-
-    const handleRegisterStep1 = async (e) => {
-        if (e) e.preventDefault();
-        setError('');
-        setIsLoading(true);
-        try {
-            await api.post('/auth/register', { name: formData.name, email: formData.email });
-            setStep(3); // Skip OTP (Step 2) as per previous logic
-            setMessage('Account initialization started. Please complete your profile.');
-        } catch (err) { setError(err.response?.data?.message || 'Failed to start registration'); }
-        finally { setIsLoading(false); }
-    };
-
-    const handleVerifyOTP = async (e) => {
-        if (e) e.preventDefault();
-        setError('');
-        setIsLoading(true);
-        try {
-            await api.post('/auth/verify-otp', { email: formData.email, otp });
-            setStep(3);
-            setMessage('Email verified! Now complete your profile.');
-        } catch (err) { setError(err.response?.data?.message || 'Invalid OTP'); }
-        finally { setIsLoading(false); }
-    };
-
-    const handleProfileSubmit = async (e) => {
-        if (e) e.preventDefault();
-        if (formData.password !== formData.confirmPassword) return setError('Passwords do not match');
-        setError('');
-        setIsLoading(true);
-        try {
-            const res = await api.post('/auth/complete-registration', formData);
-            if (res.data.requiresApproval) {
-                setStep(4);
-                setMessage(res.data.message);
-            } else {
-                completeLogin(res.data);
-            }
-        } catch (err) { setError(err.response?.data?.message || 'Failed to complete registration'); }
-        finally { setIsLoading(false); }
-    };
-
     const handleLogin = async (e) => {
         if (e) e.preventDefault();
         setError('');
@@ -113,123 +51,6 @@ export default function AuthPage({ onLogin }) {
             onLogin(data);
         }
     };
-
-    const renderSuccessStep = () => (
-        <div className="flex flex-col items-center text-center gap-6 py-8">
-            <CheckCircle2 size={64} className="text-blue-600 animate-in zoom-in duration-500" />
-            <div className="flex flex-col gap-2">
-                <h3 className="text-2xl font-bold text-foreground">Account Created!</h3>
-                <p className="text-muted-foreground leading-relaxed">
-                    Your account has been successfully created. We have sent an approval request to the Admins.
-                    You will be able to log in once your account is activated.
-                </p>
-            </div>
-            <Button 
-                onClick={() => { setIsSignUp(false); setStep(1); }} 
-                className="w-full h-12 mt-4 !bg-blue-600 !text-white hover:!bg-blue-700 transition-all rounded-xl font-bold shadow-lg shadow-blue-500/30"
-            >
-                Back to Login
-            </Button>
-        </div>
-    );
-
-    const renderProfileStep = () => (
-        <form onSubmit={handleProfileSubmit} className="flex flex-col gap-8 py-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            {message && (
-                <div className="flex items-center gap-3 p-4 bg-blue-50/50 border border-blue-100 rounded-xl text-blue-700 text-sm">
-                    <CheckCircle2 size={18} className="shrink-0" />
-                    <p className="font-medium">{message}</p>
-                </div>
-            )}
-
-            <div className="flex flex-col gap-6">
-                {/* Section: Job Details */}
-                <div className="space-y-4">
-                    <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground/60 px-1">Job Details</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5">
-                        <div className="space-y-2">
-                            <label className="text-[0.85rem] font-semibold text-foreground ml-1">Designation</label>
-                            <select required value={formData.designation} onChange={e => setFormData({ ...formData, designation: e.target.value })} className="w-full h-11 px-4 bg-slate-50/50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 text-slate-800 transition-all font-medium">
-                                <option value="" className="text-slate-500">Select Designation</option>
-                                {options.designations.map(o => <option key={o._id} value={o.name} className="text-foreground">{o.name}</option>)}
-                            </select>
-                        </div>
-                        <div className="space-y-2">
-                            <label className="text-[0.85rem] font-semibold text-foreground ml-1">Department</label>
-                            <select required value={formData.department} onChange={e => setFormData({ ...formData, department: e.target.value })} className="w-full h-11 px-4 bg-slate-50/50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 text-slate-800 transition-all font-medium">
-                                <option value="" className="text-slate-500">Select Department</option>
-                                {options.departments.map(o => <option key={o._id} value={o.name} className="text-foreground">{o.name}</option>)}
-                            </select>
-                        </div>
-                        <div className="space-y-2">
-                            <label className="text-[0.85rem] font-semibold text-foreground ml-1">Joining Date</label>
-                            <InputGroup className="h-11 border-slate-200 shadow-sm overflow-hidden rounded-xl">
-                                <InputGroupAddon align="inline-start" className="!pl-6 pr-0"><CalendarIcon size={16} className="text-muted-foreground/70" /></InputGroupAddon>
-                                <InputGroupInput required type="date" value={formData.joiningDate} onChange={e => setFormData({ ...formData, joiningDate: e.target.value })} className="!pl-6 !text-slate-900" />
-                            </InputGroup>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Section: Personal Details */}
-                <div className="space-y-4 pt-2">
-                    <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground/60 px-1">Personal Details</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5">
-                        <div className="space-y-2">
-                            <label className="text-[0.85rem] font-semibold text-foreground ml-1">Date of Birth</label>
-                            <InputGroup className="h-11 border-slate-200 shadow-sm overflow-hidden rounded-xl">
-                                <InputGroupAddon align="inline-start" className="!pl-6 pr-0"><CalendarIcon size={16} className="text-muted-foreground/70" /></InputGroupAddon>
-                                <InputGroupInput required type="date" value={formData.dob} onChange={e => setFormData({ ...formData, dob: e.target.value })} className="!pl-6 !text-slate-900" />
-                            </InputGroup>
-                        </div>
-                        <div className="space-y-2">
-                            <label className="text-[0.85rem] font-semibold text-foreground ml-1">Place</label>
-                            <InputGroup className="h-11 border-slate-200 shadow-sm overflow-hidden rounded-xl">
-                                <InputGroupAddon align="inline-start" className="!pl-6 pr-0"><MapPinIcon size={16} className="text-muted-foreground/70" /></InputGroupAddon>
-                                <InputGroupInput required type="text" value={formData.place} onChange={e => setFormData({ ...formData, place: e.target.value })} placeholder="City" className="!pl-6 placeholder:text-slate-800" />
-                            </InputGroup>
-                        </div>
-                        <div className="space-y-2">
-                            <label className="text-[0.85rem] font-semibold text-foreground ml-1">Phone Number</label>
-                            <InputGroup className="h-11 border-slate-200 shadow-sm overflow-hidden rounded-xl">
-                                <InputGroupAddon align="inline-start" className="!pl-6 pr-0"><PhoneIcon size={16} className="text-muted-foreground/70" /></InputGroupAddon>
-                                <InputGroupInput required type="tel" value={formData.phoneNumber} onChange={e => setFormData({ ...formData, phoneNumber: e.target.value })} placeholder="Phone" className="!pl-6 placeholder:text-slate-800" />
-                            </InputGroup>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Section: Security */}
-                <div className="space-y-4 pt-2">
-                    <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground/60 px-1">Security</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5">
-                        <div className="space-y-2">
-                            <label className="text-[0.85rem] font-semibold text-foreground ml-1">Password</label>
-                            <InputGroup className="h-11 border-slate-200 shadow-sm overflow-hidden rounded-xl">
-                                <InputGroupAddon align="inline-start" className="!pl-6 pr-0"><LockIcon size={16} className="text-muted-foreground/70" /></InputGroupAddon>
-                                <InputGroupInput required type="password" value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })} className="!pl-6 !text-slate-900" />
-                            </InputGroup>
-                        </div>
-                        <div className="space-y-2">
-                            <label className="text-[0.85rem] font-semibold text-foreground ml-1">Confirm Password</label>
-                            <InputGroup className="h-11 border-slate-200 shadow-sm overflow-hidden rounded-xl">
-                                <InputGroupAddon align="inline-start" className="!pl-6 pr-0"><LockIcon size={16} className="text-muted-foreground/70" /></InputGroupAddon>
-                                <InputGroupInput required type="password" value={formData.confirmPassword} onChange={e => setFormData({ ...formData, confirmPassword: e.target.value })} className="!pl-6 !text-slate-900" />
-                            </InputGroup>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <Button 
-                type="submit" 
-                className="w-full h-12 mt-4 text-base font-bold !bg-blue-600 !text-white hover:!bg-blue-700 rounded-xl transition-all shadow-lg shadow-blue-500/30 active:scale-[0.98]" 
-                disabled={isLoading}
-            >
-                {isLoading ? <Loader2 className="animate-spin" /> : 'Complete Signup'}
-            </Button>
-        </form>
-    );
 
     return (
         <main className="relative md:h-screen md:overflow-hidden lg:grid lg:grid-cols-2 bg-background">
@@ -290,10 +111,10 @@ export default function AuthPage({ onLogin }) {
                 <div className="w-full max-w-md mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700">
                     <div className="flex flex-col items-start mb-6">
                         <h1 className="font-bold text-3xl tracking-wide text-foreground mb-1">
-                            Sign In or Join Now!
+                            Welcome Back!
                         </h1>
                         <p className="text-base text-muted-foreground">
-                            login or create your Zora account.
+                            Sign in to your Zora account.
                         </p>
                     </div>
 
@@ -303,89 +124,46 @@ export default function AuthPage({ onLogin }) {
                         </div>
                     )}
 
-                    {!isSignUp || (isSignUp && step === 1) ? (
-                        <>
-                            <form onSubmit={isSignUp ? handleRegisterStep1 : handleLogin} className="flex flex-col gap-6">
-                                <div className="flex flex-col gap-4">
-                                    <p className="text-start text-muted-foreground text-[0.9rem]">
-                                        {isSignUp ? 'Create your account to get started' : 'Enter your email address to sign in or create an account'}
-                                    </p>
-                                    
-                                    {isSignUp && (
-                                        <InputGroup className="h-12 border-slate-200 overflow-hidden shadow-sm">
-                                            <InputGroupAddon align="inline-start" className="!pl-6 pr-0">
-                                                <UserCircle2 size={18} className="text-muted-foreground/70" />
-                                            </InputGroupAddon>
-                                            <InputGroupInput
-                                                required
-                                                type="text"
-                                                placeholder="Full Name"
-                                                value={formData.name}
-                                                onChange={e => setFormData({ ...formData, name: e.target.value })}
-                                                className="bg-transparent text-foreground tracking-wider placeholder:text-slate-800 !pl-6"
-                                            />
-                                        </InputGroup>
-                                    )}
-
-                                    <InputGroup className="h-12 border-slate-200 overflow-hidden shadow-sm">
-                                        <InputGroupAddon align="inline-start" className="!pl-6 pr-0">
-                                            <AtSignIcon size={18} className="text-muted-foreground/70" />
-                                        </InputGroupAddon>
-                                        <InputGroupInput
-                                            required
-                                            type="email"
-                                            placeholder="your.email@example.com"
-                                            value={formData.email}
-                                            onChange={e => setFormData({ ...formData, email: e.target.value })}
-                                            className="bg-transparent text-foreground tracking-wider placeholder:text-slate-800 !pl-6"
-                                        />
-                                    </InputGroup>
-                                    {!isSignUp && (
-                                        <InputGroup className="h-12 border-slate-200 overflow-hidden shadow-sm">
-                                            <InputGroupAddon align="inline-start" className="!pl-6 pr-0">
-                                                <LockIcon size={18} className="text-muted-foreground/70" />
-                                            </InputGroupAddon>
-                                            <InputGroupInput
-                                                required
-                                                type="password"
-                                                value={formData.password}
-                                                onChange={e => setFormData({ ...formData, password: e.target.value })}
-                                                className="bg-transparent text-slate-900 tracking-wider !pl-6"
-                                            />
-                                        </InputGroup>
-                                    )}
-                                </div>
-                                <Button 
-                                    type="submit" 
-                                    className="w-full h-12 !bg-blue-600 !text-white hover:!bg-blue-700 rounded-xl text-base font-bold shadow-lg shadow-blue-600/30 active:scale-[0.98] transition-all" 
-                                    disabled={isLoading}
-                                >
-                                    {isLoading ? <Loader2 className="animate-spin" /> : (isSignUp ? 'Join Now' : 'Sign In')}
-                                </Button>
-                            </form>
-                        </>
-                    ) : (
-                        <>
-                            {step === 3 && renderProfileStep()}
-                            {step === 4 && renderSuccessStep()}
-                        </>
-                    )}
-
-                    {/* TOS Disclaimer removed as requested */}
-
-                    {(!isSignUp || (isSignUp && step === 1)) && (
-                        <div className="text-center pt-6">
-                            <p className="text-sm text-muted-foreground">
-                                {isSignUp ? 'Already have an account? ' : "Don't have an account? "}
-                                <button
-                                    onClick={() => { setIsSignUp(!isSignUp); setStep(1); setError(''); setMessage(''); }}
-                                    className="font-bold text-primary hover:underline underline-offset-4 focus:outline-none"
-                                >
-                                    {isSignUp ? 'Sign In' : 'Join Now'}
-                                </button>
-                            </p>
+                    <form onSubmit={handleLogin} className="flex flex-col gap-6">
+                        <div className="flex flex-col gap-4">
+                            <InputGroup className="h-12 border-slate-200 overflow-hidden shadow-sm">
+                                <InputGroupAddon align="inline-start" className="!pl-6 pr-0">
+                                    <AtSignIcon size={18} className="text-muted-foreground/70" />
+                                </InputGroupAddon>
+                                <InputGroupInput
+                                    required
+                                    type="email"
+                                    placeholder="your.email@example.com"
+                                    value={formData.email}
+                                    onChange={e => setFormData({ ...formData, email: e.target.value })}
+                                    className="bg-transparent tracking-wider placeholder:text-slate-800 !pl-6 !text-slate-900 dark:text-slate-900"
+                                    style={{ color: '#0f172a' }}
+                                />
+                            </InputGroup>
+                            
+                            <InputGroup className="h-12 border-slate-200 overflow-hidden shadow-sm">
+                                <InputGroupAddon align="inline-start" className="!pl-6 pr-0">
+                                    <LockIcon size={18} className="text-muted-foreground/70" />
+                                </InputGroupAddon>
+                                <InputGroupInput
+                                    required
+                                    type="password"
+                                    placeholder="Enter your password"
+                                    value={formData.password}
+                                    onChange={e => setFormData({ ...formData, password: e.target.value })}
+                                    className="bg-transparent tracking-wider placeholder:text-slate-800 !pl-6 !text-slate-900 dark:text-slate-900"
+                                    style={{ color: '#0f172a' }}
+                                />
+                            </InputGroup>
                         </div>
-                    )}
+                        <Button 
+                            type="submit" 
+                            className="w-full h-12 !bg-blue-600 !text-white hover:!bg-blue-700 rounded-xl text-base font-bold shadow-lg shadow-blue-600/30 active:scale-[0.98] transition-all" 
+                            disabled={isLoading}
+                        >
+                            {isLoading ? <Loader2 className="animate-spin" /> : 'Sign In'}
+                        </Button>
+                    </form>
                 </div>
             </div>
         </main>

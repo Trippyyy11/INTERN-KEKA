@@ -75,7 +75,16 @@ export default function HomeTab({
     if (showHolidays) {
         return (
             <div className="page-content">
-                <HolidaysTab onBack={() => setShowHolidays(false)} isLightMode={isLightMode} />
+                <HolidaysTab 
+                    onBack={() => setShowHolidays(false)} 
+                    isLightMode={isLightMode}
+                    user={user}
+                    onEdit={() => {
+                        setShowHolidays(false);
+                        if (setActiveSidebar) setActiveSidebar('Admin');
+                        if (setActiveSubTab) setActiveSubTab('Configs');
+                    }}
+                />
             </div>
         );
     }
@@ -254,6 +263,7 @@ export default function HomeTab({
                     </div>
 
                     {/* Reporting Manager (Glassmorphism card) */}
+                    {user?.role !== 'Super Admin' && (
                     <div className="panel shadow-sm hover:shadow-md transition-shadow" style={{
                         background: isLightMode ? 'linear-gradient(135deg, #f8faff 0%, #eef2ff 100%)' : 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
                         backdropFilter: 'blur(12px)',
@@ -281,6 +291,7 @@ export default function HomeTab({
                             </div>
                         )}
                     </div>
+                    )}
 
                     {/* Holidays Banner */}
                     <div className="panel holiday-card hover:shadow-xl transition-all cursor-pointer" style={{
@@ -311,7 +322,7 @@ export default function HomeTab({
 
                         <div style={{ marginBottom: '1.75rem' }}>
                             <div style={{ fontSize: '0.75rem', fontWeight: '700', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#ff4757', boxShadow: '0 0 10px rgba(255, 71, 87, 0.5)' }}></div> On Leave Today
+                                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#ff4757', boxShadow: '0 0 10px rgba(255, 71, 87, 0.5)' }}></div> On Leave Today ({dashData.leaves.length})
                             </div>
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.25rem' }}>
                                 {dashData.leaves.length > 0 ? dashData.leaves.map(l => (
@@ -325,7 +336,7 @@ export default function HomeTab({
 
                         <div>
                             <div style={{ fontSize: '0.75rem', fontWeight: '700', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#00ff88', boxShadow: '0 0 10px rgba(0, 255, 136, 0.5)' }}></div> Working Remotely
+                                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#00ff88', boxShadow: '0 0 10px rgba(0, 255, 136, 0.5)' }}></div> Working Remotely ({dashData.workingRemotely.length})
                             </div>
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.25rem' }}>
                                 {dashData.workingRemotely.length > 0 ? dashData.workingRemotely.map(w => (
@@ -460,7 +471,7 @@ export default function HomeTab({
                             </button>
                         </div>
 
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', paddingLeft: '0.5rem' }}>
                             {(() => {
                                 const activities = [
                                     ...(dashData.announcements || []).map(a => ({ ...a, activityType: 'Announcement', date: new Date(a.createdAt || Date.now()) })),
@@ -468,63 +479,95 @@ export default function HomeTab({
                                 ].sort((a, b) => b.date - a.date).slice(0, 5);
 
                                 if (activities.length === 0) {
-                                    return <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: '500' }}>No recent activities</div>;
+                                    return <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)', fontSize: '0.95rem', fontWeight: '500', background: isLightMode ? '#f8fafc' : 'rgba(255,255,255,0.02)', borderRadius: '16px', border: isLightMode ? '1px dashed #cbd5e1' : '1px dashed rgba(255,255,255,0.1)' }}>No recent activities to display</div>;
                                 }
 
                                 return activities.map((act, idx) => (
-                                    <div key={act._id} style={{ 
+                                    <div key={act._id} className="group" style={{ 
                                         position: 'relative', 
-                                        paddingLeft: '1.75rem',
-                                        borderLeft: `2px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.1)'}`,
-                                        paddingBottom: idx === activities.length - 1 ? '0' : '0.5rem'
+                                        paddingLeft: '2.5rem',
+                                        paddingBottom: idx === activities.length - 1 ? '0' : '2rem'
                                     }}>
+                                        {/* Connecting Line */}
+                                        {idx !== activities.length - 1 && (
+                                            <div style={{
+                                                position: 'absolute',
+                                                left: '11px',
+                                                top: '32px',
+                                                bottom: 0,
+                                                width: '2px',
+                                                background: isLightMode ? 'linear-gradient(to bottom, #cbd5e1, transparent)' : 'linear-gradient(to bottom, rgba(255,255,255,0.1), transparent)',
+                                                borderRadius: '2px'
+                                            }} />
+                                        )}
+
+                                        {/* Timeline Node Icon */}
                                         <div style={{ 
                                             position: 'absolute', 
-                                            left: '-7px', 
-                                            top: '0px', 
-                                            width: '12px', 
-                                            height: '12px', 
+                                            left: '0', 
+                                            top: '0', 
+                                            width: '24px', 
+                                            height: '24px', 
                                             borderRadius: '50%', 
                                             background: act.activityType === 'Announcement' ? '#ef4444' : 'var(--primary)',
-                                            border: `2px solid ${isLightMode ? '#ffffff' : 'var(--bg-panel)'}`,
-                                            boxShadow: '0 0 0 2px rgba(255,255,255,0.1)'
-                                        }}></div>
+                                            border: `4px solid ${isLightMode ? '#ffffff' : 'var(--bg-panel)'}`,
+                                            boxShadow: '0 0 0 1px rgba(0,0,0,0.05), 0 4px 6px rgba(0,0,0,0.1)',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            zIndex: 2,
+                                            transition: 'transform 0.2s ease',
+                                        }} className="group-hover:scale-110">
+                                            {act.activityType === 'Announcement' ? <Megaphone size={10} color="#fff" /> : <Clock size={10} color="#fff" />}
+                                        </div>
                                         
-                                        {act.activityType === 'Announcement' ? (
-                                            <div style={{ background: isLightMode ? '#fef2f2' : 'rgba(239, 68, 68, 0.05)', padding: '1rem', borderRadius: '12px', marginTop: '-0.3rem', border: isLightMode ? '1px solid #fecaca' : '1px solid rgba(239, 68, 68, 0.1)' }}>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                                    <div style={{ fontWeight: '800', fontSize: '0.9rem', color: '#dc2626', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                        <Megaphone size={16} /> {act.title}
-                                                    </div>
-                                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: '700', whiteSpace: 'nowrap', background: isLightMode ? '#fff' : 'rgba(0,0,0,0.2)', padding: '0.2rem 0.5rem', borderRadius: '8px' }}>
-                                                        {act.date.toLocaleDateString([], { month: 'short', day: 'numeric' })}
-                                                    </div>
-                                                </div>
-                                                <div style={{ fontSize: '0.85rem', color: 'var(--text-main)', marginTop: '0.6rem', lineHeight: '1.5' }}>{act.content}</div>
-                                            </div>
-                                        ) : (
-                                            <div style={{ marginTop: '-0.3rem' }}>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                                        <div className="avatar shadow-sm" style={{ width: '28px', height: '28px', background: act.type === 'Praise' ? 'linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)' : 'linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%)', fontSize: '0.7rem', color: '#ffffff', fontWeight: 'bold' }}>
-                                                            {act.author?.avatar ? <img src={act.author.avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : act.author?.name?.substring(0, 2).toUpperCase()}
+                                        {/* Card Content */}
+                                        <div style={{ 
+                                            background: act.activityType === 'Announcement' ? (isLightMode ? '#fef2f2' : 'rgba(239, 68, 68, 0.05)') : (isLightMode ? '#ffffff' : 'rgba(255,255,255,0.02)'), 
+                                            padding: '1.25rem', 
+                                            borderRadius: '16px', 
+                                            border: act.activityType === 'Announcement' ? (isLightMode ? '1px solid #fecaca' : '1px solid rgba(239, 68, 68, 0.1)') : (isLightMode ? '1px solid #e2e8f0' : '1px solid rgba(255,255,255,0.05)'),
+                                            boxShadow: isLightMode ? '0 4px 12px rgba(0,0,0,0.02)' : 'none',
+                                            transition: 'all 0.3s ease',
+                                            cursor: 'pointer',
+                                            marginTop: '-0.5rem'
+                                        }} className="hover:-translate-y-1 hover:shadow-lg">
+                                            {act.activityType === 'Announcement' ? (
+                                                <>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
+                                                        <div style={{ fontWeight: '800', fontSize: '1rem', color: '#dc2626', display: 'flex', alignItems: 'center', gap: '0.5rem', letterSpacing: '-0.2px' }}>
+                                                            {act.title}
                                                         </div>
-                                                        <div style={{ fontSize: '0.85rem', color: 'var(--text-main)' }}>
-                                                            <span style={{ fontWeight: '800' }}>{act.author?.name}</span>
-                                                            {act.type === 'Praise' && <span> praised <span style={{ fontWeight: '800', color: '#f59e0b' }}>{act.praiseData?.recipient?.name}</span></span>}
-                                                            {act.type === 'Post' && <span style={{ color: 'var(--text-muted)' }}> posted an update</span>}
-                                                            {act.type === 'Poll' && <span style={{ color: 'var(--text-muted)' }}> created a poll</span>}
+                                                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: '700', whiteSpace: 'nowrap', background: isLightMode ? '#ffffff' : 'rgba(0,0,0,0.2)', padding: '0.3rem 0.6rem', borderRadius: '10px', border: isLightMode ? '1px solid #fecaca' : '1px solid rgba(239,68,68,0.2)' }}>
+                                                            {act.date.toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                                                         </div>
                                                     </div>
-                                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: '700' }}>
-                                                        {act.date.toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                                                    <div style={{ fontSize: '0.9rem', color: 'var(--text-main)', lineHeight: '1.6', opacity: 0.9 }}>{act.content}</div>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                                            <div className="avatar shadow-sm" style={{ width: '32px', height: '32px', background: act.type === 'Praise' ? 'linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)' : 'linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%)', fontSize: '0.85rem', color: '#ffffff', fontWeight: '800', border: '2px solid rgba(255,255,255,0.5)' }}>
+                                                                {act.author?.avatar ? <img src={act.author.avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : act.author?.name?.substring(0, 2).toUpperCase()}
+                                                            </div>
+                                                            <div style={{ fontSize: '0.9rem', color: 'var(--text-main)' }}>
+                                                                <span style={{ fontWeight: '800' }}>{act.author?.name}</span>
+                                                                {act.type === 'Praise' && <span> praised <span style={{ fontWeight: '800', color: '#f59e0b' }}>{act.praiseData?.recipient?.name}</span></span>}
+                                                                {act.type === 'Post' && <span style={{ color: 'var(--text-muted)' }}> posted an update</span>}
+                                                                {act.type === 'Poll' && <span style={{ color: 'var(--text-muted)' }}> created a poll</span>}
+                                                            </div>
+                                                        </div>
+                                                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: '700', background: isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.05)', padding: '0.3rem 0.6rem', borderRadius: '10px' }}>
+                                                            {act.date.toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                                                        </div>
                                                     </div>
-                                                </div>
-                                                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.5rem', paddingLeft: '2.5rem', lineHeight: '1.5' }}>
-                                                    {act.type === 'Poll' ? act.pollData?.question : act.content}
-                                                </div>
-                                            </div>
-                                        )}
+                                                    <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', paddingLeft: '2.75rem', lineHeight: '1.6' }}>
+                                                        {act.type === 'Poll' ? act.pollData?.question : act.content}
+                                                    </div>
+                                                </>
+                                            )}
+                                        </div>
                                     </div>
                                 ));
                             })()}
