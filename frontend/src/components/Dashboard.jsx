@@ -47,6 +47,7 @@ import InboxTab from './dashboard-tabs/InboxTab';
 import AdminTab from './dashboard-tabs/AdminTab';
 import EngageTab from './dashboard-tabs/EngageTab';
 import SlackTab from './dashboard-tabs/SlackTab';
+import FutureAvailabilityTab from './dashboard-tabs/FutureAvailabilityTab';
 import OrganizationTree from './OrganizationTree';
 
 // Dashboard-wide styling constants
@@ -316,7 +317,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
         const timer = setInterval(() => setCurrentTime(new Date().toLocaleTimeString()), 1000);
         fetchStats();
         fetchSystemSettings();
-        if (user?.role === 'Admin' || user?.role === 'Super Admin') {
+        if (user?.role === 'Reporting Officer' || user?.role === 'Super Admin') {
             fetchAdminData();
             fetchOrgConfigs();
             fetchGlobalFinances();
@@ -1027,6 +1028,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
         { name: 'My Finances', icon: <Briefcase size={20} /> },
         { name: 'Org', icon: <Building2 size={20} /> },
         { name: 'Engage', icon: <Award size={20} /> },
+        { name: 'Availability', icon: <Calendar size={20} /> },
         { name: 'Admin', icon: <Settings size={20} /> },
         { name: 'Slack', icon: <MessageSquare size={20} /> }
     ];
@@ -1317,7 +1319,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
         }
 
         if (activeSidebar === 'Admin') {
-            const isAdminOrSuper = user?.role === 'Admin' || user?.role === 'Super Admin';
+            const isAdminOrSuper = user?.role === 'Reporting Officer' || user?.role === 'Super Admin';
             if (!isAdminOrSuper) return <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>Access Denied. Admin privileges required.</div>;
 
             return (
@@ -1352,6 +1354,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
                         isLightMode={isLightMode}
                         globalPayslips={globalPayslips}
                         handleUpdatePayslipStatus={handleUpdatePayslipStatus}
+                        user={user}
                     />
                 </div>
             );
@@ -1394,6 +1397,14 @@ export default function Dashboard({ user, onLogout, setUser }) {
 
         if (activeSidebar === 'Slack') {
             return <SlackTab user={user} />;
+        }
+
+        if (activeSidebar === 'Availability') {
+            return (
+                <div className="page-content">
+                    <FutureAvailabilityTab user={user} isLightMode={isLightMode} />
+                </div>
+            );
         }
 
         return null;
@@ -2226,7 +2237,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
     const renderEditModal = () => {
         if (!showEditModal || !selectedUser) return null;
         const u = selectedUser;
-        const isAdmin = user?.role === 'Admin' || user?.role === 'Super Admin';
+        const isAdmin = user?.role === 'Reporting Officer' || user?.role === 'Super Admin';
 
         const modalBentoStyle = getModalBentoStyle(isLightMode);
         const modalHeaderGrad = isLightMode 
@@ -2738,8 +2749,8 @@ export default function Dashboard({ user, onLogout, setUser }) {
                     <nav className="sidebar-nav">
                     {sidebarItems.filter(item => {
                         // if (item.name === 'My Team' && teammates.length === 0) return false; // Removed to always show My Team
-                        if (item.name === 'Admin' && !(user?.role === 'Admin' || user?.role === 'Super Admin')) return false;
-                        if (item.name === 'Slack' && !(user?.role === 'Admin' || user?.role === 'Super Admin')) return false;
+                        if (item.name === 'Admin' && !(user?.role === 'Reporting Officer' || user?.role === 'Super Admin')) return false;
+                        if (item.name === 'Slack' && !(user?.role === 'Reporting Officer' || user?.role === 'Super Admin')) return false;
                         return true;
                     }).map(item => (
                         <div

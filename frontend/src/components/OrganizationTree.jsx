@@ -54,7 +54,7 @@ const getLayoutedElements = (nodes, edges, direction = 'TB') => {
 const ContextMenu = ({ x, y, node, onClose, onAction, allUsers, canEdit }) => {
     if (!canEdit) return null;
 
-    const roleWeights = { 'Super Admin': 3, 'Admin': 2, 'Employee': 1 };
+    const roleWeights = { 'Super Admin': 3, 'Reporting Officer': 2, 'Intern': 1 };
     const nodeWeight = roleWeights[node.data.role] || 0;
 
     // Users who can report TO this node — employees can't have subordinates
@@ -134,8 +134,8 @@ export default function OrganizationTree({ user: currentUser, isLightMode }) {
     const [menu, setMenu] = useState(null);
     const reactFlowWrapper = useRef(null);
 
-    const canEdit = currentUser?.role === 'Admin' || currentUser?.role === 'Super Admin';
-    const roleWeights = { 'Super Admin': 3, 'Admin': 2, 'Employee': 1 };
+    const canEdit = currentUser?.role === 'Reporting Officer' || currentUser?.role === 'Super Admin';
+    const roleWeights = { 'Super Admin': 3, 'Reporting Officer': 2, 'Intern': 1 };
 
     const fetchUsers = async () => {
         try {
@@ -173,7 +173,7 @@ export default function OrganizationTree({ user: currentUser, isLightMode }) {
             if (user.reportingManager) {
                 const managerId = typeof user.reportingManager === 'object' ? user.reportingManager._id : user.reportingManager;
                 const manager = allUsers.find(u => u._id === managerId);
-                const isManagerEntry = manager && (manager.role === 'Admin' || manager.role === 'Super Admin');
+                const isManagerEntry = manager && (manager.role === 'Reporting Officer' || manager.role === 'Super Admin');
 
                 initialEdges.push({
                     id: `e-${managerId}-${user._id}`,

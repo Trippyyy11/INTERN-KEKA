@@ -110,7 +110,7 @@ export const updateRequestStatus = async (req, res) => {
 
         // Check if the current user is one of the recipients
         const isRecipient = request.recipients.some(r => r.toString() === req.user._id.toString());
-        if (!isRecipient && req.user.role !== 'Admin' && req.user.role !== 'Super Admin') {
+        if (!isRecipient && req.user.role !== 'Reporting Officer' && req.user.role !== 'Super Admin') {
             return res.status(403).json({ message: 'Not authorized to update this request.' });
         }
 

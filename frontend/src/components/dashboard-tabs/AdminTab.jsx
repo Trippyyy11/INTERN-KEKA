@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import AuditTab from './AuditTab';
 import {
     MoreVertical,
     Users,
@@ -99,7 +100,7 @@ const FormInput = ({ isLightMode, ...props }) => {
 
 const RoleBadge = ({ role, isLightMode }) => {
     const isSA = role === 'Super Admin';
-    const isAdmin = role === 'Admin';
+    const isAdmin = role === 'Reporting Officer';
     const bg = isSA ? 'linear-gradient(135deg,#6366f1,#8b5cf6)' : isAdmin ? 'linear-gradient(135deg,#3b82f6,#06b6d4)' : (isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.06)');
     const color = (isSA || isAdmin) ? '#fff' : 'var(--text-muted)';
     return (
@@ -143,7 +144,8 @@ const AdminTab = ({
     handleShowAttendance,
     isLightMode,
     globalPayslips = [],
-    handleUpdatePayslipStatus
+    handleUpdatePayslipStatus,
+    user
 }) => {
     const [filterType, setFilterType] = useState('All');
     const [payrollMonth, setPayrollMonth] = useState(new Intl.DateTimeFormat('en-US', { month: 'long' }).format(new Date()));
@@ -223,7 +225,8 @@ const AdminTab = ({
                     { key: 'Configs', label: 'ORG CONFIGS' },
                     { key: 'Settings', label: 'SYSTEM SETTINGS' },
                     { key: 'Bank', label: 'BANK INFO' },
-                    { key: 'Payroll', label: 'PAYROLL' }
+                    { key: 'Payroll', label: 'PAYROLL' },
+                    ...(user?.role === 'Super Admin' ? [{ key: 'Audit', label: 'AUDIT LOGS' }] : [])
                 ].map(t => {
                     const active = activeSubTab === t.key;
                     return (
@@ -863,6 +866,11 @@ const AdminTab = ({
                         </table>
                     </div>
                 </div>
+            )}
+
+            {/* ===== AUDIT LOGS (Super Admin Only) ===== */}
+            {activeSubTab === 'Audit' && user?.role === 'Super Admin' && (
+                <AuditTab isLightMode={isLightMode} />
             )}
 
             <style>{`

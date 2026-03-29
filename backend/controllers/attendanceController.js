@@ -1,6 +1,7 @@
 import Attendance from '../models/Attendance.js';
 import User from '../models/User.js';
 import Request from '../models/Request.js';
+import { createAuditLog } from './auditController.js';
 
 // @desc    Clock In
 // @route   POST /api/attendance/clock-in
@@ -304,6 +305,10 @@ export const updateAttendance = async (req, res) => {
         }
 
         const updatedLog = await log.save();
+
+        // Audit log: attendance edited
+        await createAuditLog(req.user._id, 'ATTENDANCE_EDITED', `Edited attendance for log ${log._id} (user: ${log.user})`, { targetModel: 'Attendance', targetId: log._id, ipAddress: req.ip });
+
         res.status(200).json(updatedLog);
 
     } catch (error) {

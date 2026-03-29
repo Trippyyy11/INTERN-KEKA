@@ -6,7 +6,7 @@ const router = express.Router();
 
 router.route('/').post(protect, requestLeave).get(protect, getMyLeaves);
 router.route('/stats').get(protect, getLeaveStats);
-router.route('/:id/status').put(protect, authorize(['Admin', 'Super Admin']), updateLeaveStatus);
+router.route('/:id/status').put(protect, authorize(['Reporting Officer', 'Super Admin']), updateLeaveStatus);
 
 export default router;
 

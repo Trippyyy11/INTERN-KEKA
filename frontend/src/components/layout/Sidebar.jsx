@@ -18,7 +18,7 @@ const Sidebar = ({
             <nav className="sidebar-nav">
                 {sidebarItems.filter(item => {
                     if (item.name === 'My Team' && teammates.length === 0) return false;
-                    if (item.name === 'Admin' && !(user?.role === 'Admin' || user?.role === 'Super Admin')) return false;
+                    if (item.name === 'Admin' && !(user?.role === 'Reporting Officer' || user?.role === 'Super Admin')) return false;
                     return true;
                 }).map(item => (
                     <div

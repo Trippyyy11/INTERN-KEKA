@@ -10,6 +10,8 @@ connectDB();
 console.log('JWT_SECRET loaded:', !!process.env.JWT_SECRET, 'Length:', process.env.JWT_SECRET?.length);
 
 import './cron/attendanceJobs.js'; // Initialize cron jobs
+import './cron/notificationJobs.js'; // Notification cleanup cron
+import './cron/auditJobs.js'; // Monthly audit export cron
 
 const app = express();
 
@@ -31,6 +33,8 @@ import socialRoutes from './routes/socialRoutes.js';
 import requestRoutes from './routes/requestRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import slackRoutes from './routes/slackRoutes.js';
+import auditRoutes from './routes/auditRoutes.js';
+import availabilityRoutes from './routes/availabilityRoutes.js';
 
 // Testing Route
 app.get('/', (req, res) => {
@@ -48,6 +52,8 @@ app.use('/api/social', socialRoutes);
 app.use('/api/requests', requestRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/slack', slackRoutes);
+app.use('/api/audit', auditRoutes);
+app.use('/api/availability', availabilityRoutes);
 
 // Default Error handling middleware
 app.use((err, req, res, next) => {

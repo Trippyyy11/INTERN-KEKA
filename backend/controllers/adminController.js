@@ -2,11 +2,20 @@ import User from '../models/User.js';
 import Settings from '../models/Settings.js';
 import OrgConfig from '../models/OrgConfig.js';
 import Notification from '../models/Notification.js';
+import { createAuditLog } from './auditController.js';
 
 // @desc    Get all users (with approval status)
 export const getUsers = async (req, res) => {
     try {
-        const users = await User.find({ isDeleted: { $ne: true } }).populate('reportingManager', 'name email');
+        let filter = { isDeleted: { $ne: true } };
+        
+        // Reporting Officer: only see team members under them
+        if (req.user.role === 'Reporting Officer') {
+            filter.reportingManager = req.user._id;
+        }
+        // Super Admin: sees all (no additional filter)
+        
+        const users = await User.find(filter).populate('reportingManager', 'name email');
         res.json(users);
     } catch (error) { res.status(500).json({ message: error.message }); }
 };
@@ -18,6 +27,7 @@ export const approveUser = async (req, res) => {
         if (user) {
             user.isApproved = true;
             await user.save();
+            await createAuditLog(req.user._id, 'USER_APPROVED', `Approved user: ${user.name} (${user.email})`, { targetModel: 'User', targetId: user._id, ipAddress: req.ip });
             res.json({ message: 'User approved successfully' });
         } else { res.status(404).json({ message: 'User not found' }); }
     } catch (error) { res.status(500).json({ message: error.message }); }
@@ -30,9 +40,9 @@ export const denyUser = async (req, res) => {
         if (user) {
             user.isDeleted = true;
             user.isActive = false;
-            // Append suffix to email to free it up for potential re-use
             user.email = `${user.email}_deleted_${Date.now()}`;
             await user.save();
+            await createAuditLog(req.user._id, 'USER_DENIED', `Denied user: ${user.name}`, { targetModel: 'User', targetId: user._id, ipAddress: req.ip });
             res.json({ message: 'User denied and removed successfully (Soft Deleted)' });
         } else { res.status(404).json({ message: 'User not found' }); }
     } catch (error) { res.status(500).json({ message: error.message }); }
@@ -45,9 +55,9 @@ export const deleteUser = async (req, res) => {
         if (user) {
             user.isDeleted = true;
             user.isActive = false;
-            // Append suffix to email to free it up for potential re-use
             user.email = `${user.email}_deleted_${Date.now()}`;
             await user.save();
+            await createAuditLog(req.user._id, 'USER_DELETED', `Deleted user: ${user.name}`, { targetModel: 'User', targetId: user._id, ipAddress: req.ip });
             res.json({ message: 'User permanently deleted successfully (Soft Deleted)' });
         } else { res.status(404).json({ message: 'User not found' }); }
     } catch (error) { res.status(500).json({ message: error.message }); }
@@ -77,6 +87,7 @@ export const updateUserDetails = async (req, res) => {
             if (place) user.place = place;
 
             await user.save();
+            await createAuditLog(req.user._id, 'USER_UPDATED', `Updated details for: ${user.name}`, { targetModel: 'User', targetId: user._id, ipAddress: req.ip });
             res.json(user);
         } else { res.status(404).json({ message: 'User not found' }); }
     } catch (error) { res.status(500).json({ message: error.message }); }
@@ -122,13 +133,15 @@ export const createOrgConfig = async (req, res) => {
             await Notification.insertMany(notifications);
         }
 
+        await createAuditLog(req.user._id, 'CONFIG_ADDED', `Added ${config.type}: ${config.name}`, { targetModel: 'OrgConfig', targetId: config._id, ipAddress: req.ip });
         res.status(201).json(config);
     } catch (error) { res.status(500).json({ message: error.message }); }
 };
 
 export const deleteOrgConfig = async (req, res) => {
     try {
-        await OrgConfig.findByIdAndDelete(req.params.id);
+        const config = await OrgConfig.findByIdAndDelete(req.params.id);
+        await createAuditLog(req.user._id, 'CONFIG_DELETED', `Deleted config: ${config?.name || req.params.id}`, { targetModel: 'OrgConfig', targetId: req.params.id, ipAddress: req.ip });
         res.json({ message: 'Config deleted' });
     } catch (error) { res.status(500).json({ message: error.message }); }
 };
@@ -151,8 +164,8 @@ export const assignManager = async (req, res) => {
             // Define role weights
             const roleWeights = {
                 'Super Admin': 3,
-                'Admin': 2,
-                'Employee': 1
+                'Reporting Officer': 2,
+                'Intern': 1
             };
 
             const userWeight = roleWeights[user.role] || 0;
@@ -209,6 +222,7 @@ export const updateSettings = async (req, res) => {
             );
         }
 
+        await createAuditLog(req.user._id, 'SETTINGS_UPDATED', `Updated system settings`, { targetModel: 'Settings', ipAddress: req.ip });
         res.json(settings);
     } catch (error) { res.status(500).json({ message: error.message }); }
 };

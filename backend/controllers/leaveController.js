@@ -1,6 +1,7 @@
 import Leave from '../models/Leave.js';
 import User from '../models/User.js';
 import { createNotification } from './notificationController.js';
+import { createAuditLog } from './auditController.js';
 
 // @desc    Request a Leave
 // @route   POST /api/leaves
@@ -24,8 +25,11 @@ export const requestLeave = async (req, res) => {
 
         res.status(201).json(leave);
 
+        // Audit log: leave applied
+        await createAuditLog(req.user._id, 'LEAVE_APPLIED', `${req.user.name} applied for ${type} leave (${startDate} to ${endDate})`, { targetModel: 'Leave', targetId: leave._id });
+
         // Notify admins about new leave request
-        const admins = await User.find({ role: { $in: ['Admin', 'Super Admin'] } }).select('_id');
+        const admins = await User.find({ role: { $in: ['Reporting Officer', 'Super Admin'] } }).select('_id');
         for (const admin of admins) {
             await createNotification(
                 admin._id,
@@ -65,6 +69,11 @@ export const updateLeaveStatus = async (req, res) => {
             leave.status = status;
             leave.approvedBy = req.user._id;
             const updatedLeave = await leave.save();
+
+            // Audit log
+            const auditAction = status === 'Approved' ? 'LEAVE_APPROVED' : 'LEAVE_REJECTED';
+            await createAuditLog(req.user._id, auditAction, `${status} leave for user ${leave.user}`, { targetModel: 'Leave', targetId: leave._id });
+
             res.json(updatedLeave);
 
             // Notify the leave applicant about status change

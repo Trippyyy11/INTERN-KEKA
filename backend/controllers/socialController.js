@@ -135,7 +135,7 @@ export const deleteActivity = async (req, res) => {
 
         // Only the original author, Admin, or Super Admin can delete
         const isAuthor = activity.author._id.toString() === req.user._id.toString();
-        const isAdmin = req.user.role === 'Admin' || req.user.role === 'Super Admin';
+        const isAdmin = req.user.role === 'Reporting Officer' || req.user.role === 'Super Admin';
 
         if (!isAuthor && !isAdmin) {
             return res.status(403).json({ message: 'Not authorized to delete this activity.' });

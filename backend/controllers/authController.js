@@ -3,6 +3,7 @@ import User from '../models/User.js';
 import OrgConfig from '../models/OrgConfig.js';
 import sendEmail from '../utils/sendEmail.js';
 import crypto from 'crypto';
+import { createAuditLog } from './auditController.js';
 
 import Settings from '../models/Settings.js';
 
@@ -119,7 +120,7 @@ export const completeRegistration = async (req, res) => {
         user.bloodGroup = bloodGroup;
         user.gender = gender;
         user.isApproved = isFirstUser;
-        user.role = isFirstUser ? 'Super Admin' : 'Employee';
+        user.role = isFirstUser ? 'Super Admin' : 'Intern';
 
         // Fetch system settings for default leave quotas
         const settings = await Settings.findOne();
@@ -128,6 +129,9 @@ export const completeRegistration = async (req, res) => {
         }
 
         await user.save();
+
+        // Audit log: user registered
+        await createAuditLog(user._id, 'USER_REGISTERED', `New user registered: ${user.name} (${user.email})`, { targetModel: 'User', targetId: user._id });
 
         if (isFirstUser) {
             return res.status(200).json({
