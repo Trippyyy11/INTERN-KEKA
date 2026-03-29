@@ -3024,6 +3024,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                         {notifications.length > 0 ? notifications.map(n => {
                                             const iconMap = {
                                                 leave_applied: '📋', leave_approved: '✅', leave_rejected: '❌',
+                                                leave_request: '📩', leave_request_update: '📬',
                                                 clock_in_reminder: '⏰', request_received: '📩',
                                                 request_approved: '✅', request_rejected: '❌',
                                                 announcement: '📢', general: '🔔'

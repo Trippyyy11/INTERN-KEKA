@@ -84,10 +84,6 @@ const FutureAvailabilityTab = ({ user, isLightMode }) => {
     };
 
     const canEdit = (targetUserId) => {
-        if (user?.role === 'Super Admin') return true;
-        if (user?.role === 'Reporting Officer') {
-            return targetUserId === user?._id || users.some(u => u._id === targetUserId);
-        }
         return targetUserId === user?._id;
     };
 

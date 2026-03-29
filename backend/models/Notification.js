@@ -5,7 +5,7 @@ const notificationSchema = new mongoose.Schema(
         user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
         type: {
             type: String,
-            enum: ['leave_applied', 'leave_approved', 'leave_rejected', 'clock_in_reminder', 'request_received', 'request_approved', 'request_rejected', 'announcement', 'general', 'poll', 'post', 'praise', 'config'],
+            enum: ['leave_applied', 'leave_approved', 'leave_rejected', 'leave_request', 'leave_request_update', 'clock_in_reminder', 'request_received', 'request_approved', 'request_rejected', 'announcement', 'general', 'poll', 'post', 'praise', 'config'],
             required: true
         },
         title: { type: String, required: true },

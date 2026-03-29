@@ -72,19 +72,8 @@ export const upsertAvailability = async (req, res) => {
 
         // Validate permissions
         for (const entry of entries) {
-            if (userRole === 'Intern' && entry.userId !== req.user._id.toString()) {
-                return res.status(403).json({ message: 'Interns can only edit their own availability.' });
-            }
-            if (userRole === 'Reporting Officer') {
-                if (entry.userId !== req.user._id.toString()) {
-                    const isTeamMember = await User.findOne({
-                        _id: entry.userId,
-                        reportingManager: req.user._id
-                    });
-                    if (!isTeamMember) {
-                        return res.status(403).json({ message: 'You can only edit availability for your team members.' });
-                    }
-                }
+            if (entry.userId !== req.user._id.toString()) {
+                return res.status(403).json({ message: 'Users can only edit their own availability.' });
             }
         }
 
