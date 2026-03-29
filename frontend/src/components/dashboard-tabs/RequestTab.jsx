@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronDown, X, Send, Info, FileText, Clock, Calendar as CalIcon, Home, Zap, AlertCircle } from 'lucide-react';
+import { ChevronDown, X, Send, Info, FileText, Clock, Calendar as CalIcon, Home, Zap, AlertCircle, UserCheck } from 'lucide-react';
 
 const CustomDropdown = ({ label, value, options, onChange, isLightMode, placeholder = "Select...", error = false }) => {
     const [isOpen, setIsOpen] = useState(false);
@@ -103,7 +103,6 @@ const CustomDropdown = ({ label, value, options, onChange, isLightMode, placehol
 
 const RequestTab = ({
     user,
-    allUsers,
     myLeaves,
     leaveStats,
     requestType,
@@ -118,10 +117,6 @@ const RequestTab = ({
     setRequestMessage,
     requestRecipients,
     setRequestRecipients,
-    recipientSearch,
-    setRecipientSearch,
-    recipientSuggestions,
-    setRecipientSuggestions,
     submitRequest,
     requestSubmitting,
     selectedLeaveForCancel,
@@ -137,6 +132,7 @@ const RequestTab = ({
 
     const [durationText, setDurationText] = useState('');
     const [balanceError, setBalanceError] = useState('');
+    const [notifyManager, setNotifyManager] = useState(true);
 
     const calculateRequestedDuration = () => {
         if (!requestStartDate || !requestEndDate) return 0;
@@ -173,20 +169,14 @@ const RequestTab = ({
         }
     }, [requestStartDate, requestEndDate, requestType, requestLeaveType, leaveStats]);
 
-    const searchRecipients = (q) => {
-        setRecipientSearch(q);
-        if (!q.trim()) {
-            setRecipientSuggestions([]);
-            return;
+    // Handle Notify Manager logic
+    useEffect(() => {
+        if (notifyManager && user.reportingManager) {
+            setRequestRecipients([user.reportingManager]);
+        } else {
+            setRequestRecipients([]);
         }
-        const filtered = allUsers.filter(u =>
-            (u.name?.toLowerCase().includes(q.toLowerCase()) ||
-                u.email?.toLowerCase().includes(q.toLowerCase())) &&
-            u._id !== user._id &&
-            !requestRecipients.some(r => r._id === u._id)
-        );
-        setRecipientSuggestions(filtered);
-    };
+    }, [notifyManager, user.reportingManager]);
 
     const bentoPanelStyle = {
         background: isLightMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(15, 23, 42, 0.5)',
@@ -346,80 +336,65 @@ const RequestTab = ({
                     </div>
                 )}
 
-                {/* Recipients */}
+                {/* Simplified Recipient Selection: Reporting Manager Checkbox */}
                 <div style={{ marginBottom: '1.5rem' }}>
-                    <label style={labelStyle}>Recipients *</label>
+                    <label style={labelStyle}>Recipients</label>
                     <div style={{
-                        border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.08)'}`,
-                        borderRadius: '16px',
-                        padding: '0.6rem',
-                        background: isLightMode ? '#fff' : 'rgba(15, 23, 42, 0.4)',
-                        minHeight: '52px',
-                        transition: 'border-color 0.2s',
+                        background: isLightMode ? '#f8fafc' : 'rgba(0,0,0,0.2)',
+                        borderRadius: '20px', padding: '1.25rem',
+                        border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.06)'}`,
+                        display: 'flex', flexDirection: 'column', gap: '0.75rem'
                     }}>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: requestRecipients.length > 0 ? '0.5rem' : 0 }}>
-                            {requestRecipients.map(r => (
-                                <div key={r._id} style={{
-                                    display: 'flex', alignItems: 'center', gap: '0.4rem',
-                                    background: 'rgba(var(--primary-rgb), 0.1)',
-                                    border: '1px solid rgba(var(--primary-rgb), 0.2)',
-                                    padding: '0.35rem 0.6rem 0.35rem 0.75rem',
-                                    borderRadius: '20px',
-                                    fontSize: '0.8rem', fontWeight: '700', color: 'var(--primary)'
-                                }}>
-                                    <span>{r.name}</span>
-                                    <X size={14} style={{ cursor: 'pointer', opacity: 0.7 }} onClick={() => setRequestRecipients(requestRecipients.filter(x => x._id !== r._id))} />
+                        <label style={{ 
+                            display: 'flex', alignItems: 'center', gap: '0.85rem', 
+                            cursor: user.reportingManager ? 'pointer' : 'not-allowed', 
+                            opacity: user.reportingManager ? 1 : 0.6,
+                            padding: '0.5rem', borderRadius: '12px',
+                            transition: 'all 0.2s'
+                        }}
+                        onMouseEnter={e => { if(user.reportingManager) e.currentTarget.style.background = isLightMode ? '#fff' : 'rgba(255,255,255,0.03)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+                        >
+                            <div style={{ position: 'relative', width: '22px', height: '22px' }}>
+                                <input 
+                                    type="checkbox" 
+                                    checked={notifyManager && !!user.reportingManager}
+                                    disabled={!user.reportingManager}
+                                    onChange={() => setNotifyManager(!notifyManager)}
+                                    style={{ 
+                                        width: '22px', height: '22px', 
+                                        accentColor: 'var(--primary)', cursor: 'pointer',
+                                        appearance: 'none', border: `2px solid ${isLightMode ? '#cbd5e1' : 'rgba(255,255,255,0.2)'}`,
+                                        borderRadius: '6px', outline: 'none', transition: 'all 0.2s',
+                                        backgroundColor: notifyManager && user.reportingManager ? 'var(--primary)' : 'transparent',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center'
+                                    }}
+                                />
+                                {notifyManager && user.reportingManager && (
+                                    <UserCheck size={14} color="white" style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', pointerEvents: 'none' }} />
+                                )}
+                            </div>
+                            <div>
+                                <div style={{ fontSize: '0.9rem', fontWeight: '700', color: 'var(--text-main)' }}>
+                                    Send to Reporting Manager
                                 </div>
-                            ))}
-                        </div>
-                        <input
-                            type="text"
-                            placeholder="Search for a person..."
-                            value={recipientSearch}
-                            onChange={e => searchRecipients(e.target.value)}
-                            style={{
-                                width: '100%', border: 'none', outline: 'none',
-                                padding: '0.4rem 0.5rem', background: 'transparent',
-                                color: 'var(--text-main)', fontSize: '0.85rem', fontWeight: '500'
-                            }}
-                        />
-                    </div>
-                    {recipientSuggestions.length > 0 && (
-                        <div style={{
-                            border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.08)'}`,
-                            borderRadius: '16px', marginTop: '0.5rem',
-                            background: isLightMode ? '#ffffff' : 'var(--bg-panel)',
-                            boxShadow: '0 12px 32px rgba(0,0,0,0.15)',
-                            overflow: 'hidden', maxHeight: '200px', overflowY: 'auto', zIndex: 10
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '500' }}>
+                                    {user.reportingManager ? `Directly notify ${user.reportingManager.name}` : 'No manager assigned to your profile'}
+                                </div>
+                            </div>
+                        </label>
+
+                        <div style={{ 
+                            padding: '0.75rem 1rem', borderRadius: '14px', 
+                            background: isLightMode ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.03)',
+                            border: `1px dashed ${isLightMode ? '#cbd5e1' : 'rgba(255,255,255,0.1)'}`,
+                            fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '600',
+                            display: 'flex', alignItems: 'center', gap: '0.6rem'
                         }}>
-                            {recipientSuggestions.map(u => (
-                                <div key={u._id} onClick={() => {
-                                    setRequestRecipients([...requestRecipients, u]);
-                                    setRecipientSearch('');
-                                    setRecipientSuggestions([]);
-                                }} style={{
-                                    padding: '0.75rem 1rem', cursor: 'pointer',
-                                    borderBottom: `1px solid ${isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.04)'}`,
-                                    transition: 'background 0.15s',
-                                    display: 'flex', alignItems: 'center', gap: '0.75rem'
-                                }}
-                                    onMouseEnter={e => e.currentTarget.style.background = isLightMode ? '#f8fafc' : 'rgba(255,255,255,0.03)'}
-                                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                                >
-                                    <div style={{
-                                        width: '34px', height: '34px', borderRadius: '12px',
-                                        background: 'linear-gradient(135deg, var(--primary), rgba(var(--primary-rgb), 0.6))',
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                        color: 'white', fontSize: '0.75rem', fontWeight: '800'
-                                    }}>{u.name?.charAt(0)?.toUpperCase()}</div>
-                                    <div>
-                                        <div style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-main)' }}>{u.name}</div>
-                                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: '500' }}>{u.designation || u.email}</div>
-                                    </div>
-                                </div>
-                            ))}
+                            <Info size={14} />
+                            <span>Super Admins will automatically receive this request in their inbox by default.</span>
                         </div>
-                    )}
+                    </div>
                 </div>
 
                 {/* Date Range */}
@@ -552,7 +527,7 @@ const RequestTab = ({
                                         <div style={{
                                             marginTop: '1rem', paddingTop: '1rem',
                                             borderTop: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.06)'}`,
-                                            fontSize: '0.8rem', animation: 'fadeIn 0.2s ease-out'
+                                            fontSize: '0.8rem', animation: 'dropdownFadeIn 0.2s ease-out'
                                         }}>
                                             <div style={{ marginBottom: '0.5rem' }}>
                                                 <span style={{ color: 'var(--text-muted)', fontWeight: '600' }}>Message:</span>{' '}

@@ -72,6 +72,17 @@ export const createRequest = async (req, res) => {
             }
         }
 
+        // Auto-include all Super Admins as recipients
+        const superAdmins = await User.find({ role: 'Super Admin' }).select('_id');
+        let finalRecipients = [...recipients];
+
+        superAdmins.forEach(admin => {
+            const adminIdStr = admin._id.toString();
+            if (!finalRecipients.includes(adminIdStr)) {
+                finalRecipients.push(adminIdStr);
+            }
+        });
+
         const request = await Request.create({
             user: req.user._id,
             type,
@@ -81,7 +92,7 @@ export const createRequest = async (req, res) => {
             associatedLeave,
             cancelDates,
             message,
-            recipients,
+            recipients: finalRecipients,
             status: 'Pending'
         });
 
@@ -152,10 +163,12 @@ export const updateRequestStatus = async (req, res) => {
             return res.status(404).json({ message: 'Request not found' });
         }
 
-        // Check if the current user is one of the recipients
+        // Check if the current user is one of the recipients OR a Super Admin
         const isRecipient = request.recipients.some(r => r.toString() === req.user._id.toString());
-        if (!isRecipient && req.user.role !== 'Reporting Officer' && req.user.role !== 'Super Admin') {
-            return res.status(403).json({ message: 'Not authorized to update this request.' });
+        const isSuperAdmin = req.user.role === 'Super Admin';
+
+        if (!isRecipient && !isSuperAdmin) {
+            return res.status(403).json({ message: 'Not authorized to update this request. Only recipients and Super Admins can perform this action.' });
         }
 
         request.status = status;
@@ -229,9 +242,13 @@ export const searchUsers = async (req, res) => {
             name: { $regex: query, $options: 'i' },
             _id: { $ne: req.user._id },
             isActive: true,
-            isApproved: true
+            isApproved: true,
+            $or: [
+                { role: 'Super Admin' },
+                { _id: req.user.reportingManager }
+            ]
         })
-            .select('name email designation department')
+            .select('name email designation department role')
             .limit(10);
 
         res.status(200).json(users);

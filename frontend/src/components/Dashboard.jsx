@@ -461,7 +461,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
 
 
     const submitRequest = async () => {
-        if (!requestType || (requestType === 'Leave Application' && !requestLeaveType) || !requestStartDate || !requestEndDate || requestRecipients.length === 0) {
+        if (!requestType || (requestType === 'Leave Application' && !requestLeaveType) || !requestStartDate || !requestEndDate) {
             setCustomAlert({ message: 'Please fill in all required fields.', type: 'info' });
             return;
         }
