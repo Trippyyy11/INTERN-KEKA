@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronDown, X, Send, Info, FileText, Clock, Calendar as CalIcon, Home, Zap, AlertCircle, UserCheck } from 'lucide-react';
+import { ChevronDown, X, Send, Info, FileText, Clock, Calendar as CalIcon, Home, Zap, AlertCircle, CircleCheckBig } from 'lucide-react';
 
 const CustomDropdown = ({ label, value, options, onChange, isLightMode, placeholder = "Select...", error = false }) => {
     const [isOpen, setIsOpen] = useState(false);
@@ -26,7 +26,7 @@ const CustomDropdown = ({ label, value, options, onChange, isLightMode, placehol
                     textTransform: 'uppercase', letterSpacing: '0.8px'
                 }}>{label}</label>
             )}
-            <div 
+            <div
                 onClick={() => setIsOpen(!isOpen)}
                 style={{
                     width: '100%', padding: '0.9rem 1.1rem', borderRadius: '16px',
@@ -57,7 +57,7 @@ const CustomDropdown = ({ label, value, options, onChange, isLightMode, placehol
                 }}>
                     <div style={{ maxHeight: '250px', overflowY: 'auto' }}>
                         {options.map((opt) => (
-                            <div 
+                            <div
                                 key={opt.value}
                                 onClick={() => { onChange(opt.value); setIsOpen(false); }}
                                 style={{
@@ -77,8 +77,8 @@ const CustomDropdown = ({ label, value, options, onChange, isLightMode, placehol
                                     </div>
                                 </div>
                                 {opt.balance !== undefined && (
-                                    <div style={{ 
-                                        padding: '4px 10px', borderRadius: '10px', 
+                                    <div style={{
+                                        padding: '4px 10px', borderRadius: '10px',
                                         background: opt.balance <= 0 ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)',
                                         color: opt.balance <= 0 ? '#ef4444' : '#10b981',
                                         fontSize: '0.75rem', fontWeight: '800'
@@ -146,7 +146,7 @@ const RequestTab = ({
         const duration = calculateRequestedDuration();
         if (duration > 0 && requestType !== 'Half Day') {
             setDurationText(`Requested: ${duration} Day${duration > 1 ? 's' : ''}`);
-            
+
             // Validate balance
             if (['Leave Application', 'Comp Off'].includes(requestType)) {
                 const targetType = requestType === 'Comp Off' ? 'Comp Off' : (requestLeaveType || 'Casual');
@@ -247,7 +247,7 @@ const RequestTab = ({
                 </div>
 
                 {/* Request Type */}
-                <CustomDropdown 
+                <CustomDropdown
                     label="Request Type *"
                     value={requestType}
                     options={requestTypeOptions}
@@ -256,7 +256,7 @@ const RequestTab = ({
                 />
 
                 {requestType === 'Leave Application' && (
-                    <CustomDropdown 
+                    <CustomDropdown
                         label="Leave Type *"
                         value={requestLeaveType}
                         options={leaveTypeOptions}
@@ -345,33 +345,33 @@ const RequestTab = ({
                         border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.06)'}`,
                         display: 'flex', flexDirection: 'column', gap: '0.75rem'
                     }}>
-                        <label style={{ 
-                            display: 'flex', alignItems: 'center', gap: '0.85rem', 
-                            cursor: user.reportingManager ? 'pointer' : 'not-allowed', 
+                        <label style={{
+                            display: 'flex', alignItems: 'center', gap: '0.85rem',
+                            cursor: user.reportingManager ? 'pointer' : 'not-allowed',
                             opacity: user.reportingManager ? 1 : 0.6,
                             padding: '0.5rem', borderRadius: '12px',
                             transition: 'all 0.2s'
                         }}
-                        onMouseEnter={e => { if(user.reportingManager) e.currentTarget.style.background = isLightMode ? '#fff' : 'rgba(255,255,255,0.03)'; }}
-                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+                            onMouseEnter={e => { if (user.reportingManager) e.currentTarget.style.background = isLightMode ? '#fff' : 'rgba(255,255,255,0.03)'; }}
+                            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
                         >
                             <div style={{ position: 'relative', width: '22px', height: '22px' }}>
-                                <input 
-                                    type="checkbox" 
+                                <input
+                                    type="checkbox"
                                     checked={notifyManager && !!user.reportingManager}
                                     disabled={!user.reportingManager}
                                     onChange={() => setNotifyManager(!notifyManager)}
-                                    style={{ 
-                                        width: '22px', height: '22px', 
+                                    style={{
+                                        width: '24px', height: '24px',
                                         accentColor: 'var(--primary)', cursor: 'pointer',
-                                        appearance: 'none', border: `2px solid ${isLightMode ? '#cbd5e1' : 'rgba(255,255,255,0.2)'}`,
+                                        appearance: 'none', border: `2.5px solid ${isLightMode ? '#cbd5e1' : 'rgba(4, 4, 4, 0.2)'}`,
                                         borderRadius: '6px', outline: 'none', transition: 'all 0.2s',
                                         backgroundColor: notifyManager && user.reportingManager ? 'var(--primary)' : 'transparent',
                                         display: 'flex', alignItems: 'center', justifyContent: 'center'
                                     }}
                                 />
                                 {notifyManager && user.reportingManager && (
-                                    <UserCheck size={14} color="white" style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', pointerEvents: 'none' }} />
+                                    <CircleCheckBig size={14} color="white" style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', pointerEvents: 'none' }} />
                                 )}
                             </div>
                             <div>
@@ -384,8 +384,8 @@ const RequestTab = ({
                             </div>
                         </label>
 
-                        <div style={{ 
-                            padding: '0.75rem 1rem', borderRadius: '14px', 
+                        <div style={{
+                            padding: '0.75rem 1rem', borderRadius: '14px',
                             background: isLightMode ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.03)',
                             border: `1px dashed ${isLightMode ? '#cbd5e1' : 'rgba(255,255,255,0.1)'}`,
                             fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '600',
@@ -451,7 +451,7 @@ const RequestTab = ({
                         transform: 'translateY(0)',
                         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                     }}
-                    onMouseOver={e => { if(!requestSubmitting && !balanceError) { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 12px 28px rgba(var(--primary-rgb), 0.45)'; } }}
+                    onMouseOver={e => { if (!requestSubmitting && !balanceError) { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 12px 28px rgba(var(--primary-rgb), 0.45)'; } }}
                     onMouseOut={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(var(--primary-rgb), 0.35)'; }}
                 >
                     <Send size={16} />

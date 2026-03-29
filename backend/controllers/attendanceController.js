@@ -2,12 +2,15 @@ import Attendance from '../models/Attendance.js';
 import User from '../models/User.js';
 import Request from '../models/Request.js';
 import { createAuditLog } from './auditController.js';
+import { autoCloseStaleSessions } from '../utils/attendanceHelper.js';
 
 // @desc    Clock In
 // @route   POST /api/attendance/clock-in
 // @access  Private
 export const clockIn = async (req, res) => {
     try {
+        await autoCloseStaleSessions(req.user._id); // Lazy validation
+
         const { workingMode, message } = req.body;
         const today = new Date();
         today.setHours(0, 0, 0, 0); // Normalize to start of day
@@ -63,6 +66,8 @@ export const clockIn = async (req, res) => {
 // @access  Private
 export const clockOut = async (req, res) => {
     try {
+        await autoCloseStaleSessions(req.user._id); // Lazy validation
+        
         const { message } = req.body;
         // Find the latest active session (clocked in but not clocked out)
         let record = await Attendance.findOne({
@@ -104,6 +109,7 @@ export const clockOut = async (req, res) => {
 // @access  Private
 export const getLogs = async (req, res) => {
     try {
+        await autoCloseStaleSessions(req.user._id); // Lazy validation
         const logs = await Attendance.find({ user: req.user._id }).sort({ date: -1 });
         res.status(200).json(logs);
     } catch (error) {
@@ -116,6 +122,7 @@ export const getLogs = async (req, res) => {
 // @access  Private
 export const getTodayStatus = async (req, res) => {
     try {
+        await autoCloseStaleSessions(); // Lazy validation for everyone globally before fetching status
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 

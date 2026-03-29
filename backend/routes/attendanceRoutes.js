@@ -13,8 +13,8 @@ router.get('/birthdays', protect, getBirthdays);
 router.get('/teammates', protect, getTeammates);
 router.get('/team-stats', protect, getTeamStats);
 router.get('/teammates-stats', protect, getTeammateIndividualStats);
-router.get('/all', protect, authorize(['Reporting Officer', 'Super Admin']), getAllLogs);
-router.get('/logs/:userId', protect, authorize(['Reporting Officer', 'Super Admin']), getUserLogs);
-router.put('/logs/:logId', protect, authorize(['Reporting Officer', 'Super Admin']), updateAttendance);
+router.get('/all', protect, authorize(['Reporting Manager', 'Super Admin']), getAllLogs);
+router.get('/logs/:userId', protect, authorize(['Reporting Manager', 'Super Admin']), getUserLogs);
+router.put('/logs/:logId', protect, authorize(['Reporting Manager', 'Super Admin']), updateAttendance);
 
 export default router;

@@ -1,5 +1,6 @@
 import React from 'react';
-import { Info, Inbox, Check, X } from 'lucide-react';
+import { Info, Inbox, Check, X, Edit3, Save } from 'lucide-react';
+import api from '../../api/axios.js';
 
 const InboxTab = ({
     inboxRequests,
@@ -8,6 +9,10 @@ const InboxTab = ({
     isLightMode
 }) => {
     const [localNotes, setLocalNotes] = React.useState({});
+    const [showEditModal, setShowEditModal] = React.useState(false);
+    const [editLogData, setEditLogData] = React.useState(null);
+    const [editForm, setEditForm] = React.useState({ clockInTime: '', clockOutTime: '' });
+    const [isSavingEdit, setIsSavingEdit] = React.useState(false);
     const bentoPanelStyle = {
         background: isLightMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(15, 23, 42, 0.5)',
         backdropFilter: 'blur(16px)',
@@ -30,6 +35,37 @@ const InboxTab = ({
         outline: 'none',
         transition: 'border-color 0.2s',
         width: '130px',
+    };
+
+    const handleOpenEdit = (request) => {
+        if (!request.associatedAttendance) {
+            alert("No associated attendance log found for this request.");
+            return;
+        }
+        setEditLogData(request);
+        setEditForm({
+            clockInTime: request.associatedAttendance.clockInTime ? new Date(request.associatedAttendance.clockInTime).toISOString().slice(0, 16) : '',
+            clockOutTime: request.associatedAttendance.clockOutTime ? new Date(request.associatedAttendance.clockOutTime).toISOString().slice(0, 16) : '',
+        });
+        setShowEditModal(true);
+    };
+
+    const handleSaveEdit = async () => {
+        setIsSavingEdit(true);
+        try {
+            await api.put(`/attendance/logs/${editLogData.associatedAttendance._id}`, {
+                clockInTime: editForm.clockInTime || null,
+                clockOutTime: editForm.clockOutTime || null
+            });
+            setShowEditModal(false);
+            // Auto approve the request since they just fixed the attendance
+            await handleRequestAction(editLogData._id, 'Approved', 'Attendance updated by manager during regularization.');
+        } catch (err) {
+            console.error(err);
+            alert("Failed to update attendance.");
+        } finally {
+            setIsSavingEdit(false);
+        }
     };
 
     return (
@@ -146,6 +182,22 @@ const InboxTab = ({
                                                     style={inputStyle}
                                                 />
                                                 <div style={{ display: 'flex', gap: '0.3rem' }}>
+                                                    {r.type === 'Attendance Regularization' && (
+                                                        <button
+                                                            onClick={() => handleOpenEdit(r)}
+                                                            style={{
+                                                                width: '32px', height: '32px', borderRadius: '10px',
+                                                                background: 'rgba(59, 130, 246, 0.15)', color: 'var(--primary)', border: 'none',
+                                                                display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                                                                transition: 'background 0.2s',
+                                                            }}
+                                                            onMouseOver={e => e.currentTarget.style.background = 'rgba(59, 130, 246, 0.25)'}
+                                                            onMouseOut={e => e.currentTarget.style.background = 'rgba(59, 130, 246, 0.15)'}
+                                                            title="Edit Attendance & Approve"
+                                                        >
+                                                            <Edit3 size={16} strokeWidth={2} />
+                                                        </button>
+                                                    )}
                                                     <button
                                                         onClick={() => {
                                                             handleRequestAction(r._id, 'Approved', localNotes[r._id]);
@@ -206,6 +258,81 @@ const InboxTab = ({
                     </table>
                 </div>
             </div>
+
+            {/* Edit Attendance Modal */}
+            {showEditModal && editLogData && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(10px)',
+                    zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    animation: 'fadeIn 0.3s ease-out', padding: '1.5rem'
+                }}>
+                    <div style={{
+                        background: isLightMode ? '#ffffff' : '#1e293b',
+                        width: '100%', maxWidth: '420px', borderRadius: '24px',
+                        boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)',
+                        border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.1)'}`,
+                        overflow: 'hidden'
+                    }}>
+                        <div style={{ padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `1px solid ${isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.05)'}` }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(59, 130, 246, 0.1)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <Edit3 size={18} />
+                                </div>
+                                <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '800', color: 'var(--text-main)', letterSpacing: '-0.3px' }}>Edit Regularization</h3>
+                            </div>
+                            <button onClick={() => setShowEditModal(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '0.5rem', borderRadius: '50%' }}>
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                            <div style={{ padding: '1rem', background: isLightMode ? '#f8fafc' : 'rgba(0,0,0,0.2)', borderRadius: '16px', border: `1px dashed ${isLightMode ? '#cbd5e1' : 'rgba(255,255,255,0.1)'}` }}>
+                                <div style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.25rem' }}>User Reason</div>
+                                <div style={{ fontSize: '0.9rem', color: 'var(--text-main)', fontWeight: '500' }}>"{editLogData.message}"</div>
+                            </div>
+                            
+                            <div>
+                                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Clock In Time</label>
+                                <input
+                                    type="datetime-local"
+                                    value={editForm.clockInTime}
+                                    onChange={(e) => setEditForm(prev => ({ ...prev, clockInTime: e.target.value }))}
+                                    style={{ ...inputStyle, width: '100%', padding: '0.8rem' }}
+                                />
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Clock Out Time</label>
+                                <input
+                                    type="datetime-local"
+                                    value={editForm.clockOutTime}
+                                    onChange={(e) => setEditForm(prev => ({ ...prev, clockOutTime: e.target.value }))}
+                                    style={{ ...inputStyle, width: '100%', padding: '0.8rem' }}
+                                />
+                            </div>
+                            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                <Info size={12} /> Saving will update attendance and approve the request.
+                            </p>
+                        </div>
+
+                        <div style={{ padding: '1.25rem 1.5rem', background: isLightMode ? '#f8fafc' : 'rgba(0,0,0,0.2)', display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', borderTop: `1px solid ${isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.05)'}` }}>
+                            <button onClick={() => setShowEditModal(false)} style={{ padding: '0.7rem 1.5rem', borderRadius: '12px', background: 'transparent', border: 'none', color: 'var(--text-main)', fontSize: '0.9rem', fontWeight: '700', cursor: 'pointer' }}>Cancel</button>
+                            <button
+                                onClick={handleSaveEdit}
+                                disabled={isSavingEdit}
+                                style={{
+                                    padding: '0.7rem 1.5rem', borderRadius: '12px', background: 'var(--primary)', color: '#fff',
+                                    border: 'none', fontSize: '0.9rem', fontWeight: '800', cursor: isSavingEdit ? 'not-allowed' : 'pointer',
+                                    display: 'flex', alignItems: 'center', gap: '0.5rem', opacity: isSavingEdit ? 0.6 : 1,
+                                    boxShadow: '0 4px 12px rgba(var(--primary-rgb), 0.3)'
+                                }}
+                            >
+                                {isSavingEdit ? 'Saving...' : <><Save size={16} /> Save & Approve</>}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

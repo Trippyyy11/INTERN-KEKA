@@ -1,4 +1,6 @@
-import { Calendar, Clock, FileText, HelpCircle, Info, Home } from 'lucide-react';
+import React, { useState } from 'react';
+import { Calendar, Clock, FileText, HelpCircle, Info, Home, LogOut, Zap, LayoutDashboard, MoreVertical, Edit3, X, Send } from 'lucide-react';
+import api from '../../api/axios.js';
 
 const AttendanceTab = ({
     user,
@@ -34,6 +36,51 @@ const AttendanceTab = ({
     isLightMode,
     systemSettings
 }) => {
+
+    const [activeMenu, setActiveMenu] = useState(null);
+    const [showRegularizeModal, setShowRegularizeModal] = useState(false);
+    const [regularizeLog, setRegularizeLog] = useState(null);
+    const [regularizeReason, setRegularizeReason] = useState('');
+    const [isSubmittingRegularize, setIsSubmittingRegularize] = useState(false);
+    
+    // Auto-close dropdown when clicking outside
+    React.useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (!event.target.closest('.action-menu-container')) {
+                setActiveMenu(null);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const submitRegularization = async () => {
+        if (!regularizeReason.trim()) {
+            alert('Please provide a reason for regularization.');
+            return;
+        }
+        setIsSubmittingRegularize(true);
+        try {
+            const payload = {
+                type: 'Attendance Regularization',
+                startDate: regularizeLog.date,
+                endDate: regularizeLog.date,
+                message: regularizeReason.trim(),
+                recipients: [user.reportingManager],
+                associatedAttendance: regularizeLog._id
+            };
+            await api.post('/requests', payload);
+            alert('Regularization request submitted successfully.');
+            setShowRegularizeModal(false);
+            setRegularizeReason('');
+            setRegularizeLog(null);
+        } catch (error) {
+            console.error('Error submitting regularization:', error);
+            alert(error.response?.data?.message || 'Failed to submit regularization request.');
+        } finally {
+            setIsSubmittingRegularize(false);
+        }
+    };
 
     const getAttendanceProgress = () => {
         if (!isClockedIn || !activeLog?.clockInTime) return 0;
@@ -462,34 +509,62 @@ const AttendanceTab = ({
                                     Your attendance for today is completed. See you tomorrow!
                                 </div>
                             ) : (
-                                <button
-                                    className={`btn ${isClockedIn ? 'btn-danger' : 'btn-primary'}`}
-                                    onClick={handleClockToggle}
-                                    style={{ 
-                                        width: '100%', 
-                                        padding: '1.25rem', 
-                                        fontSize: '1.05rem', 
-                                        borderRadius: '16px',
-                                        fontWeight: '800',
-                                        boxShadow: isClockedIn ? '0 8px 24px rgba(239, 68, 68, 0.4)' : '0 8px 24px rgba(59, 130, 246, 0.4)',
-                                        transform: 'translateY(0)',
-                                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        gap: '0.5rem'
-                                    }}
-                                    onMouseOver={(e) => {
-                                        e.currentTarget.style.transform = 'translateY(-3px)';
-                                        e.currentTarget.style.boxShadow = isClockedIn ? '0 12px 28px rgba(239, 68, 68, 0.5)' : '0 12px 28px rgba(59, 130, 246, 0.5)';
-                                    }}
-                                    onMouseOut={(e) => {
-                                        e.currentTarget.style.transform = 'translateY(0)';
-                                        e.currentTarget.style.boxShadow = isClockedIn ? '0 8px 24px rgba(239, 68, 68, 0.4)' : '0 8px 24px rgba(59, 130, 246, 0.4)';
-                                    }}
-                                >
-                                    <Clock size={18} /> {isClockedIn ? 'Web Clock-out' : 'Web Clock-in'}
-                                </button>
+                            <button
+                                onClick={handleClockToggle}
+                                style={{ 
+                                    width: '100%', 
+                                    padding: '1.2rem', 
+                                    fontSize: '1rem', 
+                                    borderRadius: '18px',
+                                    fontWeight: '900',
+                                    letterSpacing: '1px',
+                                    textTransform: 'uppercase',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '0.75rem',
+                                    cursor: 'pointer',
+                                    border: 'none',
+                                    position: 'relative',
+                                    overflow: 'hidden',
+                                    transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                                    color: '#fff',
+                                    background: isClockedIn 
+                                        ? 'linear-gradient(135deg, #f43f5e 0%, #e11d48 100%)' 
+                                        : 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                                    boxShadow: isClockedIn 
+                                        ? '0 8px 25px -5px rgba(225, 29, 72, 0.5), 0 0 15px rgba(225, 29, 72, 0.2)' 
+                                        : '0 8px 25px -5px rgba(37, 99, 235, 0.5), 0 0 15px rgba(37, 99, 235, 0.2)',
+                                }}
+                                onMouseOver={(e) => {
+                                    e.currentTarget.style.transform = 'translateY(-4px) scale(1.02)';
+                                    e.currentTarget.style.boxShadow = isClockedIn 
+                                        ? '0 15px 30px -5px rgba(225, 29, 72, 0.6), 0 0 25px rgba(225, 29, 72, 0.3)' 
+                                        : '0 15px 30px -5px rgba(37, 99, 235, 0.6), 0 0 25px rgba(37, 99, 235, 0.3)';
+                                }}
+                                onMouseOut={(e) => {
+                                    e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                                    e.currentTarget.style.boxShadow = isClockedIn 
+                                        ? '0 8px 25px -5px rgba(225, 29, 72, 0.5), 0 0 15px rgba(225, 29, 72, 0.2)' 
+                                        : '0 8px 25px -5px rgba(37, 99, 235, 0.5), 0 0 15px rgba(37, 99, 235, 0.2)';
+                                }}
+                                onMouseDown={(e) => {
+                                    e.currentTarget.style.transform = 'translateY(-1px) scale(0.98)';
+                                }}
+                            >
+                                {/* Frosted Glass Overlay */}
+                                <div style={{
+                                    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                                    background: 'rgba(255, 255, 255, 0.1)',
+                                    backdropFilter: 'blur(1px)',
+                                    pointerEvents: 'none'
+                                }}></div>
+                                
+                                {isClockedIn ? <LogOut size={20} style={{ position: 'relative', zIndex: 1 }} /> : <Zap size={20} style={{ position: 'relative', zIndex: 1 }} />}
+                                <span style={{ position: 'relative', zIndex: 1 }}>
+                                    {isClockedIn ? 'Web Clock-out' : 'Web Clock-in'}
+                                </span>
+                            </button>
                             )}
                             
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem' }}>
@@ -651,9 +726,81 @@ const AttendanceTab = ({
                                                         }
                                                     })()}
                                                 </td>
-                                                <td style={{ textAlign: 'center', padding: '1.25rem' }}>
-                                                    <div onClick={() => setShowLogInfo(log)} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '36px', height: '36px', borderRadius: '50%', background: isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.05)', color: 'var(--primary)', cursor: 'pointer', transition: 'all 0.2s', ':hover': { background: 'var(--primary)', color: '#fff', transform: 'scale(1.1)' } }}>
-                                                        <Info size={16} />
+                                                <td style={{ textAlign: 'center', padding: '1.25rem' }} className="action-menu-container">
+                                                    <div style={{ position: 'relative', display: 'inline-block' }}>
+                                                        <div 
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setActiveMenu(activeMenu === log._id ? null : log._id);
+                                                            }} 
+                                                            style={{ 
+                                                                display: 'inline-flex', alignItems: 'center', justifyContent: 'center', 
+                                                                width: '36px', height: '36px', borderRadius: '50%', 
+                                                                background: activeMenu === log._id ? 'var(--primary)' : (isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.05)'), 
+                                                                color: activeMenu === log._id ? '#fff' : 'var(--primary)', 
+                                                                cursor: 'pointer', transition: 'all 0.2s', 
+                                                                ':hover': { background: 'var(--primary)', color: '#fff' } 
+                                                            }}
+                                                        >
+                                                            <MoreVertical size={18} />
+                                                        </div>
+
+                                                        {activeMenu === log._id && (
+                                                            <div style={{
+                                                                position: 'absolute',
+                                                                right: '100%',
+                                                                top: '50%',
+                                                                transform: 'translateY(-50%)',
+                                                                marginRight: '12px',
+                                                                width: '180px',
+                                                                background: isLightMode ? '#ffffff' : 'rgba(30, 41, 59, 0.95)',
+                                                                backdropFilter: 'blur(12px)',
+                                                                border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.1)'}`,
+                                                                borderRadius: '16px',
+                                                                boxShadow: isLightMode ? '0 10px 40px rgba(0,0,0,0.1)' : '0 10px 40px rgba(0,0,0,0.5)',
+                                                                zIndex: 100,
+                                                                padding: '0.5rem',
+                                                                animation: 'fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                                                                display: 'flex', flexDirection: 'column', gap: '4px'
+                                                            }}>
+                                                                <button 
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setShowLogInfo(log);
+                                                                        setActiveMenu(null);
+                                                                    }}
+                                                                    style={{
+                                                                        width: '100%', padding: '0.65rem 1rem', background: 'transparent',
+                                                                        border: 'none', borderRadius: '12px', cursor: 'pointer', display: 'flex',
+                                                                        alignItems: 'center', gap: '0.75rem', fontSize: '0.85rem', fontWeight: '600',
+                                                                        color: 'var(--text-main)', transition: 'background 0.2s'
+                                                                    }}
+                                                                    onMouseOver={e => e.currentTarget.style.backgroundColor = isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.05)'}
+                                                                    onMouseOut={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                                                                >
+                                                                    <Info size={16} color="var(--primary)" /> View Info
+                                                                </button>
+                                                                
+                                                                <button 
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setRegularizeLog(log);
+                                                                        setShowRegularizeModal(true);
+                                                                        setActiveMenu(null);
+                                                                    }}
+                                                                    style={{
+                                                                        width: '100%', padding: '0.65rem 1rem', background: 'transparent',
+                                                                        border: 'none', borderRadius: '12px', cursor: 'pointer', display: 'flex',
+                                                                        alignItems: 'center', gap: '0.75rem', fontSize: '0.85rem', fontWeight: '600',
+                                                                        color: 'var(--text-main)', transition: 'background 0.2s'
+                                                                    }}
+                                                                    onMouseOver={e => e.currentTarget.style.backgroundColor = isLightMode ? '#fccfce' : 'rgba(239, 68, 68, 0.15)'}
+                                                                    onMouseOut={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                                                                >
+                                                                    <Edit3 size={16} color="var(--danger)" /> Regularize
+                                                                </button>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </td>
                                             </tr>
@@ -739,6 +886,84 @@ const AttendanceTab = ({
                     )}
                 </div>
             </div>
+
+            {/* Regularization Modal */}
+            {showRegularizeModal && regularizeLog && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(10px)',
+                    zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    animation: 'fadeIn 0.3s ease-out', padding: '1.5rem'
+                }}>
+                    <div style={{
+                        background: isLightMode ? '#ffffff' : '#1e293b',
+                        width: '100%', maxWidth: '420px', borderRadius: '24px',
+                        boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)',
+                        border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.1)'}`,
+                        overflow: 'hidden'
+                    }}>
+                        <div style={{ padding: '1.5rem 1.5rem 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `1px solid ${isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.05)'}` }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(59, 130, 246, 0.1)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <Edit3 size={18} />
+                                </div>
+                                <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '800', color: 'var(--text-main)', letterSpacing: '-0.3px' }}>Regularize Attendance</h3>
+                            </div>
+                            <button onClick={() => { setShowRegularizeModal(false); setRegularizeReason(''); }} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '0.5rem', borderRadius: '50%' }}>
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div style={{ padding: '1.5rem' }}>
+                            <div style={{ marginBottom: '1.5rem', padding: '1rem', background: isLightMode ? '#f8fafc' : 'rgba(0,0,0,0.2)', borderRadius: '16px', border: `1px dashed ${isLightMode ? '#cbd5e1' : 'rgba(255,255,255,0.1)'}` }}>
+                                <div style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.25rem' }}>Selected Log</div>
+                                <div style={{ fontSize: '1rem', fontWeight: '800', color: 'var(--text-main)' }}>
+                                    {new Date(regularizeLog.date).toLocaleDateString('en-US', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}
+                                </div>
+                                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '600', marginTop: '0.25rem' }}>
+                                    Logged Hours: {regularizeLog.totalHours ? `${Math.floor(regularizeLog.totalHours)}h ${Math.round((regularizeLog.totalHours % 1) * 60)}m` : '0h'}
+                                </div>
+                            </div>
+
+                            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Reason for Regularization</label>
+                            <textarea
+                                value={regularizeReason}
+                                onChange={(e) => setRegularizeReason(e.target.value)}
+                                placeholder="E.g., Forgot to clock out, system issue, etc."
+                                rows={4}
+                                style={{
+                                    width: '100%', padding: '1rem', borderRadius: '16px',
+                                    border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.1)'}`,
+                                    background: isLightMode ? '#ffffff' : 'rgba(15, 23, 42, 0.5)',
+                                    color: 'var(--text-main)', fontSize: '0.9rem', outline: 'none',
+                                    resize: 'none', fontFamily: 'inherit', fontWeight: '500',
+                                    boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)'
+                                }}
+                            ></textarea>
+                            
+                            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: '500' }}>
+                                <Info size={12} /> This request will be sent to your Reporting Manager.
+                            </p>
+                        </div>
+
+                        <div style={{ padding: '1.25rem 1.5rem', background: isLightMode ? '#f8fafc' : 'rgba(0,0,0,0.2)', display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', borderTop: `1px solid ${isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.05)'}` }}>
+                            <button onClick={() => { setShowRegularizeModal(false); setRegularizeReason(''); }} style={{ padding: '0.7rem 1.5rem', borderRadius: '12px', background: 'transparent', border: 'none', color: 'var(--text-main)', fontSize: '0.9rem', fontWeight: '700', cursor: 'pointer' }}>Cancel</button>
+                            <button
+                                onClick={submitRegularization}
+                                disabled={isSubmittingRegularize || !regularizeReason.trim()}
+                                style={{
+                                    padding: '0.7rem 1.5rem', borderRadius: '12px', background: 'var(--primary)', color: '#fff',
+                                    border: 'none', fontSize: '0.9rem', fontWeight: '800', cursor: isSubmittingRegularize || !regularizeReason.trim() ? 'not-allowed' : 'pointer',
+                                    display: 'flex', alignItems: 'center', gap: '0.5rem', opacity: isSubmittingRegularize || !regularizeReason.trim() ? 0.6 : 1,
+                                    boxShadow: '0 4px 12px rgba(var(--primary-rgb), 0.3)'
+                                }}
+                            >
+                                {isSubmittingRegularize ? 'Sending...' : <><Send size={16} /> Submit</>}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
             <style>{`
                 @keyframes fadeIn {
                     from { opacity: 0; transform: translateY(10px); }

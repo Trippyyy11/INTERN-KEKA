@@ -8,7 +8,7 @@ import { createNotification } from './notificationController.js';
 // @access  Private
 export const createRequest = async (req, res) => {
     try {
-        const { type, leaveType, startDate, endDate, message, recipients, associatedLeave, cancelDates } = req.body;
+        const { type, leaveType, startDate, endDate, message, recipients, associatedLeave, associatedAttendance, cancelDates } = req.body;
 
         // Determine requested duration
         const start = new Date(startDate);
@@ -58,7 +58,7 @@ export const createRequest = async (req, res) => {
             }
         }
 
-        if (type !== 'Leave Cancellation') {
+        if (type !== 'Leave Cancellation' && type !== 'Attendance Regularization') {
             const startCheck = new Date(startDate);
             const today = new Date();
             today.setHours(0, 0, 0, 0);
@@ -90,6 +90,7 @@ export const createRequest = async (req, res) => {
             startDate,
             endDate,
             associatedLeave,
+            associatedAttendance,
             cancelDates,
             message,
             recipients: finalRecipients,
@@ -98,7 +99,8 @@ export const createRequest = async (req, res) => {
 
         const populated = await Request.findById(request._id)
             .populate('user', 'name email designation department')
-            .populate('recipients', 'name email');
+            .populate('recipients', 'name email')
+            .populate('associatedAttendance');
 
         // Create notification for recipients
         for (const recipientId of recipients) {
@@ -126,7 +128,8 @@ export const getMyRequests = async (req, res) => {
         const requests = await Request.find({ user: req.user._id })
             .sort({ createdAt: -1 })
             .populate('recipients', 'name email')
-            .populate('actionBy', 'name');
+            .populate('actionBy', 'name')
+            .populate('associatedAttendance');
 
         res.status(200).json(requests);
     } catch (error) {
@@ -143,7 +146,8 @@ export const getInboxRequests = async (req, res) => {
             .sort({ createdAt: -1 })
             .populate('user', 'name email designation department')
             .populate('recipients', 'name email')
-            .populate('actionBy', 'name');
+            .populate('actionBy', 'name')
+            .populate('associatedAttendance');
 
         res.status(200).json(requests);
     } catch (error) {
@@ -214,7 +218,8 @@ export const updateRequestStatus = async (req, res) => {
         const populated = await Request.findById(updated._id)
             .populate('user', 'name email designation department')
             .populate('recipients', 'name email')
-            .populate('actionBy', 'name');
+            .populate('actionBy', 'name')
+            .populate('associatedAttendance');
 
         // Notification to the requester that their request was acted upon
         await createNotification(

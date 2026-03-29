@@ -5,7 +5,7 @@ const requestSchema = new mongoose.Schema(
         user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
         type: {
             type: String,
-            enum: ['Leave Application', 'Work From Home', 'Half Day', 'Comp Off', 'Leave Cancellation'],
+            enum: ['Leave Application', 'Work From Home', 'Half Day', 'Comp Off', 'Leave Cancellation', 'Attendance Regularization'],
             required: true
         },
         leaveType: {
@@ -15,6 +15,7 @@ const requestSchema = new mongoose.Schema(
         startDate: { type: Date, required: true },
         endDate: { type: Date, required: true },
         associatedLeave: { type: mongoose.Schema.Types.ObjectId, ref: 'Leave' },
+        associatedAttendance: { type: mongoose.Schema.Types.ObjectId, ref: 'Attendance' },
         cancelDates: [{ type: Date }],
         message: { type: String },
         recipients: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],

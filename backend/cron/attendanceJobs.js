@@ -1,26 +1,25 @@
 import cron from 'node-cron';
 import Attendance from '../models/Attendance.js';
 
-// Schedule job to run at 23:55 (11:55 PM) every day
-// This will find all people who forgot to clock out today (or previous days)
-// and clock them out at 23:59:59 to close the session automatically.
-cron.schedule('55 23 * * *', async () => {
-    console.log('[CRON] Running Auto-Clock-Out Job at 23:55...');
+// Schedule job to run once a day at 4:00 AM as a fail-safe
+// Most sessions will be closed lazily by user interactions (see utils/attendanceHelper.js)
+// This cleans up any forgotten sessions for people who don't visit the site for days.
+cron.schedule('0 4 * * *', async () => {
+    console.log('[CRON] Running Auto-Clock-Out Job (16-hour check)...');
     try {
         const now = new Date();
-        const startOfToday = new Date(now);
-        startOfToday.setHours(0, 0, 0, 0);
+        const cutoffTime = new Date(now.getTime() - 16 * 60 * 60 * 1000); // 16 hours ago
 
         // Find attendance records that have NO clockOutTime, but DO have a clockInTime
-        // This includes today's open sessions, and any hanging sessions from the past
+        // AND the clockInTime is older than the 16-hour cutoff
         const hangingSessions = await Attendance.find({
-            clockInTime: { $exists: true },
+            clockInTime: { $exists: true, $lte: cutoffTime },
             clockOutTime: { $exists: false }
         });
 
         // Also check with null
         const nullSessions = await Attendance.find({
-            clockInTime: { $exists: true, $ne: null },
+            clockInTime: { $exists: true, $ne: null, $lte: cutoffTime },
             clockOutTime: null
         });
 
@@ -31,30 +30,26 @@ cron.schedule('55 23 * * *', async () => {
             .map(id => allHanging.find(a => a._id.toString() === id));
 
         if (uniqueHanging.length === 0) {
-            console.log('[CRON] No hanging sessions found.');
+            console.log('[CRON] No hanging sessions exceeding 16 hours found.');
             return;
         }
 
-        console.log(`[CRON] Found ${uniqueHanging.length} people who forgot to clock out. Clocking them out now.`);
+        console.log(`[CRON] Found ${uniqueHanging.length} people who forgot to clock out > 16 hours. Clocking them out now.`);
 
         for (const record of uniqueHanging) {
-            // We clock them out at 23:59 of the day they clocked in (record.date)
-            // Just to be safe, we grab the date of the record.
-            const clockOutDate = new Date(record.date);
-            clockOutDate.setHours(23, 59, 59, 999);
+            // We clock them out exactly 16 hours after they clocked in
+            const clockOutDate = new Date(record.clockInTime.getTime() + 16 * 60 * 60 * 1000);
 
             record.clockOutTime = clockOutDate;
 
-            // Recalculate total hours
-            const diffMs = clockOutDate - record.clockInTime;
-            const diffHrs = diffMs > 0 ? (diffMs / (1000 * 60 * 60)) : 0;
+            // set exact 16.00 hours
+            record.totalHours = "16.00";
             
-            record.totalHours = diffHrs.toFixed(2);
             await record.save();
-            console.log(`[CRON] Auto-clocked out user: ${record.user}`);
+            console.log(`[CRON] Auto-clocked out user: ${record.user} at ${clockOutDate.toISOString()}`);
         }
 
-        console.log('[CRON] Auto-Clock-Out Job completed.');
+        console.log('[CRON] Auto-Clock-Out Job (16-hour check) completed.');
     } catch (error) {
         console.error('[CRON] Error during Auto-Clock-Out Job:', error);
     }
