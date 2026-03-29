@@ -2,7 +2,7 @@ import React, { memo } from 'react';
 import { Handle, Position } from '@xyflow/react';
 
 const CustomNode = ({ data }) => {
-    const isManager = data.role === 'Reporting Officer' || data.role === 'Super Admin';
+    const isManager = data.role === 'Reporting Manager' || data.role === 'Super Admin';
 
     return (
         <div style={{

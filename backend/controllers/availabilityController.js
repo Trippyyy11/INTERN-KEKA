@@ -27,7 +27,7 @@ export const getAvailability = async (req, res) => {
             if (department) userFilter.department = department;
             const users = await User.find(userFilter).select('_id');
             userIds = users.map(u => u._id);
-        } else if (userRole === 'Reporting Officer') {
+        } else if (userRole === 'Reporting Manager') {
             // Reporting Officer: team members (users who report to them) + self
             const teamMembers = await User.find({
                 reportingManager: req.user._id,
@@ -122,7 +122,7 @@ export const exportAvailability = async (req, res) => {
             if (department) userFilter.department = department;
             const users = await User.find(userFilter).select('_id');
             userIds = users.map(u => u._id);
-        } else if (userRole === 'Reporting Officer') {
+        } else if (userRole === 'Reporting Manager') {
             const teamMembers = await User.find({
                 reportingManager: req.user._id,
                 isActive: true,

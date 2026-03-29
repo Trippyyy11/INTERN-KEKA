@@ -100,7 +100,7 @@ const FormInput = ({ isLightMode, ...props }) => {
 
 const RoleBadge = ({ role, isLightMode }) => {
     const isSA = role === 'Super Admin';
-    const isAdmin = role === 'Reporting Officer';
+    const isAdmin = role === 'Reporting Manager';
     const bg = isSA ? 'linear-gradient(135deg,#6366f1,#8b5cf6)' : isAdmin ? 'linear-gradient(135deg,#3b82f6,#06b6d4)' : (isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.06)');
     const color = (isSA || isAdmin) ? '#fff' : 'var(--text-muted)';
     return (

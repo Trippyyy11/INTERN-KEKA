@@ -9,8 +9,11 @@ export const getUsers = async (req, res) => {
     try {
         let filter = { isDeleted: { $ne: true } };
         
-        // Reporting Officer: only see team members under them
-        if (req.user.role === 'Reporting Officer') {
+        const { scope } = req.query;
+        
+        // Reporting Manager: typically only see team members
+        // IF scope === 'org', allow seeing all (for tree building)
+        if (req.user.role === 'Reporting Manager' && scope !== 'org') {
             filter.reportingManager = req.user._id;
         }
         // Super Admin: sees all (no additional filter)
@@ -164,7 +167,7 @@ export const assignManager = async (req, res) => {
             // Define role weights
             const roleWeights = {
                 'Super Admin': 3,
-                'Reporting Officer': 2,
+                'Reporting Manager': 2,
                 'Intern': 1
             };
 

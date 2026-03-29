@@ -317,7 +317,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
         const timer = setInterval(() => setCurrentTime(new Date().toLocaleTimeString()), 1000);
         fetchStats();
         fetchSystemSettings();
-        if (user?.role === 'Reporting Officer' || user?.role === 'Super Admin') {
+        if (user?.role === 'Reporting Manager' || user?.role === 'Super Admin') {
             fetchAdminData();
             fetchOrgConfigs();
             fetchGlobalFinances();

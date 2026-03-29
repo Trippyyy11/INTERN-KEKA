@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
-dotenv.config();
+dotenv.config({ path: './backend/.env' });
 
 const MONGO_URI = process.env.MONGO_URI;
 
@@ -12,12 +12,12 @@ async function migrateRoles() {
         const db = mongoose.connection.db;
         const usersCollection = db.collection('users');
 
-        // Migrate Admin → Reporting Officer
+        // Migrate Admin → Reporting Manager
         const adminResult = await usersCollection.updateMany(
             { role: 'Admin' },
-            { $set: { role: 'Reporting Officer' } }
+            { $set: { role: 'Reporting Manager' } }
         );
-        console.log(`Migrated ${adminResult.modifiedCount} users from 'Admin' to 'Reporting Officer'`);
+        console.log(`Migrated ${adminResult.modifiedCount} users from 'Admin' to 'Reporting Manager'`);
 
         // Migrate Employee → Intern
         const employeeResult = await usersCollection.updateMany(
@@ -25,6 +25,13 @@ async function migrateRoles() {
             { $set: { role: 'Intern' } }
         );
         console.log(`Migrated ${employeeResult.modifiedCount} users from 'Employee' to 'Intern'`);
+        
+        // Migrate Reporting Officer → Reporting Manager (Consistency Fix)
+        const roResult = await usersCollection.updateMany(
+            { role: 'Reporting Officer' },
+            { $set: { role: 'Reporting Manager' } }
+        );
+        console.log(`Migrated ${roResult.modifiedCount} users from 'Reporting Officer' to 'Reporting Manager'`);
 
         console.log('Role migration completed successfully!');
         process.exit(0);

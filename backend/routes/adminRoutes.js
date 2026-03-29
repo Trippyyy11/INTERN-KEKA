@@ -21,7 +21,7 @@ router.use(protect);
 router.get('/settings', getSettings);
 router.get('/org-users', getUsers); // Accessible to all authenticated users for org tree
 
-router.use(authorize(['Reporting Officer', 'Super Admin']));
+router.use(authorize(['Reporting Manager', 'Super Admin']));
 
 router.get('/users', getUsers);
 router.put('/users/:id/approve', approveUser);
