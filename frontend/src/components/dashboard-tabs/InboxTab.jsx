@@ -3,12 +3,11 @@ import { Info, Inbox, Check, X } from 'lucide-react';
 
 const InboxTab = ({
     inboxRequests,
-    requestActionNote,
-    setRequestActionNote,
     handleRequestAction,
     getStatusStyle,
     isLightMode
 }) => {
+    const [localNotes, setLocalNotes] = React.useState({});
     const bentoPanelStyle = {
         background: isLightMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(15, 23, 42, 0.5)',
         backdropFilter: 'blur(16px)',
@@ -142,13 +141,16 @@ const InboxTab = ({
                                                 <input
                                                     type="text"
                                                     placeholder="Optional Note"
-                                                    value={requestActionNote}
-                                                    onChange={(e) => setRequestActionNote(e.target.value)}
+                                                    value={localNotes[r._id] || ''}
+                                                    onChange={(e) => setLocalNotes({ ...localNotes, [r._id]: e.target.value })}
                                                     style={inputStyle}
                                                 />
                                                 <div style={{ display: 'flex', gap: '0.3rem' }}>
                                                     <button
-                                                        onClick={() => handleRequestAction(r._id, 'Approved')}
+                                                        onClick={() => {
+                                                            handleRequestAction(r._id, 'Approved', localNotes[r._id]);
+                                                            setLocalNotes({ ...localNotes, [r._id]: '' });
+                                                        }}
                                                         style={{
                                                             width: '32px', height: '32px', borderRadius: '10px',
                                                             background: 'rgba(16, 185, 129, 0.15)', color: 'var(--success)', border: 'none',
@@ -162,7 +164,10 @@ const InboxTab = ({
                                                         <Check size={16} strokeWidth={3} />
                                                     </button>
                                                     <button
-                                                        onClick={() => handleRequestAction(r._id, 'Rejected')}
+                                                        onClick={() => {
+                                                            handleRequestAction(r._id, 'Rejected', localNotes[r._id]);
+                                                            setLocalNotes({ ...localNotes, [r._id]: '' });
+                                                        }}
                                                         style={{
                                                             width: '32px', height: '32px', borderRadius: '10px',
                                                             background: 'rgba(239, 68, 68, 0.15)', color: 'var(--danger)', border: 'none',

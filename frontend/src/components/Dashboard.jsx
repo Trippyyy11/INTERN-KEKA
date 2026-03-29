@@ -253,7 +253,6 @@ export default function Dashboard({ user, onLogout, setUser }) {
     const [recipientSuggestions, setRecipientSuggestions] = useState([]);
     const [myRequests, setMyRequests] = useState([]);
     const [inboxRequests, setInboxRequests] = useState([]);
-    const [requestActionNote, setRequestActionNote] = useState('');
     const [requestSubmitting, setRequestSubmitting] = useState(false);
     const [selectedLeaveForCancel, setSelectedLeaveForCancel] = useState(null);
     const [datesToCancel, setDatesToCancel] = useState([]);
@@ -424,11 +423,10 @@ export default function Dashboard({ user, onLogout, setUser }) {
         } catch (err) { console.error('Failed to fetch inbox requests'); }
     };
 
-    const handleRequestAction = async (requestId, status) => {
+    const handleRequestAction = async (requestId, status, actionNote) => {
         try {
-            await api.put(`/requests/${requestId}/status`, { status, actionNote: requestActionNote });
+            await api.put(`/requests/${requestId}/status`, { status, actionNote });
             showAlert(`Request ${status} successfully!`, 'info');
-            setRequestActionNote('');
             fetchInboxRequests();
         } catch (err) {
             showAlert(err.response?.data?.message || 'Action failed', 'info');
@@ -1366,8 +1364,6 @@ export default function Dashboard({ user, onLogout, setUser }) {
                 <div className="page-content">
                     <InboxTab
                         inboxRequests={inboxRequests}
-                        requestActionNote={requestActionNote}
-                        setRequestActionNote={setRequestActionNote}
                         handleRequestAction={handleRequestAction}
                         getStatusStyle={getStatusStyle}
                         isLightMode={isLightMode}
@@ -2759,8 +2755,26 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                 if (item.name === 'Admin') setActiveSubTab('Leave');
                             }}
                         >
-                            {item.icon}
-                            <span className="nav-text">{item.name}</span>
+                            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                                {item.icon}
+                                {item.name === 'Inbox' && inboxRequests.filter(r => r.status === 'Pending').length > 0 && (
+                                    <span style={{
+                                        position: 'absolute',
+                                        top: '-5px',
+                                        right: '-10px',
+                                        background: 'var(--danger)',
+                                        color: '#fff',
+                                        fontSize: '0.6rem',
+                                        fontWeight: 'bold',
+                                        padding: '2px 5px',
+                                        borderRadius: '10px',
+                                        zIndex: 1
+                                    }}>
+                                        {inboxRequests.filter(r => r.status === 'Pending').length}
+                                    </span>
+                                )}
+                            </div>
+                            <span className="nav-text" style={{ marginLeft: '10px' }}>{item.name}</span>
                         </div>
                     ))}
                 </nav>

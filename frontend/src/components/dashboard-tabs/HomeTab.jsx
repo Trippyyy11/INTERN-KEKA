@@ -234,7 +234,7 @@ export default function HomeTab({
                         <div
                             className="panel cursor-pointer hover:shadow-lg transition-all"
                             style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', background: isLightMode ? '#ffffff' : 'rgba(255,255,255,0.03)', border: isLightMode ? '1px solid #e2e8f0' : '1px solid rgba(255,255,255,0.05)', borderRadius: '20px' }}
-                            onClick={() => { setActiveSidebar('Inbox'); setActiveSubTab('Leave'); }}
+                            onClick={() => { setActiveSidebar('Me'); setActiveSubTab('Request'); }}
                         >
                             <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(59, 130, 246, 0.1)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                 <Calendar size={20} />
@@ -244,7 +244,7 @@ export default function HomeTab({
                         <div
                             className="panel cursor-pointer hover:shadow-lg transition-all"
                             style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', background: isLightMode ? '#ffffff' : 'rgba(255,255,255,0.03)', border: isLightMode ? '1px solid #e2e8f0' : '1px solid rgba(255,255,255,0.05)', borderRadius: '20px' }}
-                            onClick={() => setActiveSidebar('Me')}
+                            onClick={() => { setActiveSidebar('Me'); setActiveSubTab('Profile'); }}
                         >
                             <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                 <Briefcase size={20} />

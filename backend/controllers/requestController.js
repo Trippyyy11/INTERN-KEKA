@@ -1,6 +1,7 @@
 import Request from '../models/Request.js';
 import User from '../models/User.js';
 import Leave from '../models/Leave.js';
+import { createNotification } from './notificationController.js';
 
 // @desc    Create a new request (Leave/WFH/Half Day)
 // @route   POST /api/requests
@@ -43,6 +44,18 @@ export const createRequest = async (req, res) => {
         const populated = await Request.findById(request._id)
             .populate('user', 'name email designation department')
             .populate('recipients', 'name email');
+
+        // Create notification for recipients
+        for (const recipientId of recipients) {
+            await createNotification(
+                recipientId,
+                'leave_request',
+                'New Request',
+                `${populated.user.name} submitted a ${type} request for ${new Date(startDate).toLocaleDateString()}.`,
+                request._id,
+                'Request'
+            );
+        }
 
         res.status(201).json(populated);
     } catch (error) {
@@ -145,6 +158,16 @@ export const updateRequestStatus = async (req, res) => {
             .populate('user', 'name email designation department')
             .populate('recipients', 'name email')
             .populate('actionBy', 'name');
+
+        // Notification to the requester that their request was acted upon
+        await createNotification(
+            updated.user,
+            'leave_request_update',
+            `Request ${status}`,
+            `Your ${updated.type} request was ${status.toLowerCase()} by ${req.user.name}. ${actionNote ? `Note: ${actionNote}` : ''}`,
+            updated._id,
+            'Request'
+        );
 
         res.json(populated);
     } catch (error) {
