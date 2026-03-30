@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Calendar, Clock, FileText, HelpCircle, Info, Home, LogOut, Zap, LayoutDashboard, MoreVertical, Edit3, X, Send } from 'lucide-react';
+import { Calendar, Clock, FileText, HelpCircle, Info, Home, LogOut, Zap, LayoutDashboard, MoreVertical, Edit3, X, Send, CheckCircle2, History, ArrowRight } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import api from '../../api/axios.js';
 
 const AttendanceTab = ({
@@ -39,6 +40,7 @@ const AttendanceTab = ({
 }) => {
 
     const [activeMenu, setActiveMenu] = useState(null);
+    const [activeTooltip, setActiveTooltip] = useState(null);
     const [showRegularizeModal, setShowRegularizeModal] = useState(false);
     const [regularizeLog, setRegularizeLog] = useState(null);
     const [regularizeReason, setRegularizeReason] = useState('');
@@ -370,73 +372,123 @@ const AttendanceTab = ({
                 marginBottom: '1.5rem'
             }}>
                 {/* Stats Panel */}
+                {/* Stats Panel */}
                 <div style={bentoPanelStyle}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
                         <span style={{ fontSize: '1.05rem', fontWeight: '800', letterSpacing: '-0.3px', color: 'var(--text-main)' }}>Attendance Stats</span>
-                        <select
-                            value={statsPeriod}
-                            onChange={(e) => {
-                                setStatsPeriod(e.target.value);
-                                fetchTeamStats(e.target.value);
-                            }}
-                            style={{
-                                background: isLightMode ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)',
-                                border: 'none',
-                                color: 'var(--text-main)',
-                                fontSize: '0.75rem',
-                                padding: '0.4rem 0.8rem',
-                                borderRadius: '12px',
-                                outline: 'none',
-                                cursor: 'pointer',
-                                fontWeight: '600',
-                                transition: 'background 0.2s'
-                            }}
-                        >
-                            <option value="Last Week">Last Week</option>
-                            <option value="Last Month">Last Month</option>
-                        </select>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', fontWeight: '700', color: 'var(--primary)', background: 'rgba(var(--primary-rgb), 0.1)', padding: '0.4rem 0.8rem', borderRadius: '12px' }}>
+                            <Calendar size={14} /> Last 7 Days
+                        </div>
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                        {(meStats.hasData || teammateIndividualStats.length > 0) ? (
-                            <>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(var(--primary-rgb), 0.08)', padding: '1rem', borderRadius: '16px', border: '1px solid rgba(var(--primary-rgb), 0.15)' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
-                                        <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'var(--primary)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem', fontWeight: 'bold', boxShadow: '0 4px 12px rgba(var(--primary-rgb), 0.4)' }}>ME</div>
-                                        <span style={{ fontSize: '0.95rem', fontWeight: '700' }}>Me</span>
-                                    </div>
-                                    <div style={{ textAlign: 'right' }}>
-                                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.2rem', fontWeight: '600' }}>Avg Hrs/Day</div>
-                                        <div style={{ fontSize: '1.1rem', fontWeight: '800', color: 'var(--text-main)' }}>{meStats.avgHours}</div>
-                                    </div>
-                                    <div style={{ textAlign: 'right' }}>
-                                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.2rem', fontWeight: '600' }}>On Time</div>
-                                        <div style={{ fontSize: '1.1rem', fontWeight: '800', color: 'var(--success)' }}>{meStats.onTime}</div>
-                                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', flex: 1 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'stretch', background: isLightMode ? '#f8fafc' : 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: '20px', border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.05)'}` }}>
+                            <div style={{ flex: 1 }}>
+                                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '0.2rem', fontWeight: '700' }}>Avg Hrs/Day</div>
+                                <div style={{ fontSize: '1.6rem', fontWeight: '800', color: 'var(--text-main)', display: 'flex', alignItems: 'baseline', gap: '0.1rem' }}>
+                                    {(() => {
+                                        let totalHours = 0;
+                                        for(let i = 0; i < 7; i++){
+                                            const d = new Date(); d.setDate(d.getDate() - i); d.setHours(0,0,0,0);
+                                            const l = attendanceLogs?.find(lg => new Date(lg.date).setHours(0,0,0,0) === d.getTime());
+                                            totalHours += (l?.totalHours || 0);
+                                        }
+                                        const avg = totalHours / 7;
+                                        return (
+                                            <>
+                                                {Math.floor(avg)}<span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '600', marginRight: '4px' }}>h</span>
+                                                {Math.round((avg % 1) * 60)}<span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '600' }}>m</span>
+                                            </>
+                                        );
+                                    })()}
                                 </div>
-                                {teammateIndividualStats.map(ts => (
-                                    <div key={ts._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0.5rem' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
-                                            <div className="avatar" style={{ width: '36px', height: '36px', borderRadius: '12px', fontSize: '0.8rem', background: isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.05)', color: 'var(--text-main)', fontWeight: '700', border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.1)'}` }}>
-                                                {ts.name.substring(0, 2).toUpperCase()}
-                                            </div>
-                                            <span style={{ fontSize: '0.9rem', fontWeight: '600' }}>{ts.name}</span>
-                                        </div>
-                                        <div style={{ textAlign: 'right' }}>
-                                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', letterSpacing: '0.3px', fontWeight: '500' }}>Avg Hrs/Day</div>
-                                            <div style={{ fontSize: '0.9rem', fontWeight: '700' }}>{Math.floor(ts.avgHours)}h {Math.round((ts.avgHours % 1) * 60)}m</div>
-                                        </div>
-                                        <div style={{ textAlign: 'right' }}>
-                                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', letterSpacing: '0.3px', fontWeight: '500' }}>On Time</div>
-                                            <div style={{ fontSize: '0.9rem', fontWeight: '700', color: 'var(--text-main)' }}>{ts.onTimePercentage}%</div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </>
-                        ) : (
-                            <div style={{ textAlign: 'center', padding: '3rem 0', color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: '500', background: isLightMode ? '#f8fafc' : 'rgba(0,0,0,0.2)', borderRadius: '16px', border: `1px dashed ${isLightMode ? '#cbd5e1' : 'rgba(255,255,255,0.1)'}` }}>
-                                No data available for this period.
                             </div>
-                        )}
+                            <div style={{ width: '1px', background: isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.1)', margin: '0 1rem' }}></div>
+                            <div style={{ flex: 1, textAlign: 'right' }}>
+                                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '0.2rem', fontWeight: '700' }}>On Time Ratio</div>
+                                <div style={{ fontSize: '1.6rem', fontWeight: '800', color: 'var(--success)', display: 'flex', alignItems: 'baseline', gap: '0.1rem', justifyContent: 'flex-end' }}>
+                                    {(() => {
+                                        let onTimeCount = 0;
+                                        let logsCount = 0;
+                                        const [sh, sm] = (user?.workingSchedule?.shiftStart || '11:00').split(':').map(Number);
+                                        const shiftStartMins = sh * 60 + sm;
+                                        for(let i = 0; i < 7; i++){
+                                            const d = new Date(); d.setDate(d.getDate() - i); d.setHours(0,0,0,0);
+                                            const l = attendanceLogs?.find(lg => new Date(lg.date).setHours(0,0,0,0) === d.getTime());
+                                            if (l?.clockInTime) {
+                                                logsCount++;
+                                                const cin = new Date(l.clockInTime);
+                                                const mins = cin.getHours() * 60 + cin.getMinutes();
+                                                if(mins <= shiftStartMins + 60) onTimeCount++;
+                                            }
+                                        }
+                                        return logsCount > 0 ? Math.round((onTimeCount / logsCount) * 100) + '%' : '0%';
+                                    })()}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Chart Area */}
+                        <div style={{ flex: 1, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '6px', position: 'relative', marginTop: 'auto', paddingTop: '1.5rem', minHeight: '120px' }}>
+                            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '1px', borderTop: `1px dashed ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.08)'}`, zIndex: 0 }}></div>
+                            <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: '1px', borderTop: `1px dashed ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.08)'}`, zIndex: 0 }}></div>
+                            
+                            {(() => {
+                                const targetHours = user?.workingSchedule?.minHours || 7.0;
+                                const chartData = [];
+                                for (let i = 6; i >= 0; i--) {
+                                    const d = new Date();
+                                    d.setDate(d.getDate() - i);
+                                    d.setHours(0,0,0,0);
+                                    const log = attendanceLogs?.find(lg => new Date(lg.date).setHours(0,0,0,0) === d.getTime());
+                                    const worked = log?.totalHours || 0;
+                                    chartData.push({
+                                        day: d.toLocaleDateString('en-US', { weekday: 'short' }),
+                                        dateLabel: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                                        hours: worked,
+                                        isToday: i === 0
+                                    });
+                                }
+                                
+                                const maxH = Math.max(10, ...chartData.map(d => d.hours));
+
+                                return chartData.map((d, i) => {
+                                    const heightPct = Math.max(4, Math.min((d.hours / maxH) * 100, 100)); // min 4% to show a dot if > 0
+                                    const isShort = d.hours > 0 && d.hours < targetHours;
+                                    const isZero = d.hours === 0;
+
+                                    return (
+                                        <div key={i} title={`${d.dateLabel}: ${Math.floor(d.hours)}h ${Math.round((d.hours%1)*60)}m`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, zIndex: 1, cursor: 'pointer' }}>
+                                            <div style={{ 
+                                                height: '100px', 
+                                                width: '100%', 
+                                                position: 'relative', 
+                                                display: 'flex', 
+                                                alignItems: 'flex-end', 
+                                                justifyContent: 'center',
+                                                background: isZero ? 'transparent' : (isLightMode ? 'rgba(0,0,0,0.02)' : 'rgba(255,255,255,0.02)'),
+                                                borderRadius: '6px',
+                                                padding: '2px',
+                                            }}>
+                                                <div 
+                                                    style={{
+                                                        width: '100%',
+                                                        maxWidth: '24px',
+                                                        height: isZero ? '4px' : `${heightPct}%`,
+                                                        background: isZero 
+                                                            ? (isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.1)') 
+                                                            : (d.isToday ? 'linear-gradient(to top, var(--primary), #60a5fa)' : (isShort ? 'linear-gradient(to top, #f59e0b, #fbbf24)' : 'linear-gradient(to top, #10b981, #34d399)')),
+                                                        borderRadius: isZero ? '4px' : '6px 6px 4px 4px',
+                                                        boxShadow: d.isToday ? '0 4px 12px rgba(var(--primary-rgb), 0.3)' : (isZero ? 'none' : '0 2px 8px rgba(0,0,0,0.05)'),
+                                                        transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+                                                    }}
+                                                ></div>
+                                            </div>
+                                            <span style={{ fontSize: '0.65rem', fontWeight: d.isToday ? '800' : '600', color: d.isToday ? 'var(--primary)' : 'var(--text-muted)', marginTop: '0.4rem', textTransform: 'uppercase' }}>{d.day}</span>
+                                        </div>
+                                    );
+                                });
+                            })()}
+                        </div>
                     </div>
                 </div>
 
@@ -668,7 +720,7 @@ const AttendanceTab = ({
                                     })()}
                                 </div>
                             </div>
-                            <div style={{ borderRadius: '20px', border: `1px solid ${isLightMode ? '#e2e8f0' : 'var(--border-dark)'}`, overflow: 'hidden' }}>
+                            <div style={{ borderRadius: '20px', border: `1px solid ${isLightMode ? '#e2e8f0' : 'var(--border-dark)'}` }}>
                                 <table className="data-table" style={{ margin: 0 }}>
                                     <thead>
                                         <tr style={{
@@ -680,164 +732,305 @@ const AttendanceTab = ({
                                         }}>
                                             <th style={{ padding: '0.75rem 1rem', fontWeight: '800' }}>Date</th>
                                             <th style={{ padding: '0.75rem 1rem', fontWeight: '800' }}>Gross Hours</th>
-                                            <th style={{ padding: '0.75rem 1rem', fontWeight: '800' }}>Arrival</th>
+<th style={{ padding: '0.75rem 1rem', fontWeight: '800' }}>Arrival</th>
                                             <th style={{ padding: '0.75rem 1rem', fontWeight: '800' }}>Status</th>
                                             <th style={{ padding: '0.75rem 1rem', fontWeight: '800', textAlign: 'center' }}>Action</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {filteredAttendanceLogs.length > 0 ? filteredAttendanceLogs.map(log => (
-                                            <tr key={log._id} style={{
-                                                borderBottom: `1px solid ${isLightMode ? '#e2e8f0' : 'var(--border-dark)'}`,
-                                                transition: 'background 0.2s',
-                                                cursor: 'default'
-                                            }} onMouseOver={e => e.currentTarget.style.backgroundColor = isLightMode ? '#f8fafc' : 'rgba(255,255,255,0.02)'} onMouseOut={e => e.currentTarget.style.backgroundColor = 'transparent'}>
-                                                <td style={{ fontSize: '0.85rem', fontWeight: '700', padding: '0.75rem 1rem', color: 'var(--text-main)' }}>{new Date(log.date).toLocaleDateString('en-US', { weekday: 'short', day: '2-digit', month: 'short' })}</td>
-                                                <td style={{ fontSize: '0.85rem', color: 'var(--text-muted)', padding: '0.75rem 1rem', fontWeight: '500' }}>
-                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                                        <span>{log.totalHours ? `${Math.floor(log.totalHours)}h ${Math.round((log.totalHours % 1) * 60)}m` : (log.clockInTime ? 'Ongoing' : '0h 0m')}</span>
-                                                        {log.autoClockOut && (
-                                                            <span style={{ fontSize: '0.65rem', color: 'var(--danger)', fontWeight: '700', background: 'rgba(239, 68, 68, 0.1)', padding: '2px 6px', borderRadius: '4px', width: 'fit-content', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
-                                                                Forgot to Clock Out
+                                        {filteredAttendanceLogs.length > 0 ? filteredAttendanceLogs.map((log, index) => {
+                                            const isRegularized = !!(log.originalClockInTime || log.originalClockOutTime);
+                                            const dayName = new Date(log.date).toLocaleDateString('en-US', { weekday: 'long' });
+                                            const isWeekOff = (user?.workingSchedule?.weekOffs || []).includes(dayName);
+
+                                            return (
+                                                <tr key={log._id} style={{
+                                                    borderBottom: `1px solid ${isLightMode ? '#e2e8f0' : 'var(--border-dark)'}`,
+                                                    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                                                    cursor: 'default',
+                                                    background: log.isLeave ? (isLightMode ? 'rgba(139, 92, 246, 0.03)' : 'rgba(139, 92, 246, 0.05)') : 'transparent'
+                                                }} onMouseOver={e => e.currentTarget.style.backgroundColor = log.isLeave ? (isLightMode ? 'rgba(139, 92, 246, 0.08)' : 'rgba(139, 92, 246, 0.1)') : (isLightMode ? '#f8fafc' : 'rgba(255,255,255,0.02)')} onMouseOut={e => e.currentTarget.style.backgroundColor = log.isLeave ? (isLightMode ? 'rgba(139, 92, 246, 0.03)' : 'rgba(139, 92, 246, 0.05)') : 'transparent'}>
+                                                    <td style={{ fontSize: '0.85rem', fontWeight: '700', padding: '0.75rem 1rem', color: 'var(--text-main)' }}>
+                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                                            {new Date(log.date).toLocaleDateString('en-US', { weekday: 'short', day: '2-digit', month: 'short' })}
+                                                            {isWeekOff && !log.isLeave && (
+                                                                <span style={{ fontSize: '0.6rem', color: '#8b5cf6', background: 'rgba(139, 92, 246, 0.1)', padding: '2px 6px', borderRadius: '4px', border: '1px solid rgba(139, 92, 246, 0.2)', width: 'fit-content', fontWeight: '800' }}>{log.isNoRecord ? 'Scheduled Off' : 'Worked on Week Off'}</span>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                    <td style={{ fontSize: '0.85rem', color: 'var(--text-muted)', padding: '0.75rem 1rem', fontWeight: '500' }}>
+                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                                            {log.isLeave ? (
+                                                                <span style={{ fontWeight: '700', color: '#8b5cf6' }}>On Leave</span>
+                                                            ) : log.isNoRecord ? (
+                                                                <span>{isWeekOff ? 'Week Off' : '-'}</span>
+                                                            ) : (
+                                                                <>
+                                                                    <span>{log.totalHours ? `${Math.floor(log.totalHours)}h ${Math.round((log.totalHours % 1) * 60)}m` : (log.clockInTime ? 'Ongoing' : '0h 0m')}</span>
+                                                                    {log.autoClockOut && (
+                                                                        <span style={{ fontSize: '0.65rem', color: 'var(--danger)', fontWeight: '700', background: 'rgba(239, 68, 68, 0.1)', padding: '2px 6px', borderRadius: '4px', width: 'fit-content', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+                                                                            Forgot to Clock Out
+                                                                        </span>
+                                                                    )}
+                                                                </>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                    <td style={{ fontSize: '0.8rem', padding: '0.75rem 1rem' }}>
+                                                        {(() => {
+                                                            if (log.isLeave) {
+                                                                return (
+                                                                    <span style={{ padding: '0.3rem 0.6rem', background: 'rgba(139, 92, 246, 0.1)', color: '#8b5cf6', borderRadius: '12px', fontWeight: '700', fontSize: '0.7rem', border: '1px solid rgba(139, 92, 246, 0.2)' }}>
+                                                                        {log.leaveType}
+                                                                    </span>
+                                                                );
+                                                            }
+                                                            if (log.isNoRecord) return '-';
+                                                            if (!log.clockInTime) return '-';
+
+                                                            const clockInDate = new Date(log.clockInTime);
+                                                            const hours = clockInDate.getHours();
+                                                            const mins = clockInDate.getMinutes();
+                                                            const totalMins = hours * 60 + mins;
+
+                                                            const [shiftH, shiftM] = (user?.workingSchedule?.shiftStart || '11:00').split(':').map(Number);
+                                                            const shiftStartMins = shiftH * 60 + shiftM;
+
+                                                            let arrivalLabel = null;
+                                                            if (totalMins < shiftStartMins) {
+                                                                arrivalLabel = <span style={{ padding: '0.3rem 0.6rem', background: 'rgba(16, 185, 129, 0.1)', color: 'var(--success)', borderRadius: '12px', fontWeight: '700', fontSize: '0.7rem', border: '1px solid rgba(16, 185, 129, 0.2)' }}>Early</span>;
+                                                            } else if (totalMins <= shiftStartMins + 60) {
+                                                                arrivalLabel = <span style={{ padding: '0.3rem 0.6rem', background: 'rgba(59, 130, 246, 0.1)', color: 'var(--primary)', borderRadius: '12px', fontWeight: '700', fontSize: '0.7rem', border: '1px solid rgba(59, 130, 246, 0.2)' }}>On Time</span>;
+                                                            } else {
+                                                                arrivalLabel = <span style={{ padding: '0.3rem 0.6rem', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', borderRadius: '12px', fontWeight: '700', fontSize: '0.7rem', border: '1px solid rgba(239, 68, 68, 0.2)' }}>Late</span>;
+                                                            }
+
+                                                            const isFirstRow = index === 0;
+
+                                                            return (
+                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                                    {arrivalLabel}
+                                                                    {isRegularized && (
+                                                                        <div 
+                                                                            style={{ position: 'relative', display: 'flex', alignItems: 'center' }}
+                                                                            onMouseEnter={() => setActiveTooltip(log._id)}
+                                                                            onMouseLeave={() => setActiveTooltip(null)}
+                                                                        >
+                                                                            <HelpCircle size={14} style={{ cursor: 'help', color: 'var(--primary)' }} />
+                                                                            <AnimatePresence>
+                                                                                {activeTooltip === log._id && (
+                                                                                    <motion.div
+                                                                                        initial={{ opacity: 0, y: isFirstRow ? -10 : 10, scale: 0.95 }}
+                                                                                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                                                        exit={{ opacity: 0, y: isFirstRow ? -10 : 10, scale: 0.95 }}
+                                                                                        transition={{ duration: 0.2, ease: "easeOut" }}
+                                                                                        style={{
+                                                                                            position: 'absolute',
+                                                                                            top: isFirstRow ? 'calc(100% + 12px)' : 'auto',
+                                                                                            bottom: isFirstRow ? 'auto' : 'calc(100% + 12px)',
+                                                                                            left: '50%',
+                                                                                            transform: 'translateX(-50%)',
+                                                                                            width: '260px',
+                                                                                            background: isLightMode ? '#1e293b' : 'rgba(15, 23, 42, 0.95)',
+                                                                                            backdropFilter: 'blur(12px)',
+                                                                                            padding: '1.25rem',
+                                                                                            borderRadius: '24px',
+                                                                                            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+                                                                                            color: '#fff',
+                                                                                            zIndex: 1000,
+                                                                                            border: '1px solid rgba(255,255,255,0.1)',
+                                                                                            pointerEvents: 'none'
+                                                                                        }}
+                                                                                    >
+                                                                                        {/* Header */}
+                                                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '10px' }}>
+                                                                                            <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'rgba(59, 130, 246, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                                                                <Zap size={18} color="#60a5fa" />
+                                                                                            </div>
+                                                                                            <div>
+                                                                                                <div style={{ fontSize: '0.8rem', fontWeight: '800', letterSpacing: '0.5px', color: '#fff' }}>ADJUSTMENT LOG</div>
+                                                                                                <div style={{ fontSize: '0.6rem', color: '#94a3b8', fontWeight: '600' }}>Attendance Regularized</div>
+                                                                                            </div>
+                                                                                        </div>
+
+                                                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                                                                            {/* Original */}
+                                                                                            <div style={{ padding: '0.85rem', background: 'rgba(255,255,255,0.03)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+                                                                                                    <History size={12} color="#94a3b8" />
+                                                                                                    <span style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Original State</span>
+                                                                                                </div>
+                                                                                                <div style={{ fontSize: '0.9rem', fontWeight: '700', color: '#cbd5e1', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                                                                    {log.originalClockInTime ? new Date(log.originalClockInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'} 
+                                                                                                    <ArrowRight size={12} color="#475569" /> 
+                                                                                                    {log.originalClockOutTime ? new Date(log.originalClockOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
+                                                                                                </div>
+                                                                                            </div>
+
+                                                                                            {/* Final */}
+                                                                                            <div style={{ padding: '0.85rem', background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(5, 150, 105, 0.05))', borderRadius: '16px', border: '1px solid rgba(16, 185, 129, 0.25)' }}>
+                                                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+                                                                                                    <CheckCircle2 size={12} color="#34d399" />
+                                                                                                    <span style={{ fontSize: '0.65rem', color: '#34d399', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Revised Logic</span>
+                                                                                                </div>
+                                                                                                <div style={{ fontSize: '0.95rem', fontWeight: '900', color: '#fff', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                                                                    {log.clockInTime ? new Date(log.clockInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'} 
+                                                                                                    <ArrowRight size={14} color="#10b981" /> 
+                                                                                                    {log.clockOutTime ? new Date(log.clockOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        </div>
+
+                                                                                        {/* Arrow pointing down or up */}
+                                                                                        <div style={{
+                                                                                            position: 'absolute',
+                                                                                            top: isFirstRow ? '-6px' : 'auto',
+                                                                                            bottom: isFirstRow ? 'auto' : '-6px',
+                                                                                            left: '50%',
+                                                                                            transform: 'translateX(-50%) rotate(45deg)',
+                                                                                            width: '12px',
+                                                                                            height: '12px',
+                                                                                            background: isLightMode ? '#1e293b' : 'rgba(15, 23, 42, 0.95)',
+                                                                                            borderLeft: isFirstRow ? '1px solid rgba(255,255,255,0.1)' : 'none',
+                                                                                            borderTop: isFirstRow ? '1px solid rgba(255,255,255,0.1)' : 'none',
+                                                                                            borderRight: !isFirstRow ? '1px solid rgba(255,255,255,0.1)' : 'none',
+                                                                                            borderBottom: !isFirstRow ? '1px solid rgba(255,255,255,0.1)' : 'none',
+                                                                                        }}></div>
+                                                                                    </motion.div>
+                                                                                )}
+                                                                            </AnimatePresence>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            );
+                                                        })()}
+                                                    </td>
+                                                    <td style={{ fontSize: '0.85rem', padding: '0.75rem 1rem', fontWeight: '600' }}>
+                                                        {(() => {
+                                                            if (log.isLeave) {
+                                                                return (
+                                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                                                        <span style={{ fontSize: '0.75rem', color: 'var(--text-main)', fontWeight: '700' }}>Approved Leave</span>
+                                                                        {log.leaveReason && (
+                                                                            <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: '500', fontStyle: 'italic', maxWidth: '200px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={log.leaveReason}>
+                                                                                "{log.leaveReason}"
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                );
+                                                            }
+                                                            if (log.isNoRecord) {
+                                                                return (
+                                                                    <span style={{ padding: '0.3rem 0.6rem', background: isWeekOff ? 'rgba(71, 85, 105, 0.1)' : 'rgba(239, 68, 68, 0.05)', color: isWeekOff ? '#64748b' : '#ef4444', borderRadius: '12px', fontSize: '0.7rem', fontWeight: '700', border: `1px solid ${isWeekOff ? 'rgba(71, 85, 105, 0.2)' : 'rgba(239, 68, 68, 0.1)'}` }}>
+                                                                        {isWeekOff ? 'Scheduled Off' : 'No Record'}
+                                                                    </span>
+                                                                );
+                                                            }
+                                                            if (!log.totalHours) {
+                                                                return <span style={{ color: 'var(--text-muted)' }}>{log.clockInTime ? 'Ongoing' : '-'}</span>;
+                                                            }
+                                                            const targetHours = user?.workingSchedule?.minHours || 7.0;
+                                                            const diff = log.totalHours - targetHours;
+
+                                                            if (diff >= 2) {
+                                                                return <span style={{ padding: '0.3rem 0.6rem', background: 'rgba(139, 92, 246, 0.1)', color: '#8b5cf6', borderRadius: '12px', fontSize: '0.7rem', fontWeight: '700', border: '1px solid rgba(139, 92, 246, 0.2)' }}>Overtime</span>;
+                                                            } else if (diff >= -1) {
+                                                                return <span style={{ padding: '0.3rem 0.6rem', background: 'rgba(16, 185, 129, 0.1)', color: 'var(--success)', borderRadius: '12px', fontSize: '0.7rem', fontWeight: '700', border: '1px solid rgba(16, 185, 129, 0.2)' }}>Full day</span>;
+                                                            } else if (log.totalHours >= targetHours / 2) {
+                                                                return <span style={{ padding: '0.3rem 0.6rem', background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', borderRadius: '12px', fontSize: '0.7rem', fontWeight: '700', border: '1px solid rgba(245, 158, 11, 0.2)' }}>Half day</span>;
+                                                            } else {
+                                                                return <span style={{ padding: '0.3rem 0.6rem', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', borderRadius: '12px', fontSize: '0.7rem', fontWeight: '700', border: '1px solid rgba(239, 68, 68, 0.2)' }}>Short day</span>;
+                                                            }
+                                                        })()}
+                                                        {isRegularized && !log.isLeave && (
+                                                            <span style={{ marginTop: '6px', padding: '0.25rem 0.6rem', background: 'rgba(var(--primary-rgb), 0.1)', color: 'var(--primary)', borderRadius: '10px', fontSize: '0.65rem', fontWeight: '800', border: '1px solid rgba(var(--primary-rgb), 0.2)', width: 'fit-content', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                                <Edit3 size={10} /> Regularized
                                                             </span>
                                                         )}
-                                                    </div>
-                                                </td>
-                                                <td style={{ fontSize: '0.8rem', padding: '0.75rem 1rem' }}>
-                                                    {(() => {
-                                                        if (!log.clockInTime) return '-';
-                                                        const clockInDate = new Date(log.clockInTime);
-                                                        const hours = clockInDate.getHours();
-                                                        const mins = clockInDate.getMinutes();
-                                                        const totalMins = hours * 60 + mins;
+                                                    </td>
+                                                    <td style={{ textAlign: 'center', padding: '0.75rem 1rem' }} className="action-menu-container">
+                                                        {(!log.isLeave && !log.isNoRecord) && (
+                                                            <div style={{ position: 'relative', display: 'inline-block' }}>
+                                                                <div
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setActiveMenu(activeMenu === log._id ? null : log._id);
+                                                                    }}
+                                                                    style={{
+                                                                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                                                                        width: '36px', height: '36px', borderRadius: '50%',
+                                                                        background: activeMenu === log._id ? 'var(--primary)' : (isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.05)'),
+                                                                        color: activeMenu === log._id ? '#fff' : 'var(--primary)',
+                                                                        cursor: 'pointer', transition: 'all 0.2s',
+                                                                    }}
+                                                                >
+                                                                    <MoreVertical size={18} />
+                                                                </div>
 
-                                                        const [shiftH, shiftM] = (user?.workingSchedule?.shiftStart || '11:00').split(':').map(Number);
-                                                        const shiftStartMins = shiftH * 60 + shiftM;
-
-                                                        let arrivalLabel = null;
-                                                        if (totalMins < shiftStartMins) {
-                                                            arrivalLabel = <span style={{ padding: '0.3rem 0.6rem', background: 'rgba(16, 185, 129, 0.1)', color: 'var(--success)', borderRadius: '12px', fontWeight: '700', fontSize: '0.7rem', border: '1px solid rgba(16, 185, 129, 0.2)' }}>Early</span>;
-                                                        } else if (totalMins <= shiftStartMins + 60) {
-                                                            arrivalLabel = <span style={{ padding: '0.3rem 0.6rem', background: 'rgba(59, 130, 246, 0.1)', color: 'var(--primary)', borderRadius: '12px', fontWeight: '700', fontSize: '0.7rem', border: '1px solid rgba(59, 130, 246, 0.2)' }}>On Time</span>;
-                                                        } else {
-                                                            arrivalLabel = <span style={{ padding: '0.3rem 0.6rem', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', borderRadius: '12px', fontWeight: '700', fontSize: '0.7rem', border: '1px solid rgba(239, 68, 68, 0.2)' }}>Late</span>;
-                                                        }
-
-                                                        return (
-                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                                {arrivalLabel}
-                                                                {(log.originalClockInTime || log.originalClockOutTime) && (
-                                                                    <div
-                                                                        title={`Original: ${log.originalClockInTime ? new Date(log.originalClockInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'} - ${log.originalClockOutTime ? new Date(log.originalClockOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}\nRegularized to: ${log.clockInTime ? new Date(log.clockInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'} - ${log.clockOutTime ? new Date(log.clockOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}`}
-                                                                        style={{ cursor: 'help', color: 'var(--primary)', display: 'flex', alignItems: 'center' }}
+                                                            {activeMenu === log._id && (
+                                                                <div style={{
+                                                                    position: 'absolute',
+                                                                    right: '100%',
+                                                                    top: '50%',
+                                                                    transform: 'translateY(-50%)',
+                                                                    marginRight: '12px',
+                                                                    width: '180px',
+                                                                    background: isLightMode ? '#ffffff' : 'rgba(30, 41, 59, 0.95)',
+                                                                    backdropFilter: 'blur(12px)',
+                                                                    border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.1)'}`,
+                                                                    borderRadius: '16px',
+                                                                    boxShadow: isLightMode ? '0 10px 40px rgba(0,0,0,0.1)' : '0 10px 40px rgba(0,0,0,0.5)',
+                                                                    zIndex: 100,
+                                                                    padding: '0.5rem',
+                                                                    animation: 'fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                                                                    display: 'flex', flexDirection: 'column', gap: '4px'
+                                                                }}>
+                                                                    <button
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            setShowLogInfo(log);
+                                                                            setActiveMenu(null);
+                                                                        }}
+                                                                        style={{
+                                                                            width: '100%', padding: '0.65rem 1rem', background: 'transparent',
+                                                                            border: 'none', borderRadius: '12px', cursor: 'pointer', display: 'flex',
+                                                                            alignItems: 'center', gap: '0.75rem', fontSize: '0.85rem', fontWeight: '600',
+                                                                            color: 'var(--text-main)', transition: 'background 0.2s'
+                                                                        }}
+                                                                        onMouseOver={e => e.currentTarget.style.backgroundColor = isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.05)'}
+                                                                        onMouseOut={e => e.currentTarget.style.backgroundColor = 'transparent'}
                                                                     >
-                                                                        <HelpCircle size={14} />
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        );
-                                                    })()}
-                                                </td>
-                                                <td style={{ fontSize: '0.85rem', padding: '0.75rem 1rem', fontWeight: '600' }}>
-                                                    {(() => {
-                                                        if (!log.totalHours) {
-                                                            return <span style={{ color: 'var(--text-muted)' }}>{log.clockInTime ? 'Ongoing' : '-'}</span>;
-                                                        }
-                                                        const targetHours = user?.workingSchedule?.minHours || 7.0;
-                                                        const diff = log.totalHours - targetHours;
+                                                                        <Info size={16} color="var(--primary)" /> View Info
+                                                                    </button>
 
-                                                        if (diff >= 2) {
-                                                            return <span style={{ padding: '0.3rem 0.6rem', background: 'rgba(139, 92, 246, 0.1)', color: '#8b5cf6', borderRadius: '12px', fontSize: '0.7rem', fontWeight: '700', border: '1px solid rgba(139, 92, 246, 0.2)' }}>Overtime</span>;
-                                                        } else if (diff >= -1) {
-                                                            return <span style={{ padding: '0.3rem 0.6rem', background: 'rgba(16, 185, 129, 0.1)', color: 'var(--success)', borderRadius: '12px', fontSize: '0.7rem', fontWeight: '700', border: '1px solid rgba(16, 185, 129, 0.2)' }}>Full day</span>;
-                                                        } else if (log.totalHours >= targetHours / 2) {
-                                                            return <span style={{ padding: '0.3rem 0.6rem', background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', borderRadius: '12px', fontSize: '0.7rem', fontWeight: '700', border: '1px solid rgba(245, 158, 11, 0.2)' }}>Half day</span>;
-                                                        } else {
-                                                            return <span style={{ padding: '0.3rem 0.6rem', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', borderRadius: '12px', fontSize: '0.7rem', fontWeight: '700', border: '1px solid rgba(239, 68, 68, 0.2)' }}>Short day</span>;
-                                                        }
-                                                    })()}
-                                                </td>
-                                                <td style={{ textAlign: 'center', padding: '0.75rem 1rem' }} className="action-menu-container">
-                                                    <div style={{ position: 'relative', display: 'inline-block' }}>
-                                                        <div
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                setActiveMenu(activeMenu === log._id ? null : log._id);
-                                                            }}
-                                                            style={{
-                                                                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                                                                width: '36px', height: '36px', borderRadius: '50%',
-                                                                background: activeMenu === log._id ? 'var(--primary)' : (isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.05)'),
-                                                                color: activeMenu === log._id ? '#fff' : 'var(--primary)',
-                                                                cursor: 'pointer', transition: 'all 0.2s',
-                                                                ':hover': { background: 'var(--primary)', color: '#fff' }
-                                                            }}
-                                                        >
-                                                            <MoreVertical size={18} />
+                                                                    <button
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            setRegularizeLog(log);
+                                                                            setRegularizeExpectedClockIn(log.clockInTime ? new Date(log.clockInTime).toISOString().slice(0, 16) : '');
+                                                                            setRegularizeExpectedClockOut(log.clockOutTime ? new Date(log.clockOutTime).toISOString().slice(0, 16) : '');
+                                                                            setShowRegularizeModal(true);
+                                                                            setActiveMenu(null);
+                                                                        }}
+                                                                        style={{
+                                                                            width: '100%', padding: '0.65rem 1rem', background: 'transparent',
+                                                                            border: 'none', borderRadius: '12px', cursor: 'pointer', display: 'flex',
+                                                                            alignItems: 'center', gap: '0.75rem', fontSize: '0.85rem', fontWeight: '600',
+                                                                            color: 'var(--text-main)', transition: 'background 0.2s'
+                                                                        }}
+                                                                        onMouseOver={e => e.currentTarget.style.backgroundColor = isLightMode ? '#fccfce' : 'rgba(239, 68, 68, 0.15)'}
+                                                                        onMouseOut={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                                                                    >
+                                                                        <Edit3 size={16} color="var(--danger)" /> Regularize
+                                                                    </button>
+                                                                </div>
+                                                            )}
                                                         </div>
-
-                                                        {activeMenu === log._id && (
-                                                            <div style={{
-                                                                position: 'absolute',
-                                                                right: '100%',
-                                                                top: '50%',
-                                                                transform: 'translateY(-50%)',
-                                                                marginRight: '12px',
-                                                                width: '180px',
-                                                                background: isLightMode ? '#ffffff' : 'rgba(30, 41, 59, 0.95)',
-                                                                backdropFilter: 'blur(12px)',
-                                                                border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.1)'}`,
-                                                                borderRadius: '16px',
-                                                                boxShadow: isLightMode ? '0 10px 40px rgba(0,0,0,0.1)' : '0 10px 40px rgba(0,0,0,0.5)',
-                                                                zIndex: 100,
-                                                                padding: '0.5rem',
-                                                                animation: 'fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                                                                display: 'flex', flexDirection: 'column', gap: '4px'
-                                                            }}>
-                                                                <button
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        setShowLogInfo(log);
-                                                                        setActiveMenu(null);
-                                                                    }}
-                                                                    style={{
-                                                                        width: '100%', padding: '0.65rem 1rem', background: 'transparent',
-                                                                        border: 'none', borderRadius: '12px', cursor: 'pointer', display: 'flex',
-                                                                        alignItems: 'center', gap: '0.75rem', fontSize: '0.85rem', fontWeight: '600',
-                                                                        color: 'var(--text-main)', transition: 'background 0.2s'
-                                                                    }}
-                                                                    onMouseOver={e => e.currentTarget.style.backgroundColor = isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.05)'}
-                                                                    onMouseOut={e => e.currentTarget.style.backgroundColor = 'transparent'}
-                                                                >
-                                                                    <Info size={16} color="var(--primary)" /> View Info
-                                                                </button>
-
-                                                                <button
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        setRegularizeLog(log);
-                                                                        setRegularizeExpectedClockIn(log.clockInTime ? new Date(log.clockInTime).toISOString().slice(0, 16) : '');
-                                                                        setRegularizeExpectedClockOut(log.clockOutTime ? new Date(log.clockOutTime).toISOString().slice(0, 16) : '');
-                                                                        setShowRegularizeModal(true);
-                                                                        setActiveMenu(null);
-                                                                    }}
-                                                                    style={{
-                                                                        width: '100%', padding: '0.65rem 1rem', background: 'transparent',
-                                                                        border: 'none', borderRadius: '12px', cursor: 'pointer', display: 'flex',
-                                                                        alignItems: 'center', gap: '0.75rem', fontSize: '0.85rem', fontWeight: '600',
-                                                                        color: 'var(--text-main)', transition: 'background 0.2s'
-                                                                    }}
-                                                                    onMouseOver={e => e.currentTarget.style.backgroundColor = isLightMode ? '#fccfce' : 'rgba(239, 68, 68, 0.15)'}
-                                                                    onMouseOut={e => e.currentTarget.style.backgroundColor = 'transparent'}
-                                                                >
-                                                                    <Edit3 size={16} color="var(--danger)" /> Regularize
-                                                                </button>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        )) : (
+                                                    )}
+                                                    </td>
+                                                </tr>
+                                            );
+                                        }) : (
                                             <tr style={{ border: 'none' }}><td colSpan="5" style={{ textAlign: 'center', padding: '5rem', color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: '500' }}>No logs found for {attendancePeriod}</td></tr>
                                         )}
                                     </tbody>
