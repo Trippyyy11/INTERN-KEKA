@@ -37,14 +37,22 @@ cron.schedule('0 4 * * *', async () => {
         console.log(`[CRON] Found ${uniqueHanging.length} people who forgot to clock out > 16 hours. Clocking them out now.`);
 
         for (const record of uniqueHanging) {
-            // We clock them out exactly 16 hours after they clocked in
             const clockOutDate = new Date(record.clockInTime.getTime() + 16 * 60 * 60 * 1000);
-
             record.clockOutTime = clockOutDate;
 
-            // set exact 16.00 hours
-            record.totalHours = "16.00";
-            
+            let breakMs = 0;
+            if (record.breaks && record.breaks.length > 0) {
+                record.breaks.forEach(b => {
+                    if (b.startTime && b.endTime) {
+                        breakMs += (new Date(b.endTime).getTime() - new Date(b.startTime).getTime());
+                    }
+                });
+            }
+            const diffMs = clockOutDate.getTime() - record.clockInTime.getTime() - breakMs;
+            const diffHrs = Math.max(0, diffMs / (1000 * 60 * 60));
+
+            record.totalHours = diffHrs.toFixed(2);
+            record.autoClockOut = true;
             await record.save();
             console.log(`[CRON] Auto-clocked out user: ${record.user} at ${clockOutDate.toISOString()}`);
         }

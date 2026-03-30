@@ -17,6 +17,8 @@ const requestSchema = new mongoose.Schema(
         associatedLeave: { type: mongoose.Schema.Types.ObjectId, ref: 'Leave' },
         associatedAttendance: { type: mongoose.Schema.Types.ObjectId, ref: 'Attendance' },
         cancelDates: [{ type: Date }],
+        expectedClockIn: { type: Date },
+        expectedClockOut: { type: Date },
         message: { type: String },
         recipients: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
         status: {

@@ -20,7 +20,8 @@ import {
     Heart,
     Briefcase,
     Sparkles,
-    ChevronDown
+    ChevronDown,
+    HelpCircle
 } from 'lucide-react';
 
 /* ======= HELPER COMPONENTS (Moved outside to prevent remounting) ======= */
@@ -367,7 +368,7 @@ const AdminTab = ({
                                         <tr key={log._id} style={{ borderTop: rowBorder, transition: 'background 0.2s' }}
                                             onMouseOver={e => e.currentTarget.style.background = isLightMode ? 'rgba(99,102,241,0.03)' : 'rgba(255,255,255,0.02)'}
                                             onMouseOut={e => e.currentTarget.style.background = 'transparent'}>
-                                            <td style={{ ...tdStyle, paddingLeft: '2rem' }}>
+                                            <td style={{ ...tdStyle, padding: '0.75rem 1rem 0.75rem 2rem' }}>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                                                     <AdminAvatar name={log.user?.name || 'User'} idx={idx} gradientColors={gradientColors} />
                                                     <div>
@@ -381,11 +382,32 @@ const AdminTab = ({
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td style={tdStyle}>{new Date(log.date).toLocaleDateString()}</td>
-                                            <td style={tdStyle}>{log.clockInTime ? new Date(log.clockInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}</td>
-                                            <td style={tdStyle}>{log.clockOutTime ? new Date(log.clockOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : (log.clockInTime ? <span style={{ color: 'var(--primary)', fontWeight: '700' }}>Ongoing</span> : '-')}</td>
-                                            <td style={tdStyle}>{log.totalHours ? `${log.totalHours}h` : '-'}</td>
-                                            <td style={tdStyle}>
+                                            <td style={{ ...tdStyle, padding: '0.75rem 1rem' }}>{new Date(log.date).toLocaleDateString()}</td>
+                                            <td style={{ ...tdStyle, padding: '0.75rem 1rem' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                    {log.clockInTime ? new Date(log.clockInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}
+                                                    {(log.originalClockInTime || log.originalClockOutTime) && (
+                                                        <div 
+                                                            title={`Original: ${log.originalClockInTime ? new Date(log.originalClockInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'} - ${log.originalClockOutTime ? new Date(log.originalClockOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}\nRegularized to: ${log.clockInTime ? new Date(log.clockInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'} - ${log.clockOutTime ? new Date(log.clockOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}`}
+                                                            style={{ cursor: 'help', color: 'var(--primary)', display: 'flex', alignItems: 'center' }}
+                                                        >
+                                                            <HelpCircle size={14} />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </td>
+                                            <td style={{ ...tdStyle, padding: '0.75rem 1rem' }}>
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                                    <span>{log.clockOutTime ? new Date(log.clockOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : (log.clockInTime ? <span style={{ color: 'var(--primary)', fontWeight: '700' }}>Ongoing</span> : '-')}</span>
+                                                    {log.autoClockOut && (
+                                                        <span style={{ fontSize: '0.65rem', color: '#ef4444', fontWeight: '700', background: 'rgba(239, 68, 68, 0.1)', padding: '2px 6px', borderRadius: '4px', width: 'fit-content', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+                                                            Auto-Clocked Out
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </td>
+                                            <td style={{ ...tdStyle, padding: '0.75rem 1rem' }}>{log.totalHours ? `${log.totalHours}h` : '-'}</td>
+                                            <td style={{ ...tdStyle, padding: '0.75rem 1rem' }}>
                                                 <span style={{
                                                     padding: '0.2rem 0.6rem', borderRadius: '8px', fontSize: '0.65rem', fontWeight: '800', 
                                                     textTransform: 'uppercase',
@@ -395,7 +417,7 @@ const AdminTab = ({
                                                     {log.status === 'WFH' ? 'Remote' : log.status}
                                                 </span>
                                             </td>
-                                            <td style={{ ...tdStyle, textAlign: 'center', paddingRight: '2rem' }}>
+                                            <td style={{ ...tdStyle, textAlign: 'center', padding: '0.75rem 2rem 0.75rem 1rem' }}>
                                                 <button 
                                                     onClick={() => handleShowAttendance(log.user)} 
                                                     style={{ 

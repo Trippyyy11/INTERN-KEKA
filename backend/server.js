@@ -6,7 +6,12 @@ import connectDB from './config/db.js';
 
 dotenv.config();
 
-connectDB();
+connectDB().then(() => {
+    // Safely drop the unique index to allow multiple shifts/breaks per day if needed
+    import('./models/Attendance.js').then(({ default: Attendance }) => {
+        Attendance.collection.dropIndex('user_1_date_1').catch(() => {});
+    });
+});
 console.log('JWT_SECRET loaded:', !!process.env.JWT_SECRET, 'Length:', process.env.JWT_SECRET?.length);
 
 import './cron/attendanceJobs.js'; // Initialize cron jobs

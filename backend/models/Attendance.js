@@ -11,13 +11,22 @@ const attendanceSchema = new mongoose.Schema(
         status: { type: String, enum: ['Present', 'Absent', 'WFH', 'Leave', 'Holiday'], default: 'Present' },
         workingMode: { type: String, enum: ['On-site', 'Remote'], default: 'On-site' },
         totalHours: { type: Number, default: 0 },
-        isLate: { type: Boolean, default: false }
+        isLate: { type: Boolean, default: false },
+        breaks: [
+            {
+                startTime: { type: Date, required: true },
+                endTime: { type: Date }
+            }
+        ],
+        autoClockOut: { type: Boolean, default: false },
+        originalClockInTime: { type: Date },
+        originalClockOutTime: { type: Date }
     },
     { timestamps: true }
 );
 
-// Ensure a user can only have one attendance record per day
-attendanceSchema.index({ user: 1, date: 1 }, { unique: true });
+// Create index to optimize lookups
+attendanceSchema.index({ user: 1, date: 1 });
 
 const Attendance = mongoose.model('Attendance', attendanceSchema);
 export default Attendance;

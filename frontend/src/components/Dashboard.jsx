@@ -248,6 +248,8 @@ export default function Dashboard({ user, onLogout, setUser }) {
     const [requestLeaveType, setRequestLeaveType] = useState('');
     const [requestStartDate, setRequestStartDate] = useState('');
     const [requestEndDate, setRequestEndDate] = useState('');
+    const [requestExpectedClockIn, setRequestExpectedClockIn] = useState('');
+    const [requestExpectedClockOut, setRequestExpectedClockOut] = useState('');
     const [requestMessage, setRequestMessage] = useState('');
     const [requestRecipients, setRequestRecipients] = useState([]);
     const [recipientSearch, setRecipientSearch] = useState('');
@@ -467,6 +469,11 @@ export default function Dashboard({ user, onLogout, setUser }) {
             return;
         }
 
+        if (requestType === 'Attendance Regularization' && (!requestExpectedClockIn || !requestExpectedClockOut)) {
+            setCustomAlert({ message: 'Please provide Expected Clock In and Clock Out times for regularization.', type: 'info' });
+            return;
+        }
+
         // Rule Validation: Block today and tomorrow for non-cancellation requests. Past dates allowed.
         if (requestType !== 'Leave Cancellation') {
             const start = new Date(requestStartDate);
@@ -498,6 +505,8 @@ export default function Dashboard({ user, onLogout, setUser }) {
                 endDate: requestType === 'Leave Cancellation' && selectedLeaveForCancel ? selectedLeaveForCancel.endDate : requestEndDate,
                 associatedLeave: requestType === 'Leave Cancellation' ? selectedLeaveForCancel?._id : undefined,
                 cancelDates: requestType === 'Leave Cancellation' ? datesToCancel : undefined,
+                expectedClockIn: requestType === 'Attendance Regularization' ? requestExpectedClockIn : undefined,
+                expectedClockOut: requestType === 'Attendance Regularization' ? requestExpectedClockOut : undefined,
                 message: requestMessage,
                 recipients: recipientsPayload
             });
@@ -506,6 +515,8 @@ export default function Dashboard({ user, onLogout, setUser }) {
             setRequestLeaveType('');
             setRequestStartDate('');
             setRequestEndDate('');
+            setRequestExpectedClockIn('');
+            setRequestExpectedClockOut('');
             setRequestMessage('');
             setRequestRecipients([]);
             setSelectedLeaveForCancel(null);
@@ -1169,6 +1180,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                 getStatusStyle={getStatusStyle}
                                 isLightMode={isLightMode}
                                 systemSettings={systemSettings}
+                                showAlert={showAlert}
                             />
                         )}
 
@@ -1249,6 +1261,10 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                 setRequestStartDate={setRequestStartDate}
                                 requestEndDate={requestEndDate}
                                 setRequestEndDate={setRequestEndDate}
+                                requestExpectedClockIn={requestExpectedClockIn}
+                                setRequestExpectedClockIn={setRequestExpectedClockIn}
+                                requestExpectedClockOut={requestExpectedClockOut}
+                                setRequestExpectedClockOut={setRequestExpectedClockOut}
                                 requestMessage={requestMessage}
                                 setRequestMessage={setRequestMessage}
                                 submitRequest={submitRequest}

@@ -8,7 +8,7 @@ import { createNotification } from './notificationController.js';
 // @access  Private
 export const createRequest = async (req, res) => {
     try {
-        const { type, leaveType, startDate, endDate, message, recipients, associatedLeave, associatedAttendance, cancelDates } = req.body;
+        const { type, leaveType, startDate, endDate, expectedClockIn, expectedClockOut, message, recipients, associatedLeave, associatedAttendance, cancelDates } = req.body;
 
         // Determine requested duration
         const start = new Date(startDate);
@@ -92,6 +92,8 @@ export const createRequest = async (req, res) => {
             associatedLeave,
             associatedAttendance,
             cancelDates,
+            expectedClockIn,
+            expectedClockOut,
             message,
             recipients: finalRecipients,
             status: 'Pending'
@@ -213,6 +215,45 @@ export const updateRequestStatus = async (req, res) => {
                     await leave.save();
                 }
             }
+        }
+
+        if (status === 'Approved' && updated.type === 'Attendance Regularization' && updated.associatedAttendance) {
+            import('../models/Attendance.js').then(async ({ default: Attendance }) => {
+                const attendance = await Attendance.findById(updated.associatedAttendance);
+                if (attendance) {
+                    const clockInToApply = req.body.overrideClockIn || updated.expectedClockIn;
+                    const clockOutToApply = req.body.overrideClockOut || updated.expectedClockOut;
+
+                    // Store original times if not already stored
+                    if (attendance.clockInTime && !attendance.originalClockInTime) {
+                        attendance.originalClockInTime = attendance.clockInTime;
+                    }
+                    if (attendance.clockOutTime && !attendance.originalClockOutTime) {
+                        attendance.originalClockOutTime = attendance.clockOutTime;
+                    }
+
+                    if (clockInToApply) attendance.clockInTime = new Date(clockInToApply);
+                    if (clockOutToApply) attendance.clockOutTime = new Date(clockOutToApply);
+                    
+                    attendance.autoClockOut = false;
+
+                    let breakMs = 0;
+                    if (attendance.breaks && attendance.breaks.length > 0) {
+                        attendance.breaks.forEach(b => {
+                            if (b.startTime && b.endTime) {
+                                breakMs += (new Date(b.endTime).getTime() - new Date(b.startTime).getTime());
+                            }
+                        });
+                    }
+                    if (attendance.clockInTime && attendance.clockOutTime) {
+                        const diffMs = new Date(attendance.clockOutTime).getTime() - new Date(attendance.clockInTime).getTime() - breakMs;
+                        const diffHrs = diffMs > 0 ? (diffMs / (1000 * 60 * 60)) : 0;
+                        attendance.totalHours = diffHrs.toFixed(2);
+                    }
+                    
+                    await attendance.save();
+                }
+            });
         }
 
         const populated = await Request.findById(updated._id)

@@ -13,16 +13,18 @@ export const clockIn = async (req, res) => {
         await autoCloseStaleSessions(req.user._id); // Lazy validation
 
         const { workingMode, message } = req.body;
-        const today = new Date();
-        today.setHours(0, 0, 0, 0); // Normalize to start of day
+        const now = new Date();
+        const cutoffTime = new Date(now.getTime() - 16 * 60 * 60 * 1000); // 16 hours ago
 
-        let record = await Attendance.findOne({ user: req.user._id, date: today });
-
-        if (record && record.clockInTime) {
-            return res.status(400).json({ message: 'Already clocked in today.' });
-        }
+        // Find a shift started within the 16-hour window
+        let record = await Attendance.findOne({ 
+            user: req.user._id, 
+            clockInTime: { $gt: cutoffTime } 
+        }).sort({ clockInTime: -1 });
 
         if (workingMode === 'Remote') {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
             const endOfDay = new Date(today);
             endOfDay.setHours(23, 59, 59, 999);
 
@@ -39,21 +41,30 @@ export const clockIn = async (req, res) => {
             }
         }
 
-        if (!record) {
+        if (record) {
+            if (!record.clockOutTime) {
+                return res.status(400).json({ message: 'Already clocked in. You are currently in an active shift.' });
+            } else {
+                // User is resuming the shift from a break
+                record.breaks.push({ startTime: record.clockOutTime, endTime: now });
+                record.clockOutTime = undefined; // Clear it to make it active again
+                record.workingMode = workingMode || 'On-site';
+                record.status = workingMode === 'Remote' ? 'WFH' : 'Present';
+                record.autoClockOut = false;
+                await record.save();
+            }
+        } else {
+            // Start a brand new shift
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
             record = await Attendance.create({
                 user: req.user._id,
                 date: today,
-                clockInTime: new Date(),
+                clockInTime: now,
                 clockInMessage: message || '',
                 status: workingMode === 'Remote' ? 'WFH' : 'Present',
                 workingMode: workingMode || 'On-site'
             });
-        } else {
-            record.clockInTime = new Date();
-            record.clockInMessage = message || '';
-            record.workingMode = workingMode || 'On-site';
-            record.status = workingMode === 'Remote' ? 'WFH' : 'Present';
-            await record.save();
         }
 
         res.status(200).json(record);
@@ -92,9 +103,18 @@ export const clockOut = async (req, res) => {
         record.clockOutTime = clockOutTime;
         record.clockOutMessage = message || '';
 
-        // Calculate total hours
-        const diffMs = clockOutTime - record.clockInTime;
-        const diffHrs = diffMs / (1000 * 60 * 60);
+        // Calculate total hours factoring in breaks
+        let breakMs = 0;
+        if (record.breaks && record.breaks.length > 0) {
+            record.breaks.forEach(b => {
+                if (b.startTime && b.endTime) {
+                    breakMs += (new Date(b.endTime).getTime() - new Date(b.startTime).getTime());
+                }
+            });
+        }
+
+        const diffMs = clockOutTime.getTime() - record.clockInTime.getTime() - breakMs;
+        const diffHrs = Math.max(0, diffMs / (1000 * 60 * 60));
 
         record.totalHours = diffHrs.toFixed(2);
         await record.save();
@@ -298,10 +318,19 @@ export const updateAttendance = async (req, res) => {
         if (status) log.status = status;
 
         if (log.clockInTime && log.clockOutTime) {
-            const diffMs = log.clockOutTime - log.clockInTime;
+            let breakMs = 0;
+            if (log.breaks && log.breaks.length > 0) {
+                log.breaks.forEach(b => {
+                    if (b.startTime && b.endTime) {
+                        breakMs += (new Date(b.endTime).getTime() - new Date(b.startTime).getTime());
+                    }
+                });
+            }
+
+            const diffMs = new Date(log.clockOutTime).getTime() - new Date(log.clockInTime).getTime() - breakMs;
             const diffHrs = diffMs > 0 ? (diffMs / (1000 * 60 * 60)) : 0;
             log.totalHours = diffHrs.toFixed(2);
-        } else if (log.clockOutTime === null) {
+        } else if (log.clockOutTime === null || log.clockOutTime === undefined) {
             log.totalHours = 0;
         }
 

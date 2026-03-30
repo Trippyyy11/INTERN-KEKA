@@ -1,5 +1,5 @@
 import React from 'react';
-import { Info, Inbox, Check, X, Edit3, Save } from 'lucide-react';
+import { Info, Inbox, Check, X, Edit3, Save, ChevronLeft, ChevronRight } from 'lucide-react';
 import api from '../../api/axios.js';
 
 const InboxTab = ({
@@ -13,6 +13,13 @@ const InboxTab = ({
     const [editLogData, setEditLogData] = React.useState(null);
     const [editForm, setEditForm] = React.useState({ clockInTime: '', clockOutTime: '' });
     const [isSavingEdit, setIsSavingEdit] = React.useState(false);
+    const [currentPage, setCurrentPage] = React.useState(1);
+    const rowsPerPage = 20;
+
+    const indexOfLastRow = currentPage * rowsPerPage;
+    const indexOfFirstRow = indexOfLastRow - rowsPerPage;
+    const currentRequests = inboxRequests.slice(indexOfFirstRow, indexOfLastRow);
+    const totalPages = Math.ceil(inboxRequests.length / rowsPerPage);
     const bentoPanelStyle = {
         background: isLightMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(15, 23, 42, 0.5)',
         backdropFilter: 'blur(16px)',
@@ -44,8 +51,8 @@ const InboxTab = ({
         }
         setEditLogData(request);
         setEditForm({
-            clockInTime: request.associatedAttendance.clockInTime ? new Date(request.associatedAttendance.clockInTime).toISOString().slice(0, 16) : '',
-            clockOutTime: request.associatedAttendance.clockOutTime ? new Date(request.associatedAttendance.clockOutTime).toISOString().slice(0, 16) : '',
+            clockInTime: request.expectedClockIn ? new Date(request.expectedClockIn).toISOString().slice(0, 16) : (request.associatedAttendance?.clockInTime ? new Date(request.associatedAttendance.clockInTime).toISOString().slice(0, 16) : ''),
+            clockOutTime: request.expectedClockOut ? new Date(request.expectedClockOut).toISOString().slice(0, 16) : (request.associatedAttendance?.clockOutTime ? new Date(request.associatedAttendance.clockOutTime).toISOString().slice(0, 16) : ''),
         });
         setShowEditModal(true);
     };
@@ -86,40 +93,41 @@ const InboxTab = ({
                 </div>
             </div>
 
-            <div style={bentoPanelStyle}>
+            <div style={{ ...bentoPanelStyle, padding: '0' }}>
                 <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 0.5rem' }}>
+                    <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 0.75rem', padding: '0 1rem' }}>
                         <thead>
                             <tr>
                                 {['Dates', 'Request Type', 'Status', 'Requested By', 'Action Taken On', 'Leave / WFH Note', 'Action Note', 'Actions'].map((header, idx) => (
                                     <th key={idx} style={{
                                         textAlign: 'left',
-                                        padding: '0 1.25rem 1rem 1.25rem',
-                                        fontSize: '0.7rem',
-                                        fontWeight: '700',
+                                        padding: '1.25rem',
+                                        fontSize: '0.75rem',
+                                        fontWeight: '800',
                                         color: 'var(--text-muted)',
                                         textTransform: 'uppercase',
-                                        letterSpacing: '0.8px',
-                                        borderBottom: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.06)'}`
+                                        letterSpacing: '1px'
                                     }}>{header}</th>
                                 ))}
                             </tr>
                         </thead>
                         <tbody>
-                            {inboxRequests.length > 0 ? inboxRequests.map(r => (
+                             {currentRequests.length > 0 ? currentRequests.map(r => (
                                 <tr key={r._id} style={{
-                                    background: isLightMode ? '#f8fafc' : 'rgba(0,0,0,0.15)',
-                                    transition: 'transform 0.2s, box-shadow 0.2s',
+                                    background: isLightMode ? '#ffffff' : 'rgba(255,255,255,0.02)',
+                                    transition: 'all 0.2s ease',
+                                    borderRadius: '16px',
+                                    boxShadow: isLightMode ? '0 1px 3px rgba(0,0,0,0.02)' : 'none'
                                 }}
                                     onMouseOver={e => {
                                         e.currentTarget.style.transform = 'translateY(-2px)';
                                         e.currentTarget.style.boxShadow = isLightMode ? '0 8px 16px rgba(0,0,0,0.04)' : '0 8px 16px rgba(0,0,0,0.2)';
-                                        e.currentTarget.style.background = isLightMode ? '#ffffff' : 'rgba(0,0,0,0.25)';
+                                        e.currentTarget.style.background = isLightMode ? '#ffffff' : 'rgba(255,255,255,0.05)';
                                     }}
                                     onMouseOut={e => {
                                         e.currentTarget.style.transform = 'translateY(0)';
-                                        e.currentTarget.style.boxShadow = 'none';
-                                        e.currentTarget.style.background = isLightMode ? '#f8fafc' : 'rgba(0,0,0,0.15)';
+                                        e.currentTarget.style.boxShadow = isLightMode ? '0 1px 3px rgba(0,0,0,0.02)' : 'none';
+                                        e.currentTarget.style.background = isLightMode ? '#ffffff' : 'rgba(255,255,255,0.02)';
                                     }}
                                 >
                                     <td style={{ padding: '1.25rem', borderRadius: '16px 0 0 16px', fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-main)' }}>
@@ -167,6 +175,11 @@ const InboxTab = ({
                                     </td>
                                     <td style={{ padding: '1.25rem', fontSize: '0.8rem', color: 'var(--text-muted)', maxWidth: '160px', fontWeight: '500' }}>
                                         <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.message || '-'}</div>
+                                        {r.expectedClockIn && r.expectedClockOut && (
+                                            <div style={{ marginTop: '0.25rem', fontSize: '0.7rem', color: 'var(--primary)', fontWeight: '700' }}>
+                                                Expected: {new Date(r.expectedClockIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {new Date(r.expectedClockOut).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            </div>
+                                        )}
                                     </td>
                                     <td style={{ padding: '1.25rem', fontSize: '0.8rem', color: 'var(--text-muted)', maxWidth: '140px', fontWeight: '500' }}>
                                         <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.actionNote || '-'}</div>
@@ -257,6 +270,100 @@ const InboxTab = ({
                         </tbody>
                     </table>
                 </div>
+
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                    <div style={{
+                        padding: '1.25rem 1.5rem',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        borderTop: `1px solid ${isLightMode ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)'}`,
+                        background: isLightMode ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.1)'
+                    }}>
+                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '600' }}>
+                            Showing {indexOfFirstRow + 1} to {Math.min(indexOfLastRow, inboxRequests.length)} of {inboxRequests.length} requests
+                        </div>
+                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                disabled={currentPage === 1}
+                                style={{
+                                    padding: '0.5rem',
+                                    borderRadius: '10px',
+                                    border: 'none',
+                                    background: isLightMode ? '#ffffff' : 'rgba(255,255,255,0.05)',
+                                    color: 'var(--text-main)',
+                                    cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                                    opacity: currentPage === 1 ? 0.5 : 1,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    transition: 'all 0.2s',
+                                    boxShadow: isLightMode ? '0 1px 3px rgba(0,0,0,0.05)' : 'none'
+                                }}
+                            >
+                                <ChevronLeft size={18} />
+                            </button>
+
+                            {[...Array(totalPages)].map((_, i) => {
+                                const pageNum = i + 1;
+                                // Only show current, first, last, and pages around current
+                                if (
+                                    pageNum === 1 ||
+                                    pageNum === totalPages ||
+                                    (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)
+                                ) {
+                                    return (
+                                        <button
+                                            key={pageNum}
+                                            onClick={() => setCurrentPage(pageNum)}
+                                            style={{
+                                                width: '36px',
+                                                height: '36px',
+                                                borderRadius: '10px',
+                                                border: 'none',
+                                                background: currentPage === pageNum ? 'var(--primary)' : (isLightMode ? '#ffffff' : 'rgba(255,255,255,0.05)'),
+                                                color: currentPage === pageNum ? '#ffffff' : 'var(--text-main)',
+                                                fontWeight: '800',
+                                                cursor: 'pointer',
+                                                transition: 'all 0.2s',
+                                                boxShadow: (currentPage === pageNum || isLightMode) ? '0 2px 8px rgba(0,0,0,0.05)' : 'none'
+                                            }}
+                                        >
+                                            {pageNum}
+                                        </button>
+                                    );
+                                } else if (
+                                    pageNum === currentPage - 2 ||
+                                    pageNum === currentPage + 2
+                                ) {
+                                    return <span key={pageNum} style={{ color: 'var(--text-muted)' }}>...</span>;
+                                }
+                                return null;
+                            })}
+
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                disabled={currentPage === totalPages}
+                                style={{
+                                    padding: '0.5rem',
+                                    borderRadius: '10px',
+                                    border: 'none',
+                                    background: isLightMode ? '#ffffff' : 'rgba(255,255,255,0.05)',
+                                    color: 'var(--text-main)',
+                                    cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+                                    opacity: currentPage === totalPages ? 0.5 : 1,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    transition: 'all 0.2s',
+                                    boxShadow: isLightMode ? '0 1px 3px rgba(0,0,0,0.05)' : 'none'
+                                }}
+                            >
+                                <ChevronRight size={18} />
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Edit Attendance Modal */}
@@ -291,7 +398,7 @@ const InboxTab = ({
                                 <div style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.25rem' }}>User Reason</div>
                                 <div style={{ fontSize: '0.9rem', color: 'var(--text-main)', fontWeight: '500' }}>"{editLogData.message}"</div>
                             </div>
-                            
+
                             <div>
                                 <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Clock In Time</label>
                                 <input

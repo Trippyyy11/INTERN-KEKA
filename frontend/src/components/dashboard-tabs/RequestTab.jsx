@@ -113,6 +113,10 @@ const RequestTab = ({
     setRequestStartDate,
     requestEndDate,
     setRequestEndDate,
+    requestExpectedClockIn,
+    setRequestExpectedClockIn,
+    requestExpectedClockOut,
+    setRequestExpectedClockOut,
     requestMessage,
     setRequestMessage,
     requestRecipients,
@@ -216,7 +220,8 @@ const RequestTab = ({
         { label: 'Work From Home', value: 'Work From Home', icon: '🏠' },
         { label: 'Half Day', value: 'Half Day', icon: '⏰' },
         { label: 'Comp Off', value: 'Comp Off', icon: '🔄', balance: leaveStats?.balances?.['Comp Off']?.total - leaveStats?.balances?.['Comp Off']?.consumed },
-        { label: 'Leave Cancellation', value: 'Leave Cancellation', icon: '🚫' }
+        { label: 'Leave Cancellation', value: 'Leave Cancellation', icon: '🚫' },
+        { label: 'Attendance Regularization', value: 'Attendance Regularization', icon: '📝' }
     ];
 
     const leaveTypeOptions = [
@@ -397,17 +402,42 @@ const RequestTab = ({
                     </div>
                 </div>
 
-                {/* Date Range */}
+                {/* Date Range & Expected Times */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '0.5rem' }}>
                     <div>
-                        <label style={labelStyle}>From Date *</label>
-                        <input type="date" value={requestStartDate} onChange={e => setRequestStartDate(e.target.value)} style={inputStyle} />
+                        <label style={labelStyle}>{requestType === 'Attendance Regularization' ? 'Target Date *' : 'From Date *'}</label>
+                        <input type="date" value={requestStartDate} onChange={e => {setRequestStartDate(e.target.value); if (requestType === 'Attendance Regularization') setRequestEndDate(e.target.value);}} style={inputStyle} />
                     </div>
-                    <div>
-                        <label style={labelStyle}>To Date *</label>
-                        <input type="date" value={requestEndDate} onChange={e => setRequestEndDate(e.target.value)} min={requestStartDate} style={inputStyle} />
-                    </div>
+                    {requestType !== 'Attendance Regularization' && (
+                        <div>
+                            <label style={labelStyle}>To Date *</label>
+                            <input type="date" value={requestEndDate} onChange={e => setRequestEndDate(e.target.value)} min={requestStartDate} style={inputStyle} />
+                        </div>
+                    )}
                 </div>
+
+                {requestType === 'Attendance Regularization' && (
+                    <div style={{
+                        background: isLightMode ? '#f8fafc' : 'rgba(0,0,0,0.2)',
+                        borderRadius: '20px', padding: '1.25rem', marginBottom: '1.5rem',
+                        border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.06)'}`,
+                    }}>
+                        <div style={{ fontSize: '0.8rem', fontWeight: '800', color: 'var(--text-main)', marginBottom: '1rem' }}>EXPECTED CLOCK TIMES</div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '0.5rem' }}>
+                            <div>
+                                <label style={labelStyle}>Expected Clock In *</label>
+                                <input type="datetime-local" value={requestExpectedClockIn} onChange={e => setRequestExpectedClockIn(e.target.value)} style={inputStyle} />
+                            </div>
+                            <div>
+                                <label style={labelStyle}>Expected Clock Out *</label>
+                                <input type="datetime-local" value={requestExpectedClockOut} onChange={e => setRequestExpectedClockOut(e.target.value)} style={inputStyle} />
+                            </div>
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', gap: '8px', alignItems: 'center', marginTop: '10px' }}>
+                            <Info size={14} /> <span>Your reporting manager or admin can apply these times if approved.</span>
+                        </div>
+                    </div>
+                )}
 
                 {/* Duration/Balance Info */}
                 <div style={{ marginBottom: '1.5rem', minHeight: '20px' }}>
