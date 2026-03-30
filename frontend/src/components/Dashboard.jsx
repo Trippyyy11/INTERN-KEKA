@@ -2901,7 +2901,21 @@ export default function Dashboard({ user, onLogout, setUser }) {
                     <nav className="sidebar-nav">
                     {sidebarItems.filter(item => {
                         const normalizedRole = user?.role?.toLowerCase().replace(/\s/g, '');
-                        if (item.name === 'Admin' && !(normalizedRole === 'superadmin' || normalizedRole === 'reportingmanager' || user?.permissions?.canCreateUsers)) return false;
+                        if (item.name === 'Admin') {
+                            const perms = user?.permissions || {};
+                            const hasAdminAccess = normalizedRole === 'superadmin' || 
+                                                   normalizedRole === 'reportingmanager' || 
+                                                   perms.canCreateUsers || 
+                                                   perms.canViewUsersTab || 
+                                                   perms.canViewAttendanceTab || 
+                                                   perms.canViewConfigsTab || 
+                                                   perms.canViewSettingsTab || 
+                                                   perms.canViewBankTab || 
+                                                   perms.canViewPayrollTab || 
+                                                   perms.canViewPermissionsTab || 
+                                                   perms.canViewAuditTab;
+                            if (!hasAdminAccess) return false;
+                        }
                         if (item.name === 'Slack' && !(normalizedRole === 'reportingmanager' || normalizedRole === 'superadmin')) return false;
 
                         // Hide personal employee tabs from Admins and Managers

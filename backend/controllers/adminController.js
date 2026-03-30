@@ -139,14 +139,21 @@ export const getPotentialManagers = async (req, res) => {
 // @desc    Update user permissions
 export const updateUserPermissions = async (req, res) => {
     try {
-        const { canCreateUsers } = req.body;
+        const { permissions, canCreateUsers } = req.body;
         const user = await User.findById(req.params.id);
         if (!user) return res.status(404).json({ message: 'User not found' });
         
-        user.permissions = {
-            ...user.permissions,
-            canCreateUsers: !!canCreateUsers
-        };
+        if (permissions) {
+            user.permissions = {
+                ...user.permissions?.toObject?.() || user.permissions,
+                ...permissions
+            };
+        } else if (canCreateUsers !== undefined) {
+            user.permissions = {
+                ...user.permissions?.toObject?.() || user.permissions,
+                canCreateUsers: !!canCreateUsers
+            };
+        }
         
         await user.save();
         await createAuditLog(req.user._id, 'PERMISSIONS_UPDATED', `Updated permissions for: ${user.name}`, { targetModel: 'User', targetId: user._id, ipAddress: req.ip, userName: req.user.name });

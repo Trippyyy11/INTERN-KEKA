@@ -60,7 +60,15 @@ const userSchema = new mongoose.Schema(
         isDeleted: { type: Boolean, default: false },
         profilePicture: { type: String, default: '' },
         permissions: {
-            canCreateUsers: { type: Boolean, default: false }
+            canCreateUsers: { type: Boolean, default: false },
+            canViewUsersTab: { type: Boolean, default: false },
+            canViewAttendanceTab: { type: Boolean, default: false },
+            canViewConfigsTab: { type: Boolean, default: false },
+            canViewSettingsTab: { type: Boolean, default: false },
+            canViewBankTab: { type: Boolean, default: false },
+            canViewPayrollTab: { type: Boolean, default: false },
+            canViewPermissionsTab: { type: Boolean, default: false },
+            canViewAuditTab: { type: Boolean, default: false }
         },
         slackBotToken: { type: String, default: '' },
         internId: { type: String, unique: true, sparse: true } // Sparse allows multiple nulls for non-interns

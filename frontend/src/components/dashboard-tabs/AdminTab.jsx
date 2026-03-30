@@ -171,6 +171,22 @@ const AdminTab = ({
     const [permissionsUsers, setPermissionsUsers] = useState([]);
     const [permissionsLoading, setPermissionsLoading] = useState(false);
     const [potentialManagers, setPotentialManagers] = useState([]);
+    
+    // Manage Granular Permissions Modal
+    const [showPermissionsModal, setShowPermissionsModal] = useState(false);
+    const [selectedPermissionsUser, setSelectedPermissionsUser] = useState(null);
+
+    const PERMISSION_KEYS = [
+        { key: 'canCreateUsers', label: 'Create Users' },
+        { key: 'canViewUsersTab', label: 'View Users Tab' },
+        { key: 'canViewAttendanceTab', label: 'View Attendance Tab' },
+        { key: 'canViewConfigsTab', label: 'View Org Configs Tab' },
+        { key: 'canViewSettingsTab', label: 'View System Settings Tab' },
+        { key: 'canViewBankTab', label: 'View Bank Info Tab' },
+        { key: 'canViewPayrollTab', label: 'View Payroll Tab' },
+        { key: 'canViewPermissionsTab', label: 'Manage Permissions Tab' },
+        { key: 'canViewAuditTab', label: 'View Audit Logs Tab' }
+    ];
 
     const normalizedRole = user?.role?.toLowerCase().replace(/\s/g, '');
     const isSuperAdmin = normalizedRole === 'superadmin';
@@ -193,14 +209,14 @@ const AdminTab = ({
 
     // Load permissions users when Permissions tab is active
     useEffect(() => {
-        if (activeSubTab === 'Permissions' && isSuperAdmin) {
+        if (activeSubTab === 'Permissions' && (isSuperAdmin || user?.permissions?.canViewPermissionsTab)) {
             setPermissionsLoading(true);
             api.get('/admin/org-users').then(res => {
                 setPermissionsUsers(res.data.filter(u => !u.isDeleted));
                 setPermissionsLoading(false);
             }).catch(() => setPermissionsLoading(false));
         }
-    }, [activeSubTab, isSuperAdmin]);
+    }, [activeSubTab, isSuperAdmin, user?.permissions?.canViewPermissionsTab]);
 
     const handleCreateUser = async (e) => {
         e.preventDefault();
@@ -220,10 +236,22 @@ const AdminTab = ({
 
     const handleTogglePermission = async (userId, permission, currentValue) => {
         try {
-            await api.patch(`/admin/users/${userId}/permissions`, { [permission]: !currentValue });
+            await api.patch(`/admin/users/${userId}/permissions`, { permissions: { [permission]: !currentValue } });
             setPermissionsUsers(prev => prev.map(u => u._id === userId ? { ...u, permissions: { ...u.permissions, [permission]: !currentValue } } : u));
         } catch (err) {
             console.error('Failed to update permission', err);
+        }
+    };
+    
+    const handleSaveMultiPermissions = async () => {
+        try {
+            await api.patch(`/admin/users/${selectedPermissionsUser._id}/permissions`, { 
+                permissions: selectedPermissionsUser.permissions 
+            });
+            setPermissionsUsers(prev => prev.map(u => u._id === selectedPermissionsUser._id ? selectedPermissionsUser : u));
+            setShowPermissionsModal(false);
+        } catch (err) {
+            console.error('Failed to update permissions', err);
         }
     };
     
@@ -293,14 +321,14 @@ const AdminTab = ({
                 borderRadius: '18px', marginBottom: '2rem'
             }}>
                 {[
-                    { key: 'Leave', label: 'USERS' },
-                    ...(isSuperAdmin || normalizedRole === 'reportingmanager' ? [{ key: 'Attendance', label: 'ATTENDANCE' }] : []),
-                    ...(isSuperAdmin || normalizedRole === 'reportingmanager' ? [{ key: 'Configs', label: 'ORG CONFIGS' }] : []),
-                    ...(isSuperAdmin ? [{ key: 'Settings', label: 'SYSTEM SETTINGS' }] : []),
-                    ...(isSuperAdmin ? [{ key: 'Bank', label: 'BANK INFO' }] : []),
-                    ...(isSuperAdmin ? [{ key: 'Payroll', label: 'PAYROLL' }] : []),
-                    ...(isSuperAdmin ? [{ key: 'Permissions', label: 'PERMISSIONS' }] : []),
-                    ...(isSuperAdmin ? [{ key: 'Audit', label: 'AUDIT LOGS' }] : [])
+                    ...(isSuperAdmin || normalizedRole === 'reportingmanager' || user?.permissions?.canViewUsersTab ? [{ key: 'Leave', label: 'USERS' }] : []),
+                    ...(isSuperAdmin || normalizedRole === 'reportingmanager' || user?.permissions?.canViewAttendanceTab ? [{ key: 'Attendance', label: 'ATTENDANCE' }] : []),
+                    ...(isSuperAdmin || normalizedRole === 'reportingmanager' || user?.permissions?.canViewConfigsTab ? [{ key: 'Configs', label: 'ORG CONFIGS' }] : []),
+                    ...(isSuperAdmin || user?.permissions?.canViewSettingsTab ? [{ key: 'Settings', label: 'SYSTEM SETTINGS' }] : []),
+                    ...(isSuperAdmin || user?.permissions?.canViewBankTab ? [{ key: 'Bank', label: 'BANK INFO' }] : []),
+                    ...(isSuperAdmin || user?.permissions?.canViewPayrollTab ? [{ key: 'Payroll', label: 'PAYROLL' }] : []),
+                    ...(isSuperAdmin || user?.permissions?.canViewPermissionsTab ? [{ key: 'Permissions', label: 'PERMISSIONS' }] : []),
+                    ...(isSuperAdmin || user?.permissions?.canViewAuditTab ? [{ key: 'Audit', label: 'AUDIT LOGS' }] : [])
                 ].map(t => {
                     const active = activeSubTab === t.key;
                     return (
@@ -531,8 +559,8 @@ const AdminTab = ({
                 </div>
             )}
 
-            {/* ===== PERMISSIONS (Super Admin Only) ===== */}
-            {activeSubTab === 'Permissions' && isSuperAdmin && (
+            {/* ===== PERMISSIONS ===== */}
+            {activeSubTab === 'Permissions' && (isSuperAdmin || user?.permissions?.canViewPermissionsTab) && (
                 <div style={{ ...glass, padding: '2rem' }}>
                     <SectionHeader icon={<Lock size={24} />} title="User Permissions" subtitle="Grant or revoke granular permissions for individual users" />
 
@@ -545,11 +573,14 @@ const AdminTab = ({
                                     <tr>
                                         <th style={{ ...thStyle, paddingLeft: '2rem' }}>INTERN</th>
                                         <th style={thStyle}>ROLE</th>
-                                        <th style={{ ...thStyle, textAlign: 'center' }}>CAN CREATE USERS</th>
+                                        <th style={{ ...thStyle, textAlign: 'center' }}>ACCESS LEVEL</th>
+                                        <th style={{ ...thStyle, textAlign: 'center' }}>ACTION</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {permissionsUsers.map((u, idx) => (
+                                    {permissionsUsers.map((u, idx) => {
+                                        const accessCount = PERMISSION_KEYS.filter(p => u.permissions?.[p.key]).length;
+                                        return (
                                         <tr key={u._id} style={{ borderTop: rowBorder, transition: 'background 0.2s' }}
                                             onMouseOver={e => e.currentTarget.style.background = isLightMode ? 'rgba(99,102,241,0.03)' : 'rgba(255,255,255,0.02)'}
                                             onMouseOut={e => e.currentTarget.style.background = 'transparent'}>
@@ -564,16 +595,29 @@ const AdminTab = ({
                                             </td>
                                             <td style={tdStyle}><RoleBadge role={u.role} isLightMode={isLightMode} /></td>
                                             <td style={{ ...tdStyle, textAlign: 'center' }}>
-                                                <button onClick={() => handleTogglePermission(u._id, 'canCreateUsers', u.permissions?.canCreateUsers)} style={{
-                                                    background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.8rem',
-                                                    color: u.permissions?.canCreateUsers ? '#10b981' : (isLightMode ? '#cbd5e1' : 'rgba(255,255,255,0.15)'),
-                                                    transition: 'all 0.2s', display: 'inline-flex', alignItems: 'center'
+                                                <span style={{
+                                                    background: accessCount > 0 ? 'rgba(16,185,129,0.1)' : 'rgba(148,163,184,0.1)',
+                                                    color: accessCount > 0 ? '#10b981' : 'var(--text-muted)',
+                                                    padding: '0.4rem 0.8rem', borderRadius: '12px', fontSize: '0.75rem', fontWeight: '800'
                                                 }}>
-                                                    {u.permissions?.canCreateUsers ? <ToggleRight size={32} /> : <ToggleLeft size={32} />}
+                                                    {accessCount} / {PERMISSION_KEYS.length} Granted
+                                                </span>
+                                            </td>
+                                            <td style={{ ...tdStyle, textAlign: 'center' }}>
+                                                <button onClick={() => {
+                                                    setSelectedPermissionsUser({ ...u, permissions: u.permissions || {} });
+                                                    setShowPermissionsModal(true);
+                                                }} style={{
+                                                    padding: '0.5rem 1rem', borderRadius: '10px', border: '1px solid var(--primary)', 
+                                                    background: 'transparent', color: 'var(--primary)', fontSize: '0.75rem', 
+                                                    fontWeight: '700', cursor: 'pointer', transition: 'all 0.2s'
+                                                }} onMouseOver={e => { e.currentTarget.style.background = 'var(--primary)'; e.currentTarget.style.color = '#fff'; }}
+                                                   onMouseOut={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--primary)'; }}>
+                                                    Manage Permissions
                                                 </button>
                                             </td>
                                         </tr>
-                                    ))}
+                                    )})}
                                 </tbody>
                             </table>
                         </div>
@@ -1089,6 +1133,71 @@ const AdminTab = ({
                 </div>
             )}
 
+            {/* ===== PERMISSIONS MODAL ===== */}
+            {showPermissionsModal && selectedPermissionsUser && (
+                <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.6)', zIndex: 9999, display: 'flex', justifyContent: 'flex-end', alignItems: 'stretch', backdropFilter: 'blur(4px)' }}
+                    onClick={(e) => { if (e.target === e.currentTarget) setShowPermissionsModal(false); }}>
+                    <div style={{
+                        background: isLightMode ? '#ffffff' : '#0f172a', padding: '2.5rem',
+                        width: '100%', maxWidth: '450px', height: '100vh', overflowY: 'auto',
+                        borderLeft: `1px solid ${isLightMode ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.08)'}`,
+                        borderRadius: '28px 0 0 28px',
+                        boxShadow: '-10px 0 40px rgba(0,0,0,0.3)', display: 'flex', flexDirection: 'column',
+                        animation: 'slideInRightSheet 0.35s cubic-bezier(0.16, 1, 0.3, 1)'
+                    }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                            <div>
+                                <h2 style={{ margin: 0, fontSize: '1.35rem', fontWeight: '900', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                                    <ShieldCheck size={22} color="var(--primary)" /> Manage Permissions
+                                </h2>
+                                <p style={{ margin: '0.3rem 0 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>Configure access levels for {selectedPermissionsUser.name}</p>
+                            </div>
+                            <button onClick={() => setShowPermissionsModal(false)} style={{
+                                width: '38px', height: '38px', borderRadius: '12px', border: 'none', cursor: 'pointer',
+                                background: isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.06)', color: 'var(--text-muted)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center'
+                            }}><X size={18} /></button>
+                        </div>
+                        
+                        <div style={{ 
+                            background: isLightMode ? '#f8fafc' : 'rgba(0,0,0,0.15)', borderRadius: '20px', padding: '1.5rem',
+                            display: 'flex', flexDirection: 'column', gap: '1rem', border: `1px solid ${isLightMode ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.04)'}`
+                        }}>
+                            {PERMISSION_KEYS.map((perm) => (
+                                <div key={perm.key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', 
+                                    paddingBottom: '1rem', borderBottom: `1px dashed ${isLightMode ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)'}` 
+                                }}>
+                                    <div style={{ fontWeight: '600', fontSize: '0.9rem', color: 'var(--text-main)' }}>{perm.label}</div>
+                                    <button onClick={() => {
+                                        setSelectedPermissionsUser(prev => ({
+                                            ...prev,
+                                            permissions: { ...prev.permissions, [perm.key]: !prev.permissions?.[perm.key] }
+                                        }));
+                                    }} style={{
+                                        background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.8rem',
+                                        color: selectedPermissionsUser.permissions?.[perm.key] ? '#10b981' : (isLightMode ? '#cbd5e1' : 'rgba(255,255,255,0.15)'),
+                                        transition: 'all 0.2s', display: 'flex', alignItems: 'center', padding: 0
+                                    }}>
+                                        {selectedPermissionsUser.permissions?.[perm.key] ? <ToggleRight size={32} /> : <ToggleLeft size={32} />}
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                        
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '2rem' }}>
+                            <button onClick={handleSaveMultiPermissions} style={{
+                                padding: '1rem 2rem', borderRadius: '16px', border: 'none', cursor: 'pointer',
+                                background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', color: '#fff',
+                                fontWeight: '800', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '0.5rem',
+                                boxShadow: '0 6px 20px rgba(99,102,241,0.35)', transition: 'all 0.2s'
+                            }} onMouseOver={e => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseOut={e => e.currentTarget.style.transform = 'translateY(0)'}>
+                                Save Permissions
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <style>{`
                 @keyframes flyoutIn {
                     from { opacity: 0; transform: translateY(-50%) translateX(15px) scale(0.95); }
@@ -1097,6 +1206,10 @@ const AdminTab = ({
                 @keyframes dropdownIn {
                     from { opacity: 0; transform: translateY(-6px) scale(0.97); }
                     to { opacity: 1; transform: translateY(0) scale(1); }
+                }
+                @keyframes slideInRightSheet {
+                    from { transform: translateX(100%); opacity: 0.8; }
+                    to { transform: translateX(0); opacity: 1; }
                 }
             `}</style>
         </div>
