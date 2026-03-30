@@ -3,6 +3,7 @@ import User from '../models/User.js';
 import Request from '../models/Request.js';
 import { createAuditLog } from './auditController.js';
 import { autoCloseStaleSessions } from '../utils/attendanceHelper.js';
+import { getVisibilityQuery } from '../utils/userHelper.js';
 
 // @desc    Clock In
 // @route   POST /api/attendance/clock-in
@@ -67,7 +68,7 @@ export const clockIn = async (req, res) => {
 export const clockOut = async (req, res) => {
     try {
         await autoCloseStaleSessions(req.user._id); // Lazy validation
-        
+
         const { message } = req.body;
         // Find the latest active session (clocked in but not clocked out)
         let record = await Attendance.findOne({
@@ -144,11 +145,8 @@ export const getTeamStats = async (req, res) => {
         startDate.setDate(startDate.getDate() - days);
         startDate.setHours(0, 0, 0, 0);
 
-        const myDept = req.user.department;
-        if (!myDept) return res.status(200).json({ avgHours: 0, onTimePercentage: 0 });
-
-        // Find all users in same department
-        const teammateIds = (await User.find({ department: myDept }).select('_id')).map(u => u._id);
+        const teamQuery = getVisibilityQuery(req.user);
+        const teammateIds = (await User.find(teamQuery).select('_id')).map(u => u._id);
 
         const logs = await Attendance.find({
             user: { $in: teammateIds },
@@ -200,15 +198,11 @@ export const getTeammateIndividualStats = async (req, res) => {
         startDate.setDate(startDate.getDate() - days);
         startDate.setHours(0, 0, 0, 0);
 
-        const myDept = req.user.department;
-        if (!myDept) return res.status(200).json([]);
+        const teamQuery = getVisibilityQuery(req.user);
+        // Exclude the current user from stats
+        teamQuery._id = { $ne: req.user._id };
 
-        // Find all teammates (excluding me)
-        const teammates = await User.find({
-            department: myDept,
-            _id: { $ne: req.user._id },
-            isActive: true
-        }).select('name avatar workingSchedule');
+        const teammates = await User.find(teamQuery).select('name avatar workingSchedule');
 
         const teammateIds = teammates.map(u => u._id);
 

@@ -317,10 +317,11 @@ export default function Dashboard({ user, onLogout, setUser }) {
         const timer = setInterval(() => setCurrentTime(new Date().toLocaleTimeString()), 1000);
         fetchStats();
         fetchSystemSettings();
-        if (user?.role === 'Reporting Manager' || user?.role === 'Super Admin') {
+        if (user?.role === 'Reporting Manager' || user?.role === 'Super Admin' || user?.role === 'Reporting Officer') {
             fetchAdminData();
             fetchOrgConfigs();
             fetchGlobalFinances();
+            fetchInboxRequests();
         }
         fetchPublicData();
         return () => clearInterval(timer);
@@ -486,6 +487,10 @@ export default function Dashboard({ user, onLogout, setUser }) {
         }
         setRequestSubmitting(true);
         try {
+            const recipientsPayload = (requestRecipients || [])
+                .map(r => typeof r === 'object' ? r._id : r)
+                .filter(id => !!id);
+
             await api.post('/requests', {
                 type: requestType,
                 leaveType: requestType === 'Leave Application' ? requestLeaveType : undefined,
@@ -494,7 +499,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
                 associatedLeave: requestType === 'Leave Cancellation' ? selectedLeaveForCancel?._id : undefined,
                 cancelDates: requestType === 'Leave Cancellation' ? datesToCancel : undefined,
                 message: requestMessage,
-                recipients: requestRecipients.map(r => r._id)
+                recipients: recipientsPayload
             });
             setCustomAlert({ message: 'Request submitted successfully!', type: 'info' });
             setRequestType('');
@@ -1108,6 +1113,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
                     socialFeed={socialFeed}
                     showAlert={showAlert}
                     fetchPublicData={fetchPublicData}
+                    pendingInboxCount={inboxRequests.filter(r => r.status === 'Pending').length}
                 />
             );
         }
@@ -2749,9 +2755,15 @@ export default function Dashboard({ user, onLogout, setUser }) {
                 <div style={{ flex: 1, overflowY: 'auto', paddingBottom: '1rem' }}>
                     <nav className="sidebar-nav">
                     {sidebarItems.filter(item => {
-                        // if (item.name === 'My Team' && teammates.length === 0) return false; // Removed to always show My Team
-                        if (item.name === 'Admin' && !(user?.role === 'Reporting Officer' || user?.role === 'Super Admin')) return false;
-                        if (item.name === 'Slack' && !(user?.role === 'Reporting Officer' || user?.role === 'Super Admin')) return false;
+                        const normalizedRole = user?.role?.toLowerCase().replace(/\s/g, '');
+                        if (item.name === 'Admin' && !(normalizedRole === 'reportingofficer' || normalizedRole === 'superadmin')) return false;
+                        if (item.name === 'Slack' && !(normalizedRole === 'reportingofficer' || normalizedRole === 'superadmin')) return false;
+
+                        // Hide personal employee tabs from Admins and Managers
+                        if ((item.name === 'Me' || item.name === 'My Finances') && (normalizedRole === 'superadmin' || normalizedRole === 'reportingmanager' || normalizedRole === 'reportingofficer')) {
+                            return false;
+                        }
+                        
                         return true;
                     }).map(item => (
                         <div

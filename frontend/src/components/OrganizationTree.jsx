@@ -134,7 +134,7 @@ export default function OrganizationTree({ user: currentUser, isLightMode }) {
     const [menu, setMenu] = useState(null);
     const reactFlowWrapper = useRef(null);
 
-    const canEdit = currentUser?.role === 'Reporting Manager' || currentUser?.role === 'Super Admin';
+    const canEdit = currentUser?.role === 'Super Admin';
     const roleWeights = { 'Super Admin': 3, 'Reporting Manager': 2, 'Intern': 1 };
 
     const fetchUsers = async () => {

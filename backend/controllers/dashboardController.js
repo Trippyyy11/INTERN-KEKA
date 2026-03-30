@@ -5,6 +5,7 @@ import OrgConfig from '../models/OrgConfig.js';
 import Notification from '../models/Notification.js';
 import Attendance from '../models/Attendance.js';
 import moment from 'moment';
+import { getVisibilityQuery } from '../utils/userHelper.js';
 
 // @desc    Get dashboard statistics and real-time alerts
 // @route   GET /api/dashboard/stats
@@ -12,6 +13,8 @@ import moment from 'moment';
 export const getDashboardStats = async (req, res) => {
     try {
         const today = moment().startOf('day');
+        const startOfToday = today.toDate();
+        const endOfToday = moment().endOf('day').toDate();
         const thirtyDaysAgo = moment().subtract(30, 'days').startOf('day');
 
         // 1. Birthdays (Today & Upcoming)
@@ -33,56 +36,56 @@ export const getDashboardStats = async (req, res) => {
             return dobA - dobB;
         });
 
-        const myDept = req.user.department;
+        const teamQuery = getVisibilityQuery(req.user);
+        // Fetch teammates based on visibility rules 
+        // NOTE: Strict intern list for Super Admins and Managers. Only Interns see their own peers.
+        const teamMembers = await User.find(teamQuery).select('name designation workingSchedule department avatar profilePicture gender place bloodGroup dob welcomeProfile phoneNumber');
 
-        // 2. On Leave Today (Team only)
+        const teamMemberIds = teamMembers.map(u => u._id.toString());
+
+        // 2. On Leave Today (Team + Self)
         const leavesToday = await Leave.find({
             status: 'Approved',
-            startDate: { $lte: today.toDate() },
-            endDate: { $gte: today.toDate() }
-        }).populate({
-            path: 'user',
-            match: myDept ? { department: myDept } : {},
-            select: 'name department avatar profilePicture gender place bloodGroup dob welcomeProfile designation phoneNumber'
-        });
+            startDate: { $lte: endOfToday },
+            endDate: { $gte: startOfToday },
+            user: { $in: teamMemberIds }
+        }).populate('user', 'name department avatar profilePicture gender place bloodGroup dob welcomeProfile designation phoneNumber');
 
         // Filter out leaves where user didn't match the department filter
         const teamLeavesToday = leavesToday.filter(l => l.user !== null);
 
-        // 3. Working Remotely (WFH - Team only)
+        // 3. Working Remotely (WFH - Team + Self)
         const workingRemotely = await Attendance.find({
-            date: today.toDate(),
-            status: 'WFH'
-        }).populate({
-            path: 'user',
-            match: myDept ? { department: myDept } : {},
-            select: 'name department avatar profilePicture gender place bloodGroup dob welcomeProfile designation phoneNumber'
-        });
+            date: { $gte: startOfToday, $lte: endOfToday },
+            status: 'WFH',
+            user: { $in: teamMemberIds }
+        }).populate('user', 'name department avatar profilePicture gender place bloodGroup dob welcomeProfile designation phoneNumber');
 
         // Filter out records where user didn't match the department filter
         const teamWorkingRemotely = workingRemotely.filter(w => w.user !== null);
 
         // 4. New Joinees (Last 7 days)
         const sevenDaysAgo = moment().subtract(7, 'days').startOf('day');
-        const endOfToday = moment().endOf('day');
         const newJoinees = await User.find({
             $or: [
-                { joiningDate: { $gte: sevenDaysAgo.toDate(), $lte: endOfToday.toDate() } },
-                { joiningDate: { $eq: null }, createdAt: { $gte: sevenDaysAgo.toDate(), $lte: endOfToday.toDate() } },
-                { joiningDate: { $exists: false }, createdAt: { $gte: sevenDaysAgo.toDate(), $lte: endOfToday.toDate() } }
+                { joiningDate: { $gte: sevenDaysAgo.toDate(), $lte: endOfToday } },
+                { joiningDate: { $eq: null }, createdAt: { $gte: sevenDaysAgo.toDate(), $lte: endOfToday } },
+                { joiningDate: { $exists: false }, createdAt: { $gte: sevenDaysAgo.toDate(), $lte: endOfToday } }
             ],
             isDeleted: { $ne: true }
         }).select('name joiningDate createdAt department avatar profilePicture gender place bloodGroup dob welcomeProfile designation phoneNumber');
 
         // 5. Team Activity Stats (Today)
-        const teamMembers = await User.find({ department: myDept }).select('name designation workingSchedule');
         const teamAttendance = await Attendance.find({
-            date: today.toDate(),
-            user: { $in: teamMembers.map(u => u._id) }
+            date: { $gte: startOfToday, $lte: endOfToday },
+            user: { $in: teamMemberIds }
         });
 
         const loggedInUserIds = teamAttendance.map(a => a.user.toString());
-        const notInYet = teamMembers.filter(m => !loggedInUserIds.includes(m._id.toString()));
+        const onLeaveUserIds = teamLeavesToday.map(l => l.user._id.toString());
+        
+        // notInYet strictly compares against the fetched teamMembers (which are the interns)
+        const notInYet = teamMembers.filter(m => !loggedInUserIds.includes(m._id.toString()) && !onLeaveUserIds.includes(m._id.toString()));
 
         let onTimeCount = 0;
         let lateCount = 0;
@@ -156,15 +159,8 @@ export const getTeamCalendarStats = async (req, res) => {
         const startOfMonth = targetDate.clone().startOf('month');
         const endOfMonth = targetDate.clone().endOf('month');
 
-        const myDept = req.user.department;
-        const query = { isActive: true, isDeleted: { $ne: true } };
-        if (myDept) {
-            query.department = { $regex: `^${myDept.trim()}$`, $options: 'i' };
-        } else {
-            query._id = req.user._id;
-        }
-
-        const teamMembers = await User.find(query).select('name designation avatar workingSchedule');
+        const teamQuery = getVisibilityQuery(req.user);
+        const teamMembers = await User.find(teamQuery).select('name designation avatar workingSchedule');
 
         if (teamMembers.length === 0) {
             return res.status(200).json({
@@ -190,7 +186,7 @@ export const getTeamCalendarStats = async (req, res) => {
                 { startDate: { $lte: endOfMonth.toDate() }, endDate: { $gte: startOfMonth.toDate() } }
             ],
             user: { $in: teamMembers.map(u => u._id) }
-        }).populate('user', 'name');
+        });
 
         const holidays = await OrgConfig.find({
             type: 'Holiday',

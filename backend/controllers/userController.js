@@ -1,4 +1,5 @@
 import User from '../models/User.js';
+import { getVisibilityQuery } from '../utils/userHelper.js';
 
 // @desc    Get all birthdays
 // @route   GET /api/attendance/birthdays
@@ -17,15 +18,11 @@ export const getBirthdays = async (req, res) => {
 // @access  Private
 export const getTeammates = async (req, res) => {
     try {
-        const myDept = req.user.department;
-        if (!myDept) {
-            return res.status(200).json([]);
-        }
-        const teammates = await User.find({
-            department: myDept,
-            _id: { $ne: req.user._id },
-            isActive: true
-        }).select('name email designation department joiningDate dob avatar welcomeProfile');
+        const teamQuery = getVisibilityQuery(req.user);
+        // Exclude the current user from teammates list
+        teamQuery._id = { $ne: req.user._id };
+
+        const teammates = await User.find(teamQuery).select('name email designation department joiningDate dob avatar welcomeProfile');
 
         res.status(200).json(teammates);
     } catch (error) {

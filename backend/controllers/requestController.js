@@ -74,12 +74,12 @@ export const createRequest = async (req, res) => {
 
         // Auto-include all Super Admins as recipients
         const superAdmins = await User.find({ role: 'Super Admin' }).select('_id');
-        let finalRecipients = [...recipients];
+        let finalRecipients = (recipients || []).filter(r => !!r);
 
         superAdmins.forEach(admin => {
             const adminIdStr = admin._id.toString();
-            if (!finalRecipients.includes(adminIdStr)) {
-                finalRecipients.push(adminIdStr);
+            if (!finalRecipients.map(r => r.toString()).includes(adminIdStr)) {
+                finalRecipients.push(admin._id);
             }
         });
 
@@ -103,12 +103,12 @@ export const createRequest = async (req, res) => {
             .populate('associatedAttendance');
 
         // Create notification for recipients
-        for (const recipientId of recipients) {
+        for (const recipientId of (recipients || []).filter(r => !!r)) {
             await createNotification(
                 recipientId,
                 'leave_request',
                 'New Request',
-                `${populated.user.name} submitted a ${type} request for ${new Date(startDate).toLocaleDateString()}.`,
+                `${populated.user?.name || 'Someone'} submitted a ${type} request for ${new Date(startDate).toLocaleDateString()}.`,
                 request._id,
                 'Request'
             );
@@ -168,7 +168,7 @@ export const updateRequestStatus = async (req, res) => {
         }
 
         // Check if the current user is one of the recipients OR a Super Admin
-        const isRecipient = request.recipients.some(r => r.toString() === req.user._id.toString());
+        const isRecipient = request.recipients.some(r => r && r.toString() === req.user._id.toString());
         const isSuperAdmin = req.user.role === 'Super Admin';
 
         if (!isRecipient && !isSuperAdmin) {
@@ -222,14 +222,17 @@ export const updateRequestStatus = async (req, res) => {
             .populate('associatedAttendance');
 
         // Notification to the requester that their request was acted upon
-        await createNotification(
-            updated.user,
-            'leave_request_update',
-            `Request ${status}`,
-            `Your ${updated.type} request was ${status.toLowerCase()} by ${req.user.name}. ${actionNote ? `Note: ${actionNote}` : ''}`,
-            updated._id,
-            'Request'
-        );
+        const requesterId = populated.user?._id || updated.user;
+        if (requesterId) {
+            await createNotification(
+                requesterId,
+                'leave_request_update',
+                `Request ${status}`,
+                `Your ${updated.type} request was ${status.toLowerCase()} by ${req.user.name}. ${actionNote ? `Note: ${actionNote}` : ''}`,
+                updated._id,
+                'Request'
+            );
+        }
 
         res.json(populated);
     } catch (error) {

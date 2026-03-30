@@ -146,6 +146,11 @@ export const checkClockInReminder = async (req, res) => {
 // Helper: Create a notification (used by other controllers)
 export const createNotification = async (userId, type, title, message, relatedId = null, relatedModel = null) => {
     try {
+        if (!userId) {
+            console.warn('Skipping notification creation: userId is missing.');
+            return;
+        }
+
         await Notification.create({
             user: userId,
             type,

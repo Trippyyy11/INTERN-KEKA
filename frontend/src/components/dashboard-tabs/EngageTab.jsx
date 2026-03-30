@@ -60,6 +60,7 @@ export default function EngageTab({
     isLightMode,
     dashData
 }) {
+    const [viewSubTab, setViewSubTab] = React.useState('Announcements');
 
     const bentoPanelStyle = {
         background: isLightMode ? '#ffffff' : 'rgba(255,255,255,0.03)',
@@ -107,40 +108,42 @@ export default function EngageTab({
     return (
         <div style={{ padding: '0 1.5rem', marginTop: '1rem', position: 'relative' }}>
 
-            {/* Top Navigation Row */}
-            <div style={{
-                display: 'inline-flex', alignItems: 'center', background: isLightMode ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.04)',
-                padding: '0.35rem', borderRadius: '16px', marginBottom: '2rem'
-            }}>
-                <button
-                    style={{
-                        padding: '0.6rem 2rem', borderRadius: '12px', border: 'none',
-                        background: engageTab === 'Create' ? (isLightMode ? '#ffffff' : '#1e293b') : 'transparent',
-                        color: engageTab === 'Create' ? 'var(--primary)' : 'var(--text-muted)',
-                        fontWeight: '800', fontSize: '0.85rem', letterSpacing: '0.5px', cursor: 'pointer',
-                        boxShadow: engageTab === 'Create' && isLightMode ? '0 2px 10px rgba(0,0,0,0.05)' : 'none',
-                        transition: 'all 0.2s'
-                    }}
-                    onClick={() => setEngageTab('Create')}
-                >
-                    CREATE
-                </button>
-                <button
-                    style={{
-                        padding: '0.6rem 2rem', borderRadius: '12px', border: 'none',
-                        background: engageTab === 'View' ? (isLightMode ? '#ffffff' : '#1e293b') : 'transparent',
-                        color: engageTab === 'View' ? 'var(--primary)' : 'var(--text-muted)',
-                        fontWeight: '800', fontSize: '0.85rem', letterSpacing: '0.5px', cursor: 'pointer',
-                        boxShadow: engageTab === 'View' && isLightMode ? '0 2px 10px rgba(0,0,0,0.05)' : 'none',
-                        transition: 'all 0.2s'
-                    }}
-                    onClick={() => setEngageTab('View')}
-                >
-                    VIEW
-                </button>
-            </div>
+            {/* Top Navigation Row (Hidden for Interns) */}
+            {user?.role !== 'Intern' && (
+                <div style={{
+                    display: 'inline-flex', alignItems: 'center', background: isLightMode ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.04)',
+                    padding: '0.35rem', borderRadius: '16px', marginBottom: '2rem'
+                }}>
+                    <button
+                        style={{
+                            padding: '0.6rem 2rem', borderRadius: '12px', border: 'none',
+                            background: engageTab === 'Create' ? (isLightMode ? '#ffffff' : '#1e293b') : 'transparent',
+                            color: engageTab === 'Create' ? 'var(--primary)' : 'var(--text-muted)',
+                            fontWeight: '800', fontSize: '0.85rem', letterSpacing: '0.5px', cursor: 'pointer',
+                            boxShadow: engageTab === 'Create' && isLightMode ? '0 2px 10px rgba(0,0,0,0.05)' : 'none',
+                            transition: 'all 0.2s'
+                        }}
+                        onClick={() => setEngageTab('Create')}
+                    >
+                        CREATE
+                    </button>
+                    <button
+                        style={{
+                            padding: '0.6rem 2rem', borderRadius: '12px', border: 'none',
+                            background: engageTab === 'View' ? (isLightMode ? '#ffffff' : '#1e293b') : 'transparent',
+                            color: engageTab === 'View' ? 'var(--primary)' : 'var(--text-muted)',
+                            fontWeight: '800', fontSize: '0.85rem', letterSpacing: '0.5px', cursor: 'pointer',
+                            boxShadow: engageTab === 'View' && isLightMode ? '0 2px 10px rgba(0,0,0,0.05)' : 'none',
+                            transition: 'all 0.2s'
+                        }}
+                        onClick={() => setEngageTab('View')}
+                    >
+                        VIEW
+                    </button>
+                </div>
+            )}
 
-            {engageTab === 'Create' && (
+            {(engageTab === 'Create' && user?.role !== 'Intern') && (
                 <div style={{ display: 'grid', gridTemplateColumns: (user?.role === 'Reporting Officer' || user?.role === 'Super Admin') ? '1fr 1fr' : '1fr', gap: '2rem', alignItems: 'start' }}>
 
                     {/* Creation Bento Panel */}
@@ -373,11 +376,21 @@ export default function EngageTab({
                 </div>
             )}
 
-            {engageTab === 'View' && (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 3fr', gap: '2rem', alignItems: 'start' }}>
+            {(engageTab === 'View' || user?.role === 'Intern') && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem', alignItems: 'stretch' }}>
+                    
+                    {/* Inner Toggle for View Mode */}
+                    <div style={{
+                        display: 'flex', gap: '0.5rem', borderBottom: `1px solid ${isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.06)'}`,
+                        paddingBottom: '1rem', marginTop: '-1rem'
+                    }}>
+                        <CustomTabPill icon={Megaphone} label="Announcements" active={viewSubTab === 'Announcements'} onClick={() => setViewSubTab('Announcements')} colorScheme="purple" />
+                        <CustomTabPill icon={MessageSquarePlus} label="Social Feed" active={viewSubTab === 'Social Feed'} onClick={() => setViewSubTab('Social Feed')} colorScheme="blue" />
+                    </div>
 
-                    {/* Left Column: Announcements */}
-                    <div style={{ ...bentoPanelStyle, position: 'sticky', top: '1.5rem', padding: '1.5rem' }}>
+                    {/* Announcements Tab */}
+                    {viewSubTab === 'Announcements' && (
+                        <div style={{ ...bentoPanelStyle, padding: '2rem', animation: 'fadeIn 0.3s ease-out' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem', borderBottom: `1px solid ${isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.06)'}`, paddingBottom: '1rem' }}>
                             <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'linear-gradient(135deg, rgba(var(--primary-rgb), 0.15), rgba(var(--primary-rgb), 0.05))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                 <Megaphone size={16} color="var(--primary)" />
@@ -389,12 +402,18 @@ export default function EngageTab({
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                                 {dashData.announcements.map(a => (
                                     <div key={a._id} style={{
-                                        background: isLightMode ? '#f8fafc' : 'rgba(0,0,0,0.15)', border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.04)'}`,
-                                        borderRadius: '16px', padding: '1.25rem', transition: 'all 0.2s',
-                                        boxShadow: isLightMode ? '0 2px 8px rgba(0,0,0,0.02)' : 'none'
-                                    }} onMouseOver={e => e.currentTarget.style.borderColor = 'var(--primary)'} onMouseOut={e => e.currentTarget.style.borderColor = isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.04)'}>
-                                        <div style={{ fontWeight: '800', fontSize: '0.9rem', color: 'var(--text-main)', marginBottom: '0.4rem', lineHeight: '1.4' }}>{a.title}</div>
-                                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: '1.5', fontWeight: '500' }}>{a.content}</div>
+                                        position: 'relative', overflow: 'hidden',
+                                        background: isLightMode ? '#ffffff' : 'rgba(255,255,255,0.02)',
+                                        border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.08)'}`,
+                                        borderLeft: '4px solid #8b5cf6',
+                                        borderRadius: '12px', padding: '1.25rem 1.5rem', transition: 'all 0.2s',
+                                        boxShadow: isLightMode ? '0 4px 12px rgba(0,0,0,0.02)' : 'none'
+                                    }} onMouseOver={e => e.currentTarget.style.transform = 'translateX(4px)'} onMouseOut={e => e.currentTarget.style.transform = 'translateX(0)'}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                                            <div style={{ fontWeight: '800', fontSize: '1rem', color: 'var(--text-main)' }}>{a.title}</div>
+                                            <div style={{ fontSize: '0.65rem', color: '#8b5cf6', fontWeight: '800', background: 'rgba(139, 92, 246, 0.1)', padding: '0.2rem 0.6rem', borderRadius: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Important</div>
+                                        </div>
+                                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: '1.6', fontWeight: '500' }}>{a.content}</div>
                                     </div>
                                 ))}
                             </div>
@@ -406,12 +425,22 @@ export default function EngageTab({
                                 <div style={{ fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-muted)' }}>No recent announcements</div>
                             </div>
                         )}
-                    </div>
+                        </div>
+                    )}
 
-                    {/* Right Column: Social Feed */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                        {socialFeed.length > 0 ? socialFeed.map(activity => {
-                            const canDelete = user?._id === activity.author?._id || user?.role === 'Reporting Officer' || user?.role === 'Super Admin';
+                    {/* Social Feed Tab */}
+                    {viewSubTab === 'Social Feed' && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: '800px', margin: '0 auto', width: '100%', animation: 'fadeIn 0.3s ease-out' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
+                                <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'linear-gradient(135deg, rgba(var(--primary-rgb), 0.15), rgba(var(--primary-rgb), 0.05))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <MessageSquarePlus size={16} color="var(--primary)" />
+                                </div>
+                                <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '800', color: 'var(--text-main)', letterSpacing: '0.5px' }}>Social Feed</h3>
+                            </div>
+
+                            {socialFeed.length > 0 ? socialFeed.map(activity => {
+                                const canDelete = user?._id === activity.author?._id || user?.role === 'Reporting Officer' || user?.role === 'Super Admin';
+
 
                             return (
                                 <div key={activity._id} style={{ ...bentoPanelStyle, padding: '2rem', display: 'flex', gap: '1.5rem' }}>
@@ -453,12 +482,13 @@ export default function EngageTab({
 
                                     {/* Content Column */}
                                     <div style={{ flex: 1, paddingRight: '2.5rem' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1rem' }}>
-                                            <div style={{ fontWeight: '800', fontSize: '1rem', color: 'var(--text-main)' }}>{activity.author?.name}</div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
+                                            <div style={{ fontWeight: '800', fontSize: '1.05rem', color: 'var(--text-main)' }}>{activity.author?.name}</div>
                                             <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: 'var(--text-muted)', opacity: 0.5 }}></div>
-                                            <div style={{ fontSize: '0.75rem', fontWeight: '600', color: 'var(--text-muted)' }}>{moment(activity.createdAt).fromNow()}</div>
+                                            <div style={{ fontSize: '0.8rem', fontWeight: '600', color: 'var(--text-muted)' }}>{moment(activity.createdAt).fromNow()}</div>
+                                            <div style={{ flex: 1 }}></div>
                                             <div style={{
-                                                fontSize: '0.65rem', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '0.25rem 0.6rem', borderRadius: '8px',
+                                                fontSize: '0.65rem', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.75px', padding: '0.3rem 0.75rem', borderRadius: '10px',
                                                 background: activity.type === 'Post' ? 'rgba(245, 158, 11, 0.1)' : (activity.type === 'Poll' ? 'rgba(6, 182, 212, 0.1)' : 'rgba(59, 130, 246, 0.1)'),
                                                 color: activity.type === 'Post' ? '#f59e0b' : (activity.type === 'Poll' ? '#06b6d4' : '#3b82f6')
                                             }}>{activity.type}</div>
@@ -566,7 +596,8 @@ export default function EngageTab({
                                 </p>
                             </div>
                         )}
-                    </div>
+                        </div>
+                    )}
                 </div>
             )}
 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Trash2, FileText, Briefcase, Calendar, Clock, Mail, Cake, PartyPopper, Users, Megaphone, Sparkles, LayoutDashboard, X, Phone, Building2 } from 'lucide-react';
+import { Trash2, FileText, Briefcase, Calendar, Clock, Mail, Cake, PartyPopper, Users, Megaphone, Sparkles, LayoutDashboard, X, Phone, Building2, Bell } from 'lucide-react';
 
 // Inline gender-based avatar SVG with profile picture fallback
 const GenderAvatar = ({ gender, profilePicture, size = 48, style = {} }) => {
@@ -57,7 +57,8 @@ export default function HomeTab({
     setActiveSubTab,
     editingResponse, setEditingResponse,
     welcomeResponses, setWelcomeResponses,
-    handleSaveResponse
+    handleSaveResponse,
+    pendingInboxCount
 }) {
     const inputStyle = {
         width: '100%',
@@ -226,6 +227,59 @@ export default function HomeTab({
                 </div>
                 <ClockStand clockInTime={activeLog?.clockInTime} />
             </div>
+
+            {/* Pending Requests Alert Card for Managers/Admins */}
+            {pendingInboxCount > 0 && (
+                <div 
+                    className="panel animate-in fade-in slide-in-from-top-4 duration-500" 
+                    style={{
+                        marginBottom: '1.5rem',
+                        padding: '1.25rem 1.75rem',
+                        background: isLightMode ? 'linear-gradient(135deg, #fffbeb 0%, #fff7ed 100%)' : 'linear-gradient(135deg, #451a03 0%, #2a1103 100%)',
+                        border: isLightMode ? '1px solid #fed7aa' : '1px solid #7c2d12',
+                        borderRadius: '24px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        boxShadow: '0 10px 30px -10px rgba(0,0,0,0.1)'
+                    }}
+                >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+                        <div style={{
+                            width: '48px', height: '48px', borderRadius: '16px',
+                            background: '#f97316', color: 'white',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            boxShadow: '0 4px 12px rgba(249, 115, 22, 0.3)'
+                        }}>
+                            <Bell size={24} />
+                        </div>
+                        <div>
+                            <div style={{ fontSize: '1.05rem', fontWeight: '800', color: isLightMode ? '#7c2d12' : '#fed7aa', letterSpacing: '-0.3px' }}>
+                                Action Required: {pendingInboxCount} Pending Request{pendingInboxCount > 1 ? 's' : ''}
+                            </div>
+                            <div style={{ fontSize: '0.85rem', color: isLightMode ? '#9a3412' : '#fdba74', fontWeight: '500', marginTop: '2px' }}>
+                                You have requests waiting for your approval in the inbox.
+                            </div>
+                        </div>
+                    </div>
+                    <button 
+                        className="btn btn-primary"
+                        onClick={() => setActiveSidebar('Inbox')}
+                        style={{
+                            padding: '0.75rem 1.5rem',
+                            borderRadius: '14px',
+                            fontWeight: '700',
+                            fontSize: '0.85rem',
+                            background: '#f97316',
+                            border: 'none',
+                            boxShadow: '0 4px 12px rgba(249, 115, 22, 0.2)',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        View Inbox
+                    </button>
+                </div>
+            )}
 
             {/* Dashboard Content - Bento Grid Redesign */}
             <div style={{
