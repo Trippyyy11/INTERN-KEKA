@@ -427,9 +427,14 @@ export default function Dashboard({ user, onLogout, setUser }) {
         } catch (err) { console.error('Failed to fetch inbox requests'); }
     };
 
-    const handleRequestAction = async (requestId, status, actionNote) => {
+    const handleRequestAction = async (requestId, status, actionNote, overrideClockIn, overrideClockOut) => {
         try {
-            await api.put(`/requests/${requestId}/status`, { status, actionNote });
+            await api.put(`/requests/${requestId}/status`, { 
+                status, 
+                actionNote,
+                overrideClockIn,
+                overrideClockOut
+            });
             showAlert(`Request ${status} successfully!`, 'info');
             fetchInboxRequests();
         } catch (err) {
@@ -1393,6 +1398,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
                         handleRequestAction={handleRequestAction}
                         getStatusStyle={getStatusStyle}
                         isLightMode={isLightMode}
+                        showAlert={showAlert}
                     />
                 </div>
             );
