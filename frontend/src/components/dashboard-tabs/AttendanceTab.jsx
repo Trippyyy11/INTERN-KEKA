@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, Clock, FileText, HelpCircle, Info, Home, LogOut, Zap, LayoutDashboard, MoreVertical, Edit3, X, Send, CheckCircle2, History, ArrowRight } from 'lucide-react';
+import { Calendar, Clock, FileText, HelpCircle, Info, Home, LogOut, Zap, LayoutDashboard, MoreVertical, Edit3, X, Send, CheckCircle2, History, ArrowRight, MapPin } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import api from '../../api/axios.js';
 
@@ -732,7 +732,8 @@ const AttendanceTab = ({
                                         }}>
                                             <th style={{ padding: '0.75rem 1rem', fontWeight: '800' }}>Date</th>
                                             <th style={{ padding: '0.75rem 1rem', fontWeight: '800' }}>Gross Hours</th>
-<th style={{ padding: '0.75rem 1rem', fontWeight: '800' }}>Arrival</th>
+                                            <th style={{ padding: '0.75rem 1rem', fontWeight: '800' }}>Arrival</th>
+                                            <th style={{ padding: '0.75rem 1rem', fontWeight: '800' }}>Location</th>
                                             <th style={{ padding: '0.75rem 1rem', fontWeight: '800' }}>Status</th>
                                             <th style={{ padding: '0.75rem 1rem', fontWeight: '800', textAlign: 'center' }}>Action</th>
                                         </tr>
@@ -904,6 +905,77 @@ const AttendanceTab = ({
                                                                 </div>
                                                             );
                                                         })()}
+                                                    </td>
+                                                    <td style={{ padding: '0.75rem 1rem' }}>
+                                                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                                                            {log.clockInLocation?.lat ? (
+                                                                <a 
+                                                                    href={`https://www.google.com/maps?q=${log.clockInLocation.lat},${log.clockInLocation.lng}`} 
+                                                                    target="_blank" 
+                                                                    rel="noopener noreferrer"
+                                                                    title={`Clock-in Location: ${log.clockInLocation.lat.toFixed(4)}, ${log.clockInLocation.lng.toFixed(4)}`}
+                                                                    style={{ 
+                                                                        display: 'flex', 
+                                                                        alignItems: 'center', 
+                                                                        justifyContent: 'center',
+                                                                        width: '28px', 
+                                                                        height: '28px', 
+                                                                        borderRadius: '50%', 
+                                                                        background: 'rgba(52, 211, 153, 0.15)', 
+                                                                        color: '#059669',
+                                                                        border: '1px solid rgba(52, 211, 153, 0.3)',
+                                                                        transition: 'all 0.2s'
+                                                                    }}
+                                                                    onMouseOver={e => {e.currentTarget.style.transform = 'scale(1.1)'; e.currentTarget.style.backgroundColor = 'rgba(52, 211, 153, 0.25)';}}
+                                                                    onMouseOut={e => {e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.backgroundColor = 'rgba(52, 211, 153, 0.15)';}}
+                                                                >
+                                                                    <MapPin size={14} fill="currentColor" fillOpacity={0.2} />
+                                                                </a>
+                                                            ) : (
+                                                                <div 
+                                                                    title="Location not captured for this session" 
+                                                                    style={{ 
+                                                                        display: 'flex', 
+                                                                        alignItems: 'center', 
+                                                                        justifyContent: 'center',
+                                                                        width: '28px', 
+                                                                        height: '28px', 
+                                                                        borderRadius: '50%', 
+                                                                        background: 'rgba(226, 232, 240, 0.1)', 
+                                                                        color: 'var(--text-muted)',
+                                                                        border: '1px dashed var(--border-dark)',
+                                                                        opacity: 0.5
+                                                                    }}
+                                                                >
+                                                                    <MapPin size={14} />
+                                                                </div>
+                                                            )}
+
+                                                            {log.clockOutLocation?.lat && (
+                                                                <a 
+                                                                    href={`https://www.google.com/maps?q=${log.clockOutLocation.lat},${log.clockOutLocation.lng}`} 
+                                                                    target="_blank" 
+                                                                    rel="noopener noreferrer"
+                                                                    title={`Clock-out Location: ${log.clockOutLocation.lat.toFixed(4)}, ${log.clockOutLocation.lng.toFixed(4)}`}
+                                                                    style={{ 
+                                                                        display: 'flex', 
+                                                                        alignItems: 'center', 
+                                                                        justifyContent: 'center',
+                                                                        width: '28px', 
+                                                                        height: '28px', 
+                                                                        borderRadius: '50%', 
+                                                                        background: 'rgba(148, 163, 184, 0.1)', 
+                                                                        color: 'var(--text-muted)',
+                                                                        border: '1px solid var(--border-dark)',
+                                                                        transition: 'all 0.2s'
+                                                                    }}
+                                                                    onMouseOver={e => {e.currentTarget.style.transform = 'scale(1.1)'; e.currentTarget.style.backgroundColor = 'rgba(148, 163, 184, 0.2)';}}
+                                                                    onMouseOut={e => {e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.backgroundColor = 'rgba(148, 163, 184, 0.1)';}}
+                                                                >
+                                                                    <MapPin size={14} />
+                                                                </a>
+                                                            )}
+                                                        </div>
                                                     </td>
                                                     <td style={{ fontSize: '0.85rem', padding: '0.75rem 1rem', fontWeight: '600' }}>
                                                         {(() => {

@@ -12,7 +12,7 @@ export const clockIn = async (req, res) => {
     try {
         await autoCloseStaleSessions(req.user._id); // Lazy validation
 
-        const { workingMode, message } = req.body;
+        const { workingMode, message, location } = req.body;
         const now = new Date();
         const cutoffTime = new Date(now.getTime() - 16 * 60 * 60 * 1000); // 16 hours ago
 
@@ -51,6 +51,7 @@ export const clockIn = async (req, res) => {
                 record.workingMode = workingMode || 'On-site';
                 record.status = workingMode === 'Remote' ? 'WFH' : 'Present';
                 record.autoClockOut = false;
+                if (location) record.clockInLocation = location;
                 await record.save();
             }
         } else {
@@ -62,6 +63,7 @@ export const clockIn = async (req, res) => {
                 date: today,
                 clockInTime: now,
                 clockInMessage: message || '',
+                clockInLocation: location || undefined,
                 status: workingMode === 'Remote' ? 'WFH' : 'Present',
                 workingMode: workingMode || 'On-site'
             });
@@ -81,7 +83,7 @@ export const clockOut = async (req, res) => {
     try {
         await autoCloseStaleSessions(req.user._id); // Lazy validation
 
-        const { message } = req.body;
+        const { message, location } = req.body;
         // Find the latest active session (clocked in but not clocked out)
         let record = await Attendance.findOne({
             user: req.user._id,
@@ -103,6 +105,7 @@ export const clockOut = async (req, res) => {
         const clockOutTime = new Date();
         record.clockOutTime = clockOutTime;
         record.clockOutMessage = message || '';
+        if (location) record.clockOutLocation = location;
 
         // Calculate total hours factoring in breaks
         let breakMs = 0;

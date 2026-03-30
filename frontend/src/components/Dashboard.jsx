@@ -123,6 +123,8 @@ export default function Dashboard({ user, onLogout, setUser }) {
         return saved !== null ? saved : defaultVal;
     };
 
+    const [isCapturingLocation, setIsCapturingLocation] = useState(false);
+
     const [activeSidebar, setActiveSidebar] = useState(getSavedState('activeSidebar', 'Home'));
     const [activeSubTab, setActiveSubTab] = useState(getSavedState('activeSubTab', 'Attendance'));
 
@@ -672,7 +674,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
     const fetchGlobalFinances = async () => {
         try {
             const res = await api.get('/payslips/all');
-            setGlobalPayslips(res.data);
+            setGlobalFinances(res.data);
         } catch (err) {
             console.error('Failed to fetch global finances:', err);
         }
@@ -1027,6 +1029,29 @@ export default function Dashboard({ user, onLogout, setUser }) {
         setCustomAlert({ message, type, onConfirm });
     };
 
+    const getLocation = () => {
+        return new Promise((resolve) => {
+            if (!navigator.geolocation) {
+                console.warn('Geolocation is not supported by this browser.');
+                resolve(null);
+                return;
+            }
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    resolve({
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude
+                    });
+                },
+                (error) => {
+                    console.warn('Geolocation error:', error.message);
+                    resolve(null);
+                },
+                { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+            );
+        });
+    };
+
     const handleClockToggle = async () => {
         try {
             if (isClockedIn) {
@@ -1054,8 +1079,14 @@ export default function Dashboard({ user, onLogout, setUser }) {
     };
 
     const confirmClockIn = async () => {
+        setIsCapturingLocation(true);
         try {
-            const res = await api.post('/attendance/clock-in', { workingMode: selectedWorkingMode, message: clockMessage });
+            const location = await getLocation();
+            const res = await api.post('/attendance/clock-in', { 
+                workingMode: selectedWorkingMode, 
+                message: clockMessage,
+                location 
+            });
             setShowClockInModal(false);
             setClockMessage('');
 
@@ -1068,18 +1099,27 @@ export default function Dashboard({ user, onLogout, setUser }) {
             showAlert(`Successfully clocked in as ${selectedWorkingMode}! Have a productive day! 🚀`, 'info');
         } catch (error) {
             showAlert(error.response?.data?.message || 'Error occurred while clocking in.', 'info');
+        } finally {
+            setIsCapturingLocation(false);
         }
     };
 
     const confirmClockOut = async () => {
+        setIsCapturingLocation(true);
         try {
-            await api.post('/attendance/clock-out', { message: clockMessage });
+            const location = await getLocation();
+            await api.post('/attendance/clock-out', { 
+                message: clockMessage,
+                location 
+            });
             setShowClockOutModal(false);
             setClockMessage('');
             fetchStats();
             showAlert('Successfully clocked out! 🎉', 'info');
         } catch (error) {
             showAlert(error.response?.data?.message || 'Error occurred while clocking out.', 'info');
+        } finally {
+            setIsCapturingLocation(false);
         }
     };
 
@@ -3069,8 +3109,28 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                         }}
                                     />
                                 </div>
-                                <button className="btn btn-primary" style={{ marginTop: '0.5rem' }} onClick={confirmClockIn}>
-                                    Confirm Clock In
+                                <button 
+                                    onClick={confirmClockIn} 
+                                    disabled={isCapturingLocation}
+                                    style={{ 
+                                        padding: '0.6rem 1.2rem', 
+                                        borderRadius: '10px', 
+                                        border: 'none', 
+                                        background: isCapturingLocation ? '#cbd5e1' : 'var(--primary)', 
+                                        color: '#fff', 
+                                        fontWeight: '700', 
+                                        cursor: isCapturingLocation ? 'not-allowed' : 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '0.5rem'
+                                    }}
+                                >
+                                    {isCapturingLocation ? (
+                                        <>
+                                            <div className="capturing-spinner" style={{ width: '12px', height: '12px', border: '2px solid #fff', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }}></div>
+                                            Capturing Location...
+                                        </>
+                                    ) : 'Confirm Clock-in'}
                                 </button>
                             </div>
                         </div>
