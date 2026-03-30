@@ -2,6 +2,7 @@ import Request from '../models/Request.js';
 import User from '../models/User.js';
 import Leave from '../models/Leave.js';
 import { createNotification } from './notificationController.js';
+import { getVisibilityQuery } from '../utils/userHelper.js';
 
 // @desc    Create a new request (Leave/WFH/Half Day)
 // @route   POST /api/requests
@@ -139,12 +140,25 @@ export const getMyRequests = async (req, res) => {
     }
 };
 
-// @desc    Get requests addressed to me (as a recipient)
+// @desc    Get requests addressed to me (as a recipient) or for my visible subordinates
 // @route   GET /api/requests/inbox
 // @access  Private
 export const getInboxRequests = async (req, res) => {
     try {
-        const requests = await Request.find({ recipients: req.user._id })
+        const normalizedRole = req.user.role?.toLowerCase().replace(/\s/g, '');
+        if (normalizedRole === 'intern') {
+            return res.status(200).json([]);
+        }
+
+        const visibilityQuery = getVisibilityQuery(req.user);
+        const visibleInternIds = await User.find(visibilityQuery).distinct('_id');
+
+        const requests = await Request.find({ 
+            $or: [
+                { user: { $in: visibleInternIds } },
+                { recipients: req.user._id }
+            ]
+        })
             .sort({ createdAt: -1 })
             .populate('user', 'name email designation department')
             .populate('recipients', 'name email')
@@ -169,12 +183,21 @@ export const updateRequestStatus = async (req, res) => {
             return res.status(404).json({ message: 'Request not found' });
         }
 
-        // Check if the current user is one of the recipients OR a Super Admin
+        // Check if the current user is one of the recipients OR a Super Admin OR their Reporting Manager
+        const normalizedRole = req.user.role?.toLowerCase().replace(/\s/g, '');
         const isRecipient = request.recipients.some(r => r && r.toString() === req.user._id.toString());
-        const isSuperAdmin = req.user.role === 'Super Admin';
+        const isSuperAdmin = normalizedRole === 'superadmin';
+        let isManagerOfUser = false;
 
-        if (!isRecipient && !isSuperAdmin) {
-            return res.status(403).json({ message: 'Not authorized to update this request. Only recipients and Super Admins can perform this action.' });
+        if (normalizedRole === 'reportingmanager' || normalizedRole === 'reportingofficer') {
+            const requestUser = await User.findById(request.user);
+            if (requestUser && requestUser.reportingManager?.toString() === req.user._id.toString()) {
+                isManagerOfUser = true;
+            }
+        }
+
+        if (!isRecipient && !isSuperAdmin && !isManagerOfUser) {
+            return res.status(403).json({ message: 'Not authorized to update this request. Only direct managers, explicit recipients, and Super Admins can perform this action.' });
         }
 
         request.status = status;

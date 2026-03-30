@@ -2779,6 +2779,11 @@ export default function Dashboard({ user, onLogout, setUser }) {
                         if ((item.name === 'Me' || item.name === 'My Finances') && (normalizedRole === 'superadmin' || normalizedRole === 'reportingmanager' || normalizedRole === 'reportingofficer')) {
                             return false;
                         }
+
+                        // Hide Inbox from Interns
+                        if (item.name === 'Inbox' && normalizedRole === 'intern') {
+                            return false;
+                        }
                         
                         return true;
                     }).map(item => (
