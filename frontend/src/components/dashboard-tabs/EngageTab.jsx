@@ -147,7 +147,7 @@ export default function EngageTab({
             )}
 
             {(engageTab === 'Create' && user?.role !== 'Intern') && (
-                <div style={{ display: 'grid', gridTemplateColumns: (user?.role === 'Reporting Officer' || user?.role === 'Super Admin') ? '1fr 1fr' : '1fr', gap: '2rem', alignItems: 'start' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: (user?.role === 'Reporting Manager' || user?.role === 'Super Admin') ? '1fr 1fr' : '1fr', gap: '2rem', alignItems: 'start' }}>
 
                     {/* Creation Bento Panel */}
                     <div style={bentoPanelStyle}>
@@ -337,7 +337,7 @@ export default function EngageTab({
                     </div>
 
                     {/* Announcement CTA (Admin) - Right Column */}
-                    {(user?.role === 'Reporting Officer' || user?.role === 'Super Admin') && (
+                    {(user?.role === 'Reporting Manager' || user?.role === 'Super Admin') && (
                         <div style={{ ...bentoPanelStyle, position: 'sticky', top: '1.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2.5rem 2rem', textAlign: 'center' }}>
                             {/* Gradient accent bar */}
                             <div style={{
@@ -455,7 +455,7 @@ export default function EngageTab({
                             </div>
 
                             {socialFeed.length > 0 ? socialFeed.map(activity => {
-                                const canDelete = user?._id === activity.author?._id || user?.role === 'Reporting Officer' || user?.role === 'Super Admin';
+                                const canDelete = user?._id === activity.author?._id || user?.role === 'Reporting Manager' || user?.role === 'Super Admin';
                                 const typeColors = {
                                     Post: { accent: '#f59e0b', bg: 'rgba(245, 158, 11, 0.08)' },
                                     Poll: { accent: '#06b6d4', bg: 'rgba(6, 182, 212, 0.08)' },

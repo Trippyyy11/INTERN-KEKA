@@ -791,20 +791,74 @@ export default function Dashboard({ user, onLogout, setUser }) {
     }, [attendanceLogs, statsPeriod, user]);
 
     const filteredAttendanceLogs = useMemo(() => {
+        const today = new Date();
+        today.setHours(23, 59, 59, 999);
+        const dates = [];
+        let startDate, endDate;
+
         if (attendancePeriod === '30 DAYS') {
-            const thirtyDaysAgo = new Date();
-            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-            return attendanceLogs.filter(log => new Date(log.date) >= thirtyDaysAgo);
+            startDate = new Date();
+            startDate.setDate(startDate.getDate() - 30);
+            startDate.setHours(0, 0, 0, 0);
+            endDate = today;
         } else {
             const monthsArr = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
             const monthIndex = monthsArr.indexOf(attendancePeriod);
             const year = new Date().getFullYear();
-            return attendanceLogs.filter(log => {
-                const d = new Date(log.date);
-                return d.getMonth() === monthIndex && d.getFullYear() === year;
-            });
+            startDate = new Date(year, monthIndex, 1);
+            endDate = new Date(year, monthIndex + 1, 0); // Last day of month
+            if (endDate > today) endDate = today;
         }
-    }, [attendanceLogs, attendancePeriod]);
+
+        // Generate full date list (descending order like logs usually are)
+        let curr = new Date(endDate);
+        curr.setHours(0, 0, 0, 0);
+        const limitDate = new Date(startDate);
+        limitDate.setHours(0, 0, 0, 0);
+
+        while (curr >= limitDate) {
+            const dateStr = curr.toLocaleDateString('en-CA'); // YYYY-MM-DD
+            
+            // Check for attendance log
+            const existingLog = attendanceLogs.find(log => {
+                const logDate = new Date(log.date).toLocaleDateString('en-CA');
+                return logDate === dateStr;
+            });
+
+            if (existingLog) {
+                dates.push(existingLog);
+            } else {
+                // Check for approved leave
+                const approvedLeave = myLeaves.find(leave => {
+                    if (leave.status !== 'Approved') return false;
+                    const start = new Date(leave.startDate).toLocaleDateString('en-CA');
+                    const end = new Date(leave.endDate).toLocaleDateString('en-CA');
+                    return dateStr >= start && dateStr <= end;
+                });
+
+                if (approvedLeave) {
+                    dates.push({
+                        _id: `leave-${dateStr}`,
+                        date: dateStr,
+                        isLeave: true,
+                        leaveType: approvedLeave.leaveType || approvedLeave.type,
+                        leaveReason: approvedLeave.message,
+                        status: 'Leave'
+                    });
+                } else {
+                    dates.push({
+                        _id: `empty-${dateStr}`,
+                        date: dateStr,
+                        isNoRecord: true,
+                        status: 'No Record'
+                    });
+                }
+            }
+            curr.setDate(curr.getDate() - 1);
+        }
+
+        return dates;
+    }, [attendanceLogs, attendancePeriod, myLeaves]);
 
     const fetchOrgConfigs = async () => {
         try {
@@ -1908,7 +1962,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                             <th style={{ padding: '1.25rem 1rem', textAlign: 'left', fontWeight: '800', width: '140px' }}>Status</th>
                                             <th style={{ padding: '1.25rem 1rem', textAlign: 'left', fontWeight: '800', minWidth: '200px' }}>Clock-In</th>
                                             <th style={{ padding: '1.25rem 1rem', textAlign: 'left', fontWeight: '800', minWidth: '200px' }}>Clock-Out</th>
-                                            <th style={{ padding: '1.25rem 1rem', textAlign: 'left', fontWeight: '800', width: '120px' }}>Total</th>
+                                            <th style={{ padding: '1.25rem 1rem', textAlign: '800', width: '120px' }}>Total</th>
                                             <th style={{ padding: '1.25rem 2rem', textAlign: 'right', fontWeight: '800' }}>Actions</th>
                                         </tr>
                                     </thead>
