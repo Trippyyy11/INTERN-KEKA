@@ -2628,12 +2628,13 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                         </div>
                                         <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '800', color: 'var(--text-main)' }}>Leave Quotas (Annual)</h3>
                                     </div>
-                                    <div className="grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.25rem' }}>
+                                    <div className="grid" style={{ gridTemplateColumns: 'repeat(5, 1fr)', gap: '1rem' }}>
                                         {[
-                                            { label: 'Paid Leave', key: 'paid', color: '#6366f1' },
+                                            { label: 'Annual Leave', key: 'annual', color: '#6366f1' },
+                                            { label: 'Paid Leave', key: 'paid', color: '#f59e0b' },
                                             { label: 'Sick Leave', key: 'sick', color: '#ef4444' },
                                             { label: 'Casual Leave', key: 'casual', color: '#10b981' },
-                                            { label: 'Comp Off', key: 'compOff', color: '#f59e0b' }
+                                            { label: 'Comp Off', key: 'compOff', color: '#3b82f6' }
                                         ].map(item => (
                                             <div key={item.key} style={{
                                                 background: isLightMode ? '#fff' : 'rgba(0,0,0,0.2)',

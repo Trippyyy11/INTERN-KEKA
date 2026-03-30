@@ -225,6 +225,7 @@ const RequestTab = ({
     ];
 
     const leaveTypeOptions = [
+        { label: 'Annual Leave', value: 'Annual', icon: '📅', balance: leaveStats?.balances?.['Annual']?.total - leaveStats?.balances?.['Annual']?.consumed },
         { label: 'Paid Leave', value: 'Paid', icon: '💰', balance: leaveStats?.balances?.['Paid']?.total - leaveStats?.balances?.['Paid']?.consumed },
         { label: 'Sick Leave', value: 'Sick', icon: '🤒', balance: leaveStats?.balances?.['Sick']?.total - leaveStats?.balances?.['Sick']?.consumed },
         { label: 'Casual Leave', value: 'Casual', icon: '✨', balance: leaveStats?.balances?.['Casual']?.total - leaveStats?.balances?.['Casual']?.consumed },

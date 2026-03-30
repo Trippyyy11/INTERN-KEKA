@@ -104,13 +104,13 @@ export const getLeaveStats = async (req, res) => {
         const user = req.user;
         const leaves = await Leave.find({ user: user._id }).sort({ startDate: -1 }).populate('approvedBy', 'name');
 
-        const quotas = user.leaveQuotas || { paid: 12, sick: 6, casual: 6, compOff: 0 };
-
+        const quotas = user.leaveQuotas || {};
         const summary = {
-            'Paid': { total: quotas.paid, consumed: 0 },
-            'Sick': { total: quotas.sick, consumed: 0 },
-            'Casual': { total: quotas.casual, consumed: 0 },
-            'Comp Off': { total: quotas.compOff, consumed: 0 },
+            'Annual': { total: quotas.annual || 0, consumed: 0 },
+            'Paid': { total: quotas.paid || 0, consumed: 0 },
+            'Sick': { total: quotas.sick || 0, consumed: 0 },
+            'Casual': { total: quotas.casual || 0, consumed: 0 },
+            'Comp Off': { total: quotas.compOff || 0, consumed: 0 },
             'Unpaid': { total: Infinity, consumed: 0 }
         };
 

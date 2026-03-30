@@ -747,10 +747,11 @@ const AdminTab = ({
 
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.25rem' }}>
                                 {[
-                                    { label: 'Paid Leave', key: 'paid', icon: ShieldCheck, color: '#6366f1', grad: 'linear-gradient(135deg,#6366f1,#818cf8)' },
+                                    { label: 'Annual Leave', key: 'annual', icon: Calendar, color: '#6366f1', grad: 'linear-gradient(135deg,#6366f1,#8b5cf6)' },
+                                    { label: 'Paid Leave', key: 'paid', icon: ShieldCheck, color: '#f59e0b', grad: 'linear-gradient(135deg,#f59e0b,#fbbf24)' },
                                     { label: 'Sick Leave', key: 'sick', icon: Heart, color: '#ef4444', grad: 'linear-gradient(135deg,#ef4444,#f87171)' },
                                     { label: 'Casual Leave', key: 'casual', icon: Users, color: '#10b981', grad: 'linear-gradient(135deg,#10b981,#34d399)' },
-                                    { label: 'Comp Off', key: 'compOff', icon: Clock, color: '#f59e0b', grad: 'linear-gradient(135deg,#f59e0b,#fbbf24)' }
+                                    { label: 'Comp Off', key: 'compOff', icon: Clock, color: '#3b82f6', grad: 'linear-gradient(135deg,#3b82f6,#60a5fa)' }
                                 ].map(q => (
                                     <div key={q.key} style={{
                                         background: isLightMode ? '#fff' : 'rgba(0,0,0,0.15)',

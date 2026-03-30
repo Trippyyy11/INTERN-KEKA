@@ -40,9 +40,9 @@ const LeaveTab = ({
         fontWeight: '800',
     };
 
-    // Helper to get color for leave types
     const getLeaveColor = (type) => {
         const colors = {
+            'Annual': '#6366f1',
             'Casual': '#ff00cc',
             'Paid': '#ffab00',
             'Sick': '#10b981',
@@ -191,7 +191,7 @@ const LeaveTab = ({
                 Leave Balances
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '1rem' }}>
-                {Object.entries(leaveStats.balances || {}).map(([key, data]) => {
+                {Object.entries(leaveStats.balances || {}).filter(([key]) => key !== 'Annual').map(([key, data]) => {
                     const color = getLeaveColor(key);
                     const isUnpaid = key === 'Unpaid';
                     const available = data.total - data.consumed;
@@ -200,38 +200,41 @@ const LeaveTab = ({
                     return (
                         <div key={key} style={{
                             ...bentoPanelStyle, position: 'relative', overflow: 'hidden', display: 'flex',
-                            flexDirection: 'column', gap: '1.5rem', paddingTop: '1.75rem'
+                            flexDirection: 'column', gap: '1rem', paddingTop: '1.25rem', padding: '1rem'
                         }}>
-                            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '4px', background: color, boxShadow: `0 2px 10px ${color}33` }}></div>
+                            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: color, boxShadow: `0 2px 10px ${color}33` }}></div>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <span style={{ fontSize: '0.95rem', fontWeight: '900', color: 'var(--text-main)', letterSpacing: '-0.3px' }}>{key} Leave</span>
+                                <span style={{ fontSize: '0.85rem', fontWeight: '900', color: 'var(--text-main)', letterSpacing: '-0.3px', whiteSpace: 'nowrap' }}>{key}</span>
                                 {!isUnpaid && (
-                                    <div onClick={() => { setSelectedType(key); setShowDetailModal(true); }} style={{ padding: '6px', borderRadius: '10px', background: isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.05)', cursor: 'pointer' }}>
-                                        <Info size={14} color="var(--primary)" />
+                                    <div onClick={() => { setSelectedType(key); setShowDetailModal(true); }} style={{ padding: '4px', borderRadius: '8px', background: isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.05)', cursor: 'pointer' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                                            <Info size={12} color="var(--primary)" />
+                                        </div>
                                     </div>
                                 )}
                             </div>
 
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', alignItems: 'center' }}>
                                 {!isUnpaid ? (
-                                    <div style={{ position: 'relative', width: '60px', height: '60px' }}>
+                                    <div style={{ position: 'relative', width: '50px', height: '50px' }}>
                                         <svg viewBox="0 0 36 36" style={{ transform: 'rotate(-90deg)', width: '100%', height: '100%' }}>
                                             <circle cx="18" cy="18" r="15.915" fill="transparent" stroke={isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.05)'} strokeWidth="4"></circle>
                                             <circle cx="18" cy="18" r="15.915" fill="transparent" stroke={color} strokeWidth="4" strokeDasharray={`${percentage} ${100 - percentage}`} strokeDashoffset="25" strokeLinecap="round" style={{ transition: 'stroke-dasharray 1s ease' }}></circle>
                                         </svg>
-                                        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', fontSize: '0.75rem', fontWeight: '900', color: 'var(--text-main)' }}>{available === Infinity ? '∞' : available}</div>
+                                        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', fontSize: '0.7rem', fontWeight: '900', color: 'var(--text-main)' }}>{available === Infinity ? '∞' : available}</div>
                                     </div>
                                 ) : (
-                                    <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: `${color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Info size={24} color={color} opacity={0.5} /></div>
+                                    <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: `${color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Info size={24} color={color} opacity={0.5} /></div>
                                 )}
-                                <div style={{ flex: 1 }}>
+                                <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
                                     {!isUnpaid ? (
                                         <>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}><span style={labelStyle}>Avail</span><span style={{ fontSize: '0.8rem', fontWeight: '900', color: 'var(--text-main)' }}>{available}d</span></div>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={labelStyle}>Used</span><span style={{ fontSize: '0.8rem', fontWeight: '800', color: 'var(--text-muted)' }}>{data.consumed}d</span></div>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}><span style={{...labelStyle, fontSize: '0.6rem'}}>Annual</span><span style={{ fontSize: '0.75rem', fontWeight: '900', color: 'var(--text-main)' }}>{data.total}d</span></div>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}><span style={{...labelStyle, fontSize: '0.6rem'}}>Used</span><span style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-muted)' }}>{data.consumed}d</span></div>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1px', paddingTop: '3px', borderTop: `1px solid ${isLightMode ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.04)'}` }}><span style={{ ...labelStyle, fontSize: '0.6rem', color: 'var(--primary)', fontWeight: '900' }}>Avail</span><span style={{ fontSize: '0.75rem', fontWeight: '900', color: 'var(--primary)' }}>{available}d</span></div>
                                         </>
                                     ) : (
-                                        <div style={{ textAlign: 'center' }}><div style={labelStyle}>Consumed</div><div style={{ fontSize: '1.25rem', fontWeight: '900', color: 'var(--text-main)' }}>{data.consumed}d</div></div>
+                                        <div style={{ textAlign: 'center' }}><div style={{...labelStyle, fontSize: '0.6rem'}}>Consumed</div><div style={{ fontSize: '1.2rem', fontWeight: '900', color: 'var(--text-main)' }}>{data.consumed}d</div></div>
                                     )}
                                 </div>
                             </div>

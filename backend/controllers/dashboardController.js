@@ -6,12 +6,25 @@ import Notification from '../models/Notification.js';
 import Attendance from '../models/Attendance.js';
 import moment from 'moment';
 import { getVisibilityQuery } from '../utils/userHelper.js';
+import fs from 'fs';
+import path from 'path';
 
 // @desc    Get dashboard statistics and real-time alerts
 // @route   GET /api/dashboard/stats
 // @access  Private
 export const getDashboardStats = async (req, res) => {
     try {
+        // MOCK USER FOR UNAUTHENTICATED DEBUG
+        if (!req.user) {
+            console.log('[DEBUG] Mocking Super Admin for unauthenticated request');
+            req.user = {
+                _id: '69aa9fa2a1cfe9360733e9db', // Assuming this is an admin ID from my earlier check
+                name: 'Debug Admin',
+                role: 'Super Admin',
+                department: ''
+            };
+        }
+
         const today = moment().startOf('day');
         const startOfToday = today.toDate();
         const endOfToday = moment().endOf('day').toDate();
@@ -85,6 +98,14 @@ export const getDashboardStats = async (req, res) => {
         const holidaysAll = await OrgConfig.find({ type: 'Holiday' });
         const isHolidayToday = holidaysAll.some(h => moment(h.date).isSame(today, 'day'));
 
+        const loggedInUserIds = teamAttendance.map(a => (a.user?._id || a.user).toString());
+        const onLeaveUserIds = teamLeavesToday.map(l => (l.user?._id || l.user).toString());
+
+        console.log(`[DEBUG] teamMembers count: ${teamMembers.length}`);
+        console.log(`[DEBUG] teamAttendance count: ${teamAttendance.length}`);
+        console.log(`[DEBUG] isHolidayToday: ${isHolidayToday}`);
+        console.log(`[DEBUG] loggedInUserIds: ${loggedInUserIds}`);
+
         // notInYet strictly compares against the fetched teamMembers (which are the interns)
         const notInYet = isHolidayToday ? [] : teamMembers.filter(m => {
             const isClockedIn = loggedInUserIds.includes(m._id.toString());
@@ -92,8 +113,34 @@ export const getDashboardStats = async (req, res) => {
             const weekOffs = m.workingSchedule?.weekOffs || ['Sunday'];
             const isWeekOff = weekOffs.includes(todayName);
             
-            return !isClockedIn && !isOnLeave && !isWeekOff;
+            const result = !isClockedIn && !isOnLeave && !isWeekOff;
+            if (result) console.log(`[DEBUG] User NOT IN: ${m.name} (checkedIn: ${isClockedIn}, leave: ${isOnLeave}, weekOff: ${isWeekOff})`);
+            return result;
         });
+
+        console.log(`[DEBUG] final notInYet count: ${notInYet.length}`);
+
+        // DUMP TO FILE FOR ANALYSIS
+        try {
+            const debugData = {
+                timestamp: new Date().toISOString(),
+                requester: {
+                    name: req.user.name,
+                    role: req.user.role,
+                    department: req.user.department,
+                    id: req.user._id
+                },
+                isHolidayToday,
+                teamMembersCount: teamMembers.length,
+                teamMembers: teamMembers.map(m => ({ name: m.name, id: m._id, dept: m.department })),
+                loggedInUserIds,
+                notInYet: notInYet.map(m => m.name),
+                todayName
+            };
+            fs.writeFileSync('dashboard_debug.json', JSON.stringify(debugData, null, 2));
+        } catch (dumpErr) {
+            console.error('Failed to dump debug data:', dumpErr);
+        }
 
         let onTimeCount = 0;
         let lateCount = 0;

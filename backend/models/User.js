@@ -37,6 +37,7 @@ const userSchema = new mongoose.Schema(
             weekOffs: [{ type: String, default: 'Sunday' }]
         },
         leaveQuotas: {
+            annual: { type: Number, default: 18 },
             paid: { type: Number, default: 12 },
             sick: { type: Number, default: 6 },
             casual: { type: Number, default: 6 },
