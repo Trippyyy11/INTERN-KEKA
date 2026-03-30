@@ -28,7 +28,7 @@ export const approveUser = async (req, res) => {
         if (user) {
             user.isApproved = true;
             await user.save();
-            await createAuditLog(req.user._id, 'USER_APPROVED', `Approved user: ${user.name} (${user.email})`, { targetModel: 'User', targetId: user._id, ipAddress: req.ip });
+            await createAuditLog(req.user._id, 'USER_APPROVED', `Approved user: ${user.name} (${user.email})`, { targetModel: 'User', targetId: user._id, ipAddress: req.ip, userName: req.user.name });
             res.json({ message: 'User approved successfully' });
         } else { res.status(404).json({ message: 'User not found' }); }
     } catch (error) { res.status(500).json({ message: error.message }); }
@@ -43,7 +43,7 @@ export const denyUser = async (req, res) => {
             user.isActive = false;
             user.email = `${user.email}_deleted_${Date.now()}`;
             await user.save();
-            await createAuditLog(req.user._id, 'USER_DENIED', `Denied user: ${user.name}`, { targetModel: 'User', targetId: user._id, ipAddress: req.ip });
+            await createAuditLog(req.user._id, 'USER_DENIED', `Denied user: ${user.name}`, { targetModel: 'User', targetId: user._id, ipAddress: req.ip, userName: req.user.name });
             res.json({ message: 'User denied and removed successfully (Soft Deleted)' });
         } else { res.status(404).json({ message: 'User not found' }); }
     } catch (error) { res.status(500).json({ message: error.message }); }
@@ -58,7 +58,7 @@ export const deleteUser = async (req, res) => {
             user.isActive = false;
             user.email = `${user.email}_deleted_${Date.now()}`;
             await user.save();
-            await createAuditLog(req.user._id, 'USER_DELETED', `Deleted user: ${user.name}`, { targetModel: 'User', targetId: user._id, ipAddress: req.ip });
+            await createAuditLog(req.user._id, 'USER_DELETED', `Deleted user: ${user.name}`, { targetModel: 'User', targetId: user._id, ipAddress: req.ip, userName: req.user.name });
             res.json({ message: 'User permanently deleted successfully (Soft Deleted)' });
         } else { res.status(404).json({ message: 'User not found' }); }
     } catch (error) { res.status(500).json({ message: error.message }); }
@@ -88,7 +88,7 @@ export const updateUserDetails = async (req, res) => {
             if (place) user.place = place;
 
             await user.save();
-            await createAuditLog(req.user._id, 'USER_UPDATED', `Updated details for: ${user.name}`, { targetModel: 'User', targetId: user._id, ipAddress: req.ip });
+            await createAuditLog(req.user._id, 'USER_UPDATED', `Updated details for: ${user.name}`, { targetModel: 'User', targetId: user._id, ipAddress: req.ip, userName: req.user.name });
             res.json(user);
         } else { res.status(404).json({ message: 'User not found' }); }
     } catch (error) { res.status(500).json({ message: error.message }); }
@@ -119,9 +119,20 @@ export const createUser = async (req, res) => {
         });
 
         await newUser.save();
-        await createAuditLog(req.user._id, 'USER_CREATED', `Created new user: ${name} (${email})`, { targetModel: 'User', targetId: newUser._id, ipAddress: req.ip });
+        await createAuditLog(req.user._id, 'USER_CREATED', `Created new user: ${name} (${email})`, { targetModel: 'User', targetId: newUser._id, ipAddress: req.ip, userName: req.user.name });
         
         res.status(201).json(newUser);
+    } catch (error) { res.status(500).json({ message: error.message }); }
+};
+
+// @desc    Get all potential reporting managers (Super Admin, Reporting Manager)
+export const getPotentialManagers = async (req, res) => {
+    try {
+        const managers = await User.find({
+            role: { $in: ['Super Admin', 'Reporting Manager'] },
+            isDeleted: { $ne: true }
+        }).select('name email role');
+        res.json(managers);
     } catch (error) { res.status(500).json({ message: error.message }); }
 };
 
@@ -138,7 +149,7 @@ export const updateUserPermissions = async (req, res) => {
         };
         
         await user.save();
-        await createAuditLog(req.user._id, 'PERMISSIONS_UPDATED', `Updated permissions for: ${user.name}`, { targetModel: 'User', targetId: user._id, ipAddress: req.ip });
+        await createAuditLog(req.user._id, 'PERMISSIONS_UPDATED', `Updated permissions for: ${user.name}`, { targetModel: 'User', targetId: user._id, ipAddress: req.ip, userName: req.user.name });
         res.json({ message: 'Permissions updated successfully', permissions: user.permissions });
     } catch (error) { res.status(500).json({ message: error.message }); }
 };
@@ -183,7 +194,7 @@ export const createOrgConfig = async (req, res) => {
             await Notification.insertMany(notifications);
         }
 
-        await createAuditLog(req.user._id, 'CONFIG_ADDED', `Added ${config.type}: ${config.name}`, { targetModel: 'OrgConfig', targetId: config._id, ipAddress: req.ip });
+        await createAuditLog(req.user._id, 'CONFIG_ADDED', `Added ${config.type}: ${config.name}`, { targetModel: 'OrgConfig', targetId: config._id, ipAddress: req.ip, userName: req.user.name });
         res.status(201).json(config);
     } catch (error) { res.status(500).json({ message: error.message }); }
 };
@@ -191,7 +202,7 @@ export const createOrgConfig = async (req, res) => {
 export const deleteOrgConfig = async (req, res) => {
     try {
         const config = await OrgConfig.findByIdAndDelete(req.params.id);
-        await createAuditLog(req.user._id, 'CONFIG_DELETED', `Deleted config: ${config?.name || req.params.id}`, { targetModel: 'OrgConfig', targetId: req.params.id, ipAddress: req.ip });
+        await createAuditLog(req.user._id, 'CONFIG_DELETED', `Deleted config: ${config?.name || req.params.id}`, { targetModel: 'OrgConfig', targetId: req.params.id, ipAddress: req.ip, userName: req.user.name });
         res.json({ message: 'Config deleted' });
     } catch (error) { res.status(500).json({ message: error.message }); }
 };
@@ -272,7 +283,7 @@ export const updateSettings = async (req, res) => {
             );
         }
 
-        await createAuditLog(req.user._id, 'SETTINGS_UPDATED', `Updated system settings`, { targetModel: 'Settings', ipAddress: req.ip });
+        await createAuditLog(req.user._id, 'SETTINGS_UPDATED', `Updated system settings`, { targetModel: 'Settings', ipAddress: req.ip, userName: req.user.name });
         res.json(settings);
     } catch (error) { res.status(500).json({ message: error.message }); }
 };

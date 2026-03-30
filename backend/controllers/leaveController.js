@@ -25,11 +25,13 @@ export const requestLeave = async (req, res) => {
 
         res.status(201).json(leave);
 
+        res.status(201).json(leave);
+        
         // Audit log: leave applied
-        await createAuditLog(req.user._id, 'LEAVE_APPLIED', `${req.user.name} applied for ${type} leave (${startDate} to ${endDate})`, { targetModel: 'Leave', targetId: leave._id });
+        await createAuditLog(req.user._id, 'LEAVE_APPLIED', `Applied for ${type} leave from ${new Date(startDate).toLocaleDateString()} to ${new Date(endDate).toLocaleDateString()}`, { targetModel: 'Leave', targetId: leave._id, userName: req.user.name });
 
         // Notify admins about new leave request
-        const admins = await User.find({ role: { $in: ['Reporting Officer', 'Super Admin'] } }).select('_id');
+        const admins = await User.find({ role: { $in: ['Reporting Manager', 'Super Admin'] } }).select('_id');
         for (const admin of admins) {
             await createNotification(
                 admin._id,
@@ -72,8 +74,9 @@ export const updateLeaveStatus = async (req, res) => {
 
             // Audit log
             const auditAction = status === 'Approved' ? 'LEAVE_APPROVED' : 'LEAVE_REJECTED';
-            await createAuditLog(req.user._id, auditAction, `${status} leave for user ${leave.user}`, { targetModel: 'Leave', targetId: leave._id });
-
+            const targetUser = await User.findById(leave.user).select('name');
+            await createAuditLog(req.user._id, auditAction, `${status} ${leave.type} leave for ${targetUser?.name || leave.user}`, { targetModel: 'Leave', targetId: leave._id, userName: req.user.name });
+            
             res.json(updatedLeave);
 
             // Notify the leave applicant about status change

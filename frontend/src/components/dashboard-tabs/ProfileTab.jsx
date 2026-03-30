@@ -222,13 +222,13 @@ const ProfileTab = ({
                             <div style={fieldValueStyle}>{user.phoneNumber || 'N/A'}</div>
                         )}
                     </div>
-                    <div style={fieldCardStyle}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                            <Briefcase size={12} color="var(--text-muted)" />
-                            <span style={fieldLabelStyle}>Employee ID</span>
+                        <div style={fieldCardStyle}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                <Briefcase size={12} color="var(--text-muted)" />
+                                <span style={fieldLabelStyle}>Intern ID</span>
+                            </div>
+                            <div style={fieldValueStyle}>{user.internId || 'N/A'}</div>
                         </div>
-                        <div style={fieldValueStyle}>KEKA-{user._id.substring(user._id.length - 6).toUpperCase()}</div>
-                    </div>
 
                     <div style={fieldCardStyle}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>

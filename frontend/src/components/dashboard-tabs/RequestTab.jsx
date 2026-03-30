@@ -403,18 +403,20 @@ const RequestTab = ({
                 </div>
 
                 {/* Date Range & Expected Times */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '0.5rem' }}>
-                    <div>
-                        <label style={labelStyle}>{requestType === 'Attendance Regularization' ? 'Target Date *' : 'From Date *'}</label>
-                        <input type="date" value={requestStartDate} onChange={e => {setRequestStartDate(e.target.value); if (requestType === 'Attendance Regularization') setRequestEndDate(e.target.value);}} style={inputStyle} />
-                    </div>
-                    {requestType !== 'Attendance Regularization' && (
+                {requestType !== 'Leave Cancellation' && (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '0.5rem' }}>
                         <div>
-                            <label style={labelStyle}>To Date *</label>
-                            <input type="date" value={requestEndDate} onChange={e => setRequestEndDate(e.target.value)} min={requestStartDate} style={inputStyle} />
+                            <label style={labelStyle}>{requestType === 'Attendance Regularization' ? 'Target Date *' : 'From Date *'}</label>
+                            <input type="date" value={requestStartDate} onChange={e => {setRequestStartDate(e.target.value); if (requestType === 'Attendance Regularization') setRequestEndDate(e.target.value);}} style={inputStyle} />
                         </div>
-                    )}
-                </div>
+                        {requestType !== 'Attendance Regularization' && (
+                            <div>
+                                <label style={labelStyle}>To Date *</label>
+                                <input type="date" value={requestEndDate} onChange={e => setRequestEndDate(e.target.value)} min={requestStartDate} style={inputStyle} />
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 {requestType === 'Attendance Regularization' && (
                     <div style={{

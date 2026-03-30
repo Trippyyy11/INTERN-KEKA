@@ -5,7 +5,7 @@ import { getInternUpdates, saveSlackToken, getTokenStatus } from '../controllers
 const router = express.Router();
 
 // All routes require Admin or Super Admin
-router.use(protect, authorize(['Reporting Officer', 'Super Admin']));
+router.use(protect, authorize(['Reporting Manager', 'Super Admin']));
 
 router.get('/intern-updates', getInternUpdates);
 router.put('/token', saveSlackToken);

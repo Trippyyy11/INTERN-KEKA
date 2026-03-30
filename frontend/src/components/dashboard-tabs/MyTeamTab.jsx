@@ -39,8 +39,8 @@ const MyTeamTab = ({
     };
 
     const handleDownloadCSV = () => {
-        const headers = ['Employee Name', 'ID', 'Department', 'Location', 'Job Title', 'Clock-In Time', 'Status'];
-        const filteredEmployees = [user, ...teammates].filter(e => {
+        const headers = ['Intern Name', 'ID', 'Department', 'Location', 'Job Title', 'Clock-In Time', 'Status'];
+        const filteredInterns = [user, ...teammates].filter(e => {
             const matchesSearch = e.name.toLowerCase().includes(searchTerm.toLowerCase());
             const att = dashData.teamAttendance?.find(a => a.user.toString() === e._id.toString());
             const isNotIn = dashData.notInYet?.some(m => m._id === e._id);
@@ -60,7 +60,7 @@ const MyTeamTab = ({
             return false;
         });
 
-        const rows = filteredEmployees.map(e => {
+        const rows = filteredInterns.map(e => {
             const att = dashData.teamAttendance?.find(a => a.user.toString() === e._id.toString());
             const isNotIn = dashData.notInYet?.some(m => m._id === e._id);
             let clockInStr = '09:00 AM';
@@ -88,7 +88,7 @@ const MyTeamTab = ({
         const encodedUri = encodeURI(csvContent);
         const link = document.createElement("a");
         link.setAttribute("href", encodedUri);
-        link.setAttribute("download", `employee_attendance_${moment().format('YYYY-MM-DD')}.csv`);
+        link.setAttribute("download", `intern_attendance_${moment().format('YYYY-MM-DD')}.csv`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -505,7 +505,7 @@ const MyTeamTab = ({
                                     <Users size={18} color="var(--primary)" />
                                 </div>
                                 <div>
-                                    <h2 style={{ fontSize: '1.25rem', margin: 0, fontWeight: '800', color: 'var(--text-main)', letterSpacing: '-0.3px' }}>View Employees</h2>
+                                    <h2 style={{ fontSize: '1.25rem', margin: 0, fontWeight: '800', color: 'var(--text-main)', letterSpacing: '-0.3px' }}>View Interns</h2>
                                     <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '500', marginTop: '0.2rem' }}>Detailed list and status filtering</p>
                                 </div>
                             </div>

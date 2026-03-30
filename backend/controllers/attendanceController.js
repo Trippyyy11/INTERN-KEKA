@@ -68,7 +68,7 @@ export const clockIn = async (req, res) => {
         }
 
         res.status(200).json(record);
-        await createAuditLog(req.user._id, 'CLOCK_IN', `Clocked in (${workingMode || 'On-site'})`, { targetModel: 'Attendance', targetId: record._id, ipAddress: req.ip });
+        await createAuditLog(req.user._id, 'CLOCK_IN', `Clocked in (${workingMode || 'On-site'})${message ? `: ${message}` : ''}`, { targetModel: 'Attendance', targetId: record._id, ipAddress: req.ip, userName: req.user.name });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -121,7 +121,7 @@ export const clockOut = async (req, res) => {
         await record.save();
 
         res.status(200).json(record);
-        await createAuditLog(req.user._id, 'CLOCK_OUT', `Clocked out (${diffHrs.toFixed(2)}h total)`, { targetModel: 'Attendance', targetId: record._id, ipAddress: req.ip });
+        await createAuditLog(req.user._id, 'CLOCK_OUT', `Clocked out after ${diffHrs.toFixed(2)}h${message ? `: ${message}` : ''}`, { targetModel: 'Attendance', targetId: record._id, ipAddress: req.ip, userName: req.user.name });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -339,7 +339,8 @@ export const updateAttendance = async (req, res) => {
         const updatedLog = await log.save();
 
         // Audit log: attendance edited
-        await createAuditLog(req.user._id, 'ATTENDANCE_EDITED', `Edited attendance for log ${log._id} (user: ${log.user})`, { targetModel: 'Attendance', targetId: log._id, ipAddress: req.ip });
+        const targetUser = await User.findById(log.user).select('name');
+        await createAuditLog(req.user._id, 'ATTENDANCE_EDITED', `Edited attendance for ${targetUser?.name || log.user} on ${log.date.toLocaleDateString()}`, { targetModel: 'Attendance', targetId: log._id, ipAddress: req.ip, userName: req.user.name });
 
         res.status(200).json(updatedLog);
 

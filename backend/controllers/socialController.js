@@ -1,6 +1,7 @@
 import SocialActivity from '../models/SocialActivity.js';
 import User from '../models/User.js';
 import Notification from '../models/Notification.js';
+import { createAuditLog } from './auditController.js';
 
 // @desc    Get all social activities
 // @route   GET /api/social
@@ -74,6 +75,11 @@ export const createActivity = async (req, res) => {
         if (notifications.length > 0) {
             await Notification.insertMany(notifications);
         }
+        
+        // Audit log
+        let details = `Created a new ${type.toLowerCase()}`;
+        if (type === 'Praise') details = `Recognized ${activity.praiseData.recipient.name}`;
+        await createAuditLog(req.user._id, 'ANNOUNCEMENT_POSTED', details, { targetModel: 'SocialActivity', targetId: activity._id, userName: req.user.name });
 
         res.status(201).json(activity);
     } catch (error) {
@@ -135,7 +141,7 @@ export const deleteActivity = async (req, res) => {
 
         // Only the original author, Admin, or Super Admin can delete
         const isAuthor = activity.author._id.toString() === req.user._id.toString();
-        const isAdmin = req.user.role === 'Reporting Officer' || req.user.role === 'Super Admin';
+        const isAdmin = req.user.role === 'Reporting Manager' || req.user.role === 'Super Admin';
 
         if (!isAuthor && !isAdmin) {
             return res.status(403).json({ message: 'Not authorized to delete this activity.' });

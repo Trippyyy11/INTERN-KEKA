@@ -255,8 +255,8 @@ const AuditTab = ({ isLightMode }) => {
                                         </span>
                                     </td>
                                     <td style={{ padding: '0.85rem 0.5rem', fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-main)' }}>
-                                        {log.user?.name || 'System'}
-                                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: '400' }}>{log.user?.email}</div>
+                                        {log.userName || log.user?.name || 'System'}
+                                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: '400' }}>{log.user?.email || (log.userName ? 'Action Logged' : 'N/A')}</div>
                                     </td>
                                     <td style={{ padding: '0.85rem 0.5rem', fontSize: '0.82rem', color: 'var(--text-muted)', maxWidth: '300px' }}>
                                         {log.details}

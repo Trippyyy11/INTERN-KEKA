@@ -21,6 +21,7 @@ const auditLogSchema = new mongoose.Schema(
         targetModel: { type: String }, // 'User', 'Attendance', 'Leave', 'Request', etc.
         targetId: { type: mongoose.Schema.Types.ObjectId },
         details: { type: String, required: true }, // Human-readable description
+        userName: { type: String }, // Name of the person who performed the action
         ipAddress: { type: String },
         previousValues: { type: mongoose.Schema.Types.Mixed },
         newValues: { type: mongoose.Schema.Types.Mixed }

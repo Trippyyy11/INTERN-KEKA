@@ -22,7 +22,7 @@ export const getVisibilityQuery = (requestingUser) => {
         return query;
     }
 
-    if (normalizedRole === 'reportingmanager' || normalizedRole === 'reportingofficer') {
+    if (normalizedRole === 'reportingmanager') {
         // Managers see only the interns that report directly to them
         query.reportingManager = requestingUser._id;
         return query;

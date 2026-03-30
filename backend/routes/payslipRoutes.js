@@ -5,9 +5,9 @@ import { protect, authorize } from '../middlewares/authMiddleware.js';
 const router = express.Router();
 
 router.get('/', protect, getMyPayslips);
-router.get('/all', protect, authorize(['Super Admin', 'Reporting Officer']), getAllPayslips);
-router.post('/', protect, authorize(['Super Admin', 'Reporting Officer']), createPayslip);
-router.put('/:id', protect, authorize(['Super Admin', 'Reporting Officer']), updatePayslipStatus);
+router.get('/all', protect, authorize(['Super Admin', 'Reporting Manager']), getAllPayslips);
+router.post('/', protect, authorize(['Super Admin', 'Reporting Manager']), createPayslip);
+router.put('/:id', protect, authorize(['Super Admin', 'Reporting Manager']), updatePayslipStatus);
 
 export default router;
 

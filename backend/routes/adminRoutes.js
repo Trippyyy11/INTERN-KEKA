@@ -12,7 +12,8 @@ import {
     getSettings,
     updateSettings,
     createUser,
-    updateUserPermissions
+    updateUserPermissions,
+    getPotentialManagers
 } from '../controllers/adminController.js';
 import { protect, authorize, hasPermission } from '../middlewares/authMiddleware.js';
 
@@ -26,7 +27,7 @@ router.get('/org-users', getUsers); // Accessible to all authenticated users for
 // Users with canCreateUsers permission OR Reporting Manager OR Super Admin can access GET /users
 router.get('/users', (req, res, next) => {
     const role = req.user?.role?.toLowerCase().replace(/\s/g, '');
-    if (role === 'superadmin' || role === 'reportingmanager' || role === 'reportingofficer' || req.user?.permissions?.canCreateUsers) {
+    if (role === 'superadmin' || role === 'reportingmanager' || req.user?.permissions?.canCreateUsers) {
         return next();
     }
     return res.status(403).json({ message: 'Not authorized for this route' });
@@ -34,6 +35,7 @@ router.get('/users', (req, res, next) => {
 
 // Only specific roles or permissions can create users
 router.post('/users', hasPermission('canCreateUsers'), createUser);
+router.get('/potential-managers', hasPermission('canCreateUsers'), getPotentialManagers);
 
 // Only Super Admins can update permissions
 router.patch('/users/:id/permissions', authorize(['Super Admin']), updateUserPermissions);
