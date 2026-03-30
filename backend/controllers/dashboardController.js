@@ -81,11 +81,19 @@ export const getDashboardStats = async (req, res) => {
             user: { $in: teamMemberIds }
         });
 
-        const loggedInUserIds = teamAttendance.map(a => a.user.toString());
-        const onLeaveUserIds = teamLeavesToday.map(l => l.user._id.toString());
-        
+        const todayName = moment().format('dddd');
+        const holidaysAll = await OrgConfig.find({ type: 'Holiday' });
+        const isHolidayToday = holidaysAll.some(h => moment(h.date).isSame(today, 'day'));
+
         // notInYet strictly compares against the fetched teamMembers (which are the interns)
-        const notInYet = teamMembers.filter(m => !loggedInUserIds.includes(m._id.toString()) && !onLeaveUserIds.includes(m._id.toString()));
+        const notInYet = isHolidayToday ? [] : teamMembers.filter(m => {
+            const isClockedIn = loggedInUserIds.includes(m._id.toString());
+            const isOnLeave = onLeaveUserIds.includes(m._id.toString());
+            const weekOffs = m.workingSchedule?.weekOffs || ['Sunday'];
+            const isWeekOff = weekOffs.includes(todayName);
+            
+            return !isClockedIn && !isOnLeave && !isWeekOff;
+        });
 
         let onTimeCount = 0;
         let lateCount = 0;

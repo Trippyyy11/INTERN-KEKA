@@ -63,12 +63,15 @@ export default function EngageTab({
     const [viewSubTab, setViewSubTab] = React.useState('Announcements');
 
     const bentoPanelStyle = {
-        background: isLightMode ? '#ffffff' : 'rgba(255,255,255,0.03)',
-        borderRadius: '24px',
-        border: isLightMode ? '1px solid #e2e8f0' : '1px solid rgba(255,255,255,0.05)',
-        boxShadow: isLightMode ? '0 4px 20px rgba(0,0,0,0.03)' : 'none',
+        background: isLightMode ? '#ffffff' : 'rgba(255,255,255,0.035)',
+        borderRadius: '28px',
+        border: isLightMode ? '1px solid #e2e8f0' : '1px solid rgba(255,255,255,0.06)',
+        boxShadow: isLightMode ? '0 10px 40px rgba(0,0,0,0.04)' : '0 15px 50px rgba(0,0,0,0.25)',
         position: 'relative',
-        overflow: 'hidden'
+        overflow: 'hidden',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
     };
 
     const inputWrapperStyle = {
@@ -430,172 +433,196 @@ export default function EngageTab({
 
                     {/* Social Feed Tab */}
                     {viewSubTab === 'Social Feed' && (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: '800px', margin: '0 auto', width: '100%', animation: 'fadeIn 0.3s ease-out' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
-                                <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'linear-gradient(135deg, rgba(var(--primary-rgb), 0.15), rgba(var(--primary-rgb), 0.05))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                    <MessageSquarePlus size={16} color="var(--primary)" />
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', maxWidth: '850px', margin: '0 auto', width: '100%', animation: 'fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem', padding: '0 0.5rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                    <div style={{ width: '42px', height: '42px', borderRadius: '14px', background: 'rgba(var(--primary-rgb), 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(var(--primary-rgb), 0.05)' }}>
+                                        <MessageSquarePlus size={20} color="var(--primary)" />
+                                    </div>
+                                    <div>
+                                        <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '900', color: 'var(--text-main)', letterSpacing: '-0.5px' }}>Social Feed</h3>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '2px' }}>
+                                            <span style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-muted)' }}>Latest updates from your team</span>
+                                            <span style={{ width: '4px', height: '4px', borderRadius: '50%', background: 'var(--text-muted)', opacity: 0.3 }}></span>
+                                            <span style={{ fontSize: '0.75rem', fontWeight: '800', color: 'var(--primary)' }}>{socialFeed.length} Activities</span>
+                                        </div>
+                                    </div>
                                 </div>
-                                <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '800', color: 'var(--text-main)', letterSpacing: '0.5px' }}>Social Feed</h3>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#22c55e', boxShadow: '0 0 8px #22c55e' }}></div>
+                                    <span style={{ fontSize: '0.75rem', fontWeight: '800', color: 'var(--text-muted)', letterSpacing: '0.5px' }}>LIVE FEED</span>
+                                </div>
                             </div>
 
                             {socialFeed.length > 0 ? socialFeed.map(activity => {
                                 const canDelete = user?._id === activity.author?._id || user?.role === 'Reporting Officer' || user?.role === 'Super Admin';
+                                const typeColors = {
+                                    Post: { accent: '#f59e0b', bg: 'rgba(245, 158, 11, 0.08)' },
+                                    Poll: { accent: '#06b6d4', bg: 'rgba(6, 182, 212, 0.08)' },
+                                    Praise: { accent: '#6366f1', bg: 'rgba(99, 102, 241, 0.08)' }
+                                };
+                                const colors = typeColors[activity.type] || typeColors.Post;
 
+                                return (
+                                    <div 
+                                        key={activity._id} 
+                                        style={{ ...bentoPanelStyle, padding: '2.5rem', display: 'flex', gap: '1.75rem' }}
+                                        onMouseOver={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = isLightMode ? '0 20px 40px rgba(0,0,0,0.06)' : '0 25px 60px rgba(0,0,0,0.35)'; }}
+                                        onMouseOut={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = bentoPanelStyle.boxShadow; }}
+                                    >
+                                        {/* Type Accent Bar */}
+                                        <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '5px', background: colors.accent, opacity: 0.8 }}></div>
 
-                            return (
-                                <div key={activity._id} style={{ ...bentoPanelStyle, padding: '2rem', display: 'flex', gap: '1.5rem' }}>
-                                    {canDelete && (
-                                        <button
-                                            onClick={() => {
-                                                showAlert('Are you sure you want to delete this activity?', 'confirm', async () => {
-                                                    try {
-                                                        await api.delete(`/social/${activity._id}`);
-                                                        showAlert('Activity deleted successfully.', 'info');
-                                                        fetchPublicData();
-                                                    } catch (err) {
-                                                        showAlert('Failed to delete activity.', 'error');
-                                                    }
-                                                });
-                                            }}
-                                            style={{
-                                                position: 'absolute', top: '1.5rem', right: '1.5rem', width: '32px', height: '32px', borderRadius: '10px',
-                                                background: isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.06)', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s'
-                                            }}
-                                            title="Delete Activity"
-                                            onMouseOver={e => { e.currentTarget.style.background = '#f43f5e'; e.currentTarget.style.color = '#fff' }}
-                                            onMouseOut={e => { e.currentTarget.style.background = isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = 'var(--text-muted)' }}
-                                        >
-                                            <Trash2 size={16} />
-                                        </button>
-                                    )}
-
-                                    {/* Avatar Column */}
-                                    <div style={{ flexShrink: 0 }}>
-                                        <div style={{
-                                            width: '48px', height: '48px', borderRadius: '16px', overflow: 'hidden',
-                                            background: 'linear-gradient(135deg, var(--primary), rgba(var(--primary-rgb), 0.7))',
-                                            display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '1.1rem', fontWeight: '800'
-                                        }}>
-                                            {activity.author?.avatar ? <img src={activity.author.avatar} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : activity.author?.name?.substring(0, 2).toUpperCase()}
-                                        </div>
-                                    </div>
-
-                                    {/* Content Column */}
-                                    <div style={{ flex: 1, paddingRight: '2.5rem' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
-                                            <div style={{ fontWeight: '800', fontSize: '1.05rem', color: 'var(--text-main)' }}>{activity.author?.name}</div>
-                                            <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: 'var(--text-muted)', opacity: 0.5 }}></div>
-                                            <div style={{ fontSize: '0.8rem', fontWeight: '600', color: 'var(--text-muted)' }}>{moment(activity.createdAt).fromNow()}</div>
-                                            <div style={{ flex: 1 }}></div>
-                                            <div style={{
-                                                fontSize: '0.65rem', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.75px', padding: '0.3rem 0.75rem', borderRadius: '10px',
-                                                background: activity.type === 'Post' ? 'rgba(245, 158, 11, 0.1)' : (activity.type === 'Poll' ? 'rgba(6, 182, 212, 0.1)' : 'rgba(59, 130, 246, 0.1)'),
-                                                color: activity.type === 'Post' ? '#f59e0b' : (activity.type === 'Poll' ? '#06b6d4' : '#3b82f6')
-                                            }}>{activity.type}</div>
-                                        </div>
-
-                                        {/* POST Content */}
-                                        {activity.type === 'Post' && (
-                                            <div style={{ fontSize: '0.95rem', color: 'var(--text-main)', lineHeight: '1.6', whiteSpace: 'pre-wrap', fontWeight: '500' }}>
-                                                {activity.content}
-                                            </div>
+                                        {canDelete && (
+                                            <button
+                                                onClick={() => {
+                                                    showAlert('Are you sure you want to delete this activity?', 'confirm', async () => {
+                                                        try { await api.delete(`/social/${activity._id}`); showAlert('Activity deleted successfully.', 'info'); fetchPublicData(); } 
+                                                        catch (err) { showAlert('Failed to delete activity.', 'error'); }
+                                                    });
+                                                }}
+                                                style={{
+                                                    position: 'absolute', top: '1.5rem', right: '1.5rem', width: '36px', height: '36px', borderRadius: '12px',
+                                                    background: isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.06)', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', zIndex: 10
+                                                }}
+                                                onMouseOver={e => { e.currentTarget.style.background = '#f43f5e'; e.currentTarget.style.color = '#fff'; e.currentTarget.style.transform = 'rotate(90deg)'; }}
+                                                onMouseOut={e => { e.currentTarget.style.background = isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.transform = 'rotate(0deg)'; }}
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
                                         )}
 
-                                        {/* PRAISE Content */}
-                                        {activity.type === 'Praise' && (
+                                        {/* Avatar Column */}
+                                        <div style={{ flexShrink: 0 }}>
                                             <div style={{
-                                                background: isLightMode ? '#f8fafc' : 'rgba(0,0,0,0.15)', border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.06)'}`,
-                                                borderRadius: '20px', padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1.5rem', marginTop: '0.5rem'
+                                                width: '56px', height: '56px', borderRadius: '18px', overflow: 'hidden',
+                                                background: 'linear-gradient(135deg, var(--primary), rgba(var(--primary-rgb), 0.7))',
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '1.2rem', fontWeight: '900',
+                                                boxShadow: '0 8px 16px rgba(var(--primary-rgb), 0.2)'
                                             }}>
-                                                <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: 'rgba(59, 130, 246, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                    <Award size={32} color="#3b82f6" />
-                                                </div>
+                                                {activity.author?.avatar ? <img src={activity.author.avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : activity.author?.name?.substring(0, 2).toUpperCase()}
+                                            </div>
+                                        </div>
+
+                                        {/* Content Column */}
+                                        <div style={{ flex: 1, paddingRight: '1rem' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', marginBottom: '1.5rem' }}>
                                                 <div>
-                                                    <div style={{ fontSize: '1rem', color: 'var(--text-main)', fontWeight: '500', marginBottom: '0.4rem' }}>
-                                                        Recognized <span style={{ fontWeight: '800', color: '#3b82f6' }}>{activity.praiseData?.recipient?.name}</span>
-                                                    </div>
-                                                    <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', lineHeight: '1.5', fontStyle: 'italic', fontWeight: '500' }}>
-                                                        "{activity.content}"
+                                                    <div style={{ fontWeight: '900', fontSize: '1.1rem', color: 'var(--text-main)', letterSpacing: '-0.3px' }}>{activity.author?.name}</div>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '2px' }}>
+                                                        <div style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-muted)' }}>{moment(activity.createdAt).fromNow()}</div>
+                                                        <span style={{ width: '3px', height: '3px', borderRadius: '50%', background: 'var(--text-muted)', opacity: 0.3 }}></span>
+                                                        <div style={{ fontSize: '0.65rem', fontWeight: '900', color: colors.accent, background: colors.bg, padding: '2px 8px', borderRadius: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{activity.type}</div>
                                                     </div>
                                                 </div>
                                             </div>
-                                        )}
 
-                                        {/* POLL Content */}
-                                        {activity.type === 'Poll' && (
-                                            <div style={{ marginTop: '0.5rem' }}>
-                                                <div style={{ fontSize: '1.05rem', fontWeight: '800', color: 'var(--text-main)', marginBottom: '1.5rem', lineHeight: '1.4' }}>
-                                                    {activity.pollData?.question}
+                                            {/* POST Content */}
+                                            {activity.type === 'Post' && (
+                                                <div style={{ fontSize: '1.05rem', color: 'var(--text-main)', lineHeight: '1.7', whiteSpace: 'pre-wrap', fontWeight: '500', letterSpacing: '-0.1px' }}>
+                                                    {activity.content}
                                                 </div>
-                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                                                    {activity.pollData?.options?.map(opt => {
-                                                        const totalVotes = activity.pollData.options.reduce((sum, o) => sum + o.votes.length, 0);
-                                                        const percent = totalVotes === 0 ? 0 : Math.round((opt.votes.length / totalVotes) * 100);
-                                                        const hasVoted = opt.votes.includes(user?._id);
+                                            )}
 
-                                                        return (
-                                                            <div
-                                                                key={opt._id}
-                                                                style={{
-                                                                    position: 'relative',
-                                                                    background: isLightMode ? '#ffffff' : 'rgba(255,255,255,0.02)',
-                                                                    border: hasVoted ? `2px solid var(--primary)` : `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.08)'}`,
-                                                                    borderRadius: '16px',
-                                                                    padding: '1rem 1.25rem',
-                                                                    cursor: 'pointer',
-                                                                    overflow: 'hidden',
-                                                                    boxShadow: hasVoted ? '0 4px 12px rgba(var(--primary-rgb), 0.15)' : (isLightMode ? '0 2px 6px rgba(0,0,0,0.02)' : 'none'),
-                                                                    transition: 'all 0.2s'
-                                                                }}
-                                                                onClick={async () => {
-                                                                    try {
-                                                                        await api.post(`/social/${activity._id}/vote`, { optionId: opt._id });
-                                                                        fetchPublicData();
-                                                                    } catch (err) {
-                                                                        showAlert('Failed to vote', 'error');
-                                                                    }
-                                                                }}
-                                                                onMouseOver={e => !hasVoted && (e.currentTarget.style.borderColor = 'var(--text-muted)')}
-                                                                onMouseOut={e => !hasVoted && (e.currentTarget.style.borderColor = isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.08)')}
-                                                            >
-                                                                <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: `${percent}%`, background: hasVoted ? 'rgba(var(--primary-rgb), 0.15)' : (isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.05)'), zIndex: 0, transition: 'width 0.5s cubic-bezier(0.4, 0, 0.2, 1)' }}></div>
+                                            {/* PRAISE Content */}
+                                            {activity.type === 'Praise' && (
+                                                <div style={{
+                                                    background: isLightMode ? 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)' : 'linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(99, 102, 241, 0.03) 100%)', 
+                                                    border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(99, 102, 241, 0.15)'}`,
+                                                    borderRadius: '24px', padding: '2rem', display: 'flex', alignItems: 'center', gap: '1.75rem', marginTop: '0.5rem',
+                                                    position: 'relative', overflow: 'hidden'
+                                                }}>
+                                                    {/* Decorative background icon */}
+                                                    <Award size={120} color={colors.accent} style={{ position: 'absolute', right: '-20px', bottom: '-20px', opacity: 0.05, transform: 'rotate(-15deg)' }} />
+                                                    
+                                                    <div style={{ width: '64px', height: '64px', borderRadius: '20px', background: 'rgba(99, 102, 241, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 20px rgba(99, 102, 241, 0.15)' }}>
+                                                        <Award size={36} color="#6366f1" />
+                                                    </div>
+                                                    <div style={{ position: 'relative', zIndex: 1 }}>
+                                                        <div style={{ fontSize: '1.1rem', color: 'var(--text-main)', fontWeight: '600', marginBottom: '0.6rem' }}>
+                                                            Recognized <span style={{ fontWeight: '900', color: '#6366f1', textDecoration: 'underline decoration-thickness-2' }}>{activity.praiseData?.recipient?.name}</span>
+                                                        </div>
+                                                        <div style={{ fontSize: '1rem', color: 'var(--text-muted)', lineHeight: '1.6', fontStyle: 'italic', fontWeight: '500', color: isLightMode ? '#475569' : '#94a3b8' }}>
+                                                            "{activity.content}"
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
 
-                                                                <div style={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                                    <span style={{ fontWeight: hasVoted ? '800' : '600', color: hasVoted ? 'var(--primary)' : 'var(--text-main)', fontSize: '0.95rem' }}>{opt.text}</span>
-                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                                                        {hasVoted && <CheckCircle2 size={16} color="var(--primary)" />}
-                                                                        <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '700' }}>
-                                                                            {percent}% <span style={{ opacity: 0.5 }}>({opt.votes.length})</span>
-                                                                        </span>
+                                            {/* POLL Content */}
+                                            {activity.type === 'Poll' && (
+                                                <div style={{ marginTop: '0.5rem' }}>
+                                                    <div style={{ fontSize: '1.15rem', fontWeight: '900', color: 'var(--text-main)', marginBottom: '2rem', lineHeight: '1.4', letterSpacing: '-0.4px' }}>
+                                                        {activity.pollData?.question}
+                                                    </div>
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                                        {activity.pollData?.options?.map(opt => {
+                                                            const totalVotes = activity.pollData.options.reduce((sum, o) => sum + o.votes.length, 0);
+                                                            const percent = totalVotes === 0 ? 0 : Math.round((opt.votes.length / totalVotes) * 100);
+                                                            const hasVoted = opt.votes.includes(user?._id);
+
+                                                            return (
+                                                                <div
+                                                                    key={opt._id}
+                                                                    style={{
+                                                                        position: 'relative',
+                                                                        background: isLightMode ? '#ffffff' : 'rgba(255,255,255,0.02)',
+                                                                        border: hasVoted ? `2px solid #06b6d4` : `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.08)'}`,
+                                                                        borderRadius: '18px',
+                                                                        padding: '1.25rem 1.5rem',
+                                                                        cursor: 'pointer',
+                                                                        overflow: 'hidden',
+                                                                        boxShadow: hasVoted ? '0 8px 24px rgba(6, 182, 212, 0.2)' : 'none',
+                                                                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+                                                                    }}
+                                                                    onClick={async () => {
+                                                                        try { await api.post(`/social/${activity._id}/vote`, { optionId: opt._id }); fetchPublicData(); } 
+                                                                        catch (err) { showAlert('Failed to vote', 'error'); }
+                                                                    }}
+                                                                    onMouseOver={e => !hasVoted && (e.currentTarget.style.borderColor = '#06b6d4')}
+                                                                    onMouseOut={e => !hasVoted && (e.currentTarget.style.borderColor = isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.08)')}
+                                                                >
+                                                                    <div style={{ 
+                                                                        position: 'absolute', top: 0, left: 0, bottom: 0, 
+                                                                        width: `${percent}%`, 
+                                                                        background: hasVoted ? 'linear-gradient(90deg, rgba(6, 182, 212, 0.2), rgba(6, 182, 212, 0.1))' : (isLightMode ? 'linear-gradient(90deg, #f1f5f9, #f8fafc)' : 'rgba(255,255,255,0.04)'), 
+                                                                        zIndex: 0, transition: 'width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)' 
+                                                                    }}></div>
+
+                                                                    <div style={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                                                            <span style={{ fontWeight: hasVoted ? '900' : '700', color: hasVoted ? '#06b6d4' : 'var(--text-main)', fontSize: '1rem' }}>{opt.text}</span>
+                                                                            {hasVoted && <div style={{ background: '#06b6d4', padding: '2px 8px', borderRadius: '6px', color: '#fff', fontSize: '0.6rem', fontWeight: '900', letterSpacing: '0.5px' }}>VOTED</div>}
+                                                                        </div>
+                                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                                                            <span style={{ fontSize: '1rem', color: hasVoted ? '#06b6d4' : 'var(--text-muted)', fontWeight: '900' }}>{percent}%</span>
+                                                                            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '600', opacity: 0.6 }}>{opt.votes.length} votes</span>
+                                                                        </div>
                                                                     </div>
                                                                 </div>
-                                                            </div>
-                                                        );
-                                                    })}
+                                                            );
+                                                        })}
+                                                    </div>
                                                 </div>
-                                                <div style={{ fontSize: '0.75rem', fontWeight: '600', color: 'var(--text-muted)', marginTop: '1rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                                                    <BarChart3 size={14} /> Total Votes: {activity.pollData.options.reduce((sum, o) => sum + o.votes.length, 0)}
-                                                </div>
-                                            </div>
-                                        )}
+                                            )}
+                                        </div>
                                     </div>
+                                );
+                            }) : (
+                                <div style={{ ...bentoPanelStyle, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '5rem 2rem', textAlign: 'center' }}>
+                                    <div style={{
+                                        width: '90px', height: '90px', borderRadius: '30px', background: isLightMode ? '#f8fafc' : 'rgba(255,255,255,0.03)',
+                                        border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.06)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        marginBottom: '2rem', boxShadow: '0 15px 35px rgba(0,0,0,0.05)'
+                                    }}>
+                                        <MessageSquarePlus size={36} style={{ color: 'var(--text-muted)', opacity: 0.4 }} />
+                                    </div>
+                                    <h3 style={{ fontSize: '1.5rem', fontWeight: '900', color: 'var(--text-main)', margin: '0 0 0.75rem 0', letterSpacing: '-0.5px' }}>Your Feed is Empty</h3>
+                                    <p style={{ fontSize: '1rem', maxWidth: '340px', margin: 0, color: 'var(--text-muted)', lineHeight: '1.6', fontWeight: '500' }}>
+                                        Be the first to share an update, start a poll, or recognize a peer's hard work!
+                                    </p>
                                 </div>
-                            );
-                        }) : (
-                            <div style={{ ...bentoPanelStyle, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '4rem', textAlign: 'center' }}>
-                                <div style={{
-                                    width: '80px', height: '80px', borderRadius: '24px', background: isLightMode ? '#f8fafc' : 'rgba(255,255,255,0.03)',
-                                    border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.06)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    marginBottom: '1.5rem', boxShadow: '0 10px 25px rgba(0,0,0,0.05)'
-                                }}>
-                                    <MessageSquarePlus size={32} style={{ color: 'var(--text-muted)', opacity: 0.5 }} />
-                                </div>
-                                <h3 style={{ fontSize: '1.3rem', fontWeight: '800', color: 'var(--text-main)', margin: '0 0 0.5rem 0' }}>No activity yet</h3>
-                                <p style={{ fontSize: '0.95rem', maxWidth: '300px', margin: 0, color: 'var(--text-muted)', lineHeight: '1.5', fontWeight: '500' }}>
-                                    Be the first to post, create a poll, or praise a peer!
-                                </p>
-                            </div>
-                        )}
+                            )}
                         </div>
                     )}
                 </div>

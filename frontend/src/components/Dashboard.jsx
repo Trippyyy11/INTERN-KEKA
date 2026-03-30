@@ -1259,6 +1259,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                 user={user}
                                 getStatusStyle={getStatusStyle}
                                 isLightMode={isLightMode}
+                                holidays={dashData.holidays}
                             />
                         )}
 

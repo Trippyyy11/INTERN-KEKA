@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Info, Calendar, TrendingUp, PieChart, X } from 'lucide-react';
+import { Info, Calendar, TrendingUp, PieChart, X, FileText } from 'lucide-react';
 
 const LeaveTab = ({
     leaveStats,
@@ -19,166 +19,220 @@ const LeaveTab = ({
         padding: '1.5rem',
         boxShadow: isLightMode ? '0 4px 24px rgba(0,0,0,0.04)' : '0 4px 24px rgba(0,0,0,0.2)',
         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-        display: 'flex',
-        flexDirection: 'column',
     };
 
     const sectionTitleStyle = {
-        fontSize: '1.05rem',
-        fontWeight: '800',
-        letterSpacing: '-0.3px',
+        fontSize: '1.1rem',
+        fontWeight: '900',
+        letterSpacing: '-0.5px',
         color: 'var(--text-main)',
         marginBottom: '1.25rem',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.75rem'
     };
 
     const labelStyle = {
         fontSize: '0.7rem',
         color: 'var(--text-muted)',
         textTransform: 'uppercase',
-        letterSpacing: '0.5px',
-        fontWeight: '700',
+        letterSpacing: '1px',
+        fontWeight: '800',
     };
 
+    // Helper to get color for leave types
+    const getLeaveColor = (type) => {
+        const colors = {
+            'Casual': '#ff00cc',
+            'Paid': '#ffab00',
+            'Sick': '#10b981',
+            'Comp Off': '#3b82f6',
+            'Unpaid': '#94a3b8',
+            'Half Day': '#8b5cf6',
+            'Leave Application': '#ffab00',
+            'Leave Cancellation': '#ef4444'
+        };
+        return colors[type] || 'var(--primary)';
+    };
+
+    // Calculate total consumed for donut
+    const consumedData = Object.entries(leaveStats.balances || {})
+        .filter(([_, data]) => data.consumed > 0)
+        .map(([type, data]) => ({ type, consumed: data.consumed, color: getLeaveColor(type) }));
+    
+    const totalConsumedAll = consumedData.reduce((acc, curr) => acc + curr.consumed, 0);
+
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', padding: '1.5rem' }}>
-            {/* ── My Leave Stats ── */}
-            <div style={sectionTitleStyle}>My Leave Stats</div>
-            {/* Consumed Leave Types (Centered) */}
-            <div style={{ display: 'flex', justifyContent: 'center' }}>
-                <div style={{ ...bentoPanelStyle, alignItems: 'center', maxWidth: '400px', width: '100%' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: '1rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'rgba(var(--primary-rgb), 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <PieChart size={16} color="var(--primary)" />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', padding: '1.5rem' }}>
+            
+            {/* ── Dashboard Hero Section ── */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.8fr', gap: '1.5rem' }}>
+                
+                {/* Donut Chart Panel */}
+                <div style={{ ...bentoPanelStyle, position: 'relative', overflow: 'hidden' }}>
+                    <div style={{ 
+                        position: 'absolute', top: '-20%', right: '-10%', width: '200px', height: '200px', 
+                        background: 'radial-gradient(circle, rgba(var(--primary-rgb), 0.08) 0%, transparent 70%)',
+                        zIndex: 0 
+                    }}></div>
+                    
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', position: 'relative', zIndex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(var(--primary-rgb), 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <PieChart size={20} color="var(--primary)" />
                             </div>
-                            <span style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-main)' }}>Consumed Leave Types</span>
+                            <div>
+                                <span style={{ fontSize: '1rem', fontWeight: '800', color: 'var(--text-main)', display: 'block' }}>Usage Summary</span>
+                                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: '600' }}>Overall leave distribution</span>
+                            </div>
                         </div>
-                        <Info size={14} color="var(--text-muted)" style={{ opacity: 0.5 }} />
                     </div>
-                    <div style={{ position: 'relative', width: '100px', height: '100px', margin: '0.5rem auto' }}>
-                        <svg viewBox="0 0 36 36" style={{ transform: 'rotate(-90deg)' }}>
-                            <circle cx="18" cy="18" r="15.915" fill="transparent" stroke={isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.08)'} strokeWidth="4"></circle>
-                            {Object.entries(leaveStats.balances || {}).map(([type, data], i, arr) => {
-                                const totalConsumed = arr.reduce((acc, [_, d]) => acc + d.consumed, 0);
-                                if (totalConsumed === 0) return null;
-                                const colors = ['#ff00cc', '#ffab00', '#10b981', '#3b82f6'];
-                                let offset = 0;
-                                for (let j = 0; j < i; j++) offset += (arr[j][1].consumed / totalConsumed) * 100;
-                                const dash = (data.consumed / totalConsumed) * 100;
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '2rem', flex: 1, position: 'relative', zIndex: 1 }}>
+                        <div style={{ position: 'relative', width: '160px', height: '160px' }}>
+                            <svg viewBox="0 0 36 36" style={{ transform: 'rotate(-90deg)', width: '100%', height: '100%' }}>
+                                <circle cx="18" cy="18" r="15.915" fill="transparent" stroke={isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.05)'} strokeWidth="3.5"></circle>
+                                {totalConsumedAll > 0 ? (() => {
+                                    let offset = 0;
+                                    return consumedData.map((item, i) => {
+                                        const dash = (item.consumed / totalConsumedAll) * 100;
+                                        const currentOffset = offset;
+                                        offset += dash;
+                                        return (
+                                            <circle
+                                                key={item.type}
+                                                cx="18" cy="18" r="15.915"
+                                                fill="transparent"
+                                                stroke={item.color}
+                                                strokeWidth="4.5"
+                                                strokeDasharray={`${dash} ${100 - dash}`}
+                                                strokeDashoffset={100 - currentOffset + 25}
+                                                strokeLinecap="round"
+                                                style={{ transition: 'all 1s cubic-bezier(0.4, 0, 0.2, 1)' }}
+                                            ></circle>
+                                        );
+                                    });
+                                })() : (
+                                    <circle cx="18" cy="18" r="15.915" fill="transparent" stroke="var(--text-muted)" strokeWidth="1" strokeDasharray="2,2" opacity="0.3"></circle>
+                                )}
+                            </svg>
+                            <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center' }}>
+                                <div style={{ fontSize: '1.5rem', fontWeight: '900', color: 'var(--text-main)', lineHeight: 1 }}>{totalConsumedAll}</div>
+                                <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', marginTop: '4px' }}>Days Taken</div>
+                            </div>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', flex: 1 }}>
+                            {consumedData.length > 0 ? consumedData.map(item => (
+                                <div key={item.type} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                                        <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: item.color, boxShadow: `0 0 8px ${item.color}40` }}></div>
+                                        <span style={{ fontSize: '0.8rem', color: 'var(--text-main)', fontWeight: '700' }}>{item.type}</span>
+                                    </div>
+                                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '800' }}>{item.consumed}d</span>
+                                </div>
+                            )) : (
+                                <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: '600', padding: '1rem' }}>
+                                    No leaves consumed yet
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Stats Grid */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+                    <div style={bentoPanelStyle}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1.5rem' }}>
+                            <TrendingUp size={16} color="var(--primary)" />
+                            <span style={{ fontSize: '0.85rem', fontWeight: '800', color: 'var(--text-main)' }}>Weekly Trend</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', height: '100px', gap: '6px' }}>
+                            {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, i) => {
+                                const val = leaveStats.weeklyPattern?.[i] || 0;
+                                const maxVal = Math.max(...(leaveStats.weeklyPattern || [1]));
+                                const height = val > 0 ? (val / maxVal) * 80 + 4 : 4;
                                 return (
-                                    <circle
-                                        key={type}
-                                        cx="18" cy="18" r="15.915"
-                                        fill="transparent"
-                                        stroke={colors[i % colors.length]}
-                                        strokeWidth="4"
-                                        strokeDasharray={`${dash} ${100 - dash}`}
-                                        strokeDashoffset={100 - offset + 25}
-                                    ></circle>
+                                    <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
+                                        <div style={{ width: '100%', height: `${height}px`, background: val > 0 ? 'linear-gradient(180deg, var(--primary), rgba(var(--primary-rgb), 0.3))' : (isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.03)'), borderRadius: '6px', transition: 'height 0.6s cubic-bezier(0.4, 0, 0.2, 1)' }}></div>
+                                        <span style={{ fontSize: '0.6rem', fontWeight: '800', color: 'var(--text-muted)' }}>{day}</span>
+                                    </div>
                                 );
                             })}
-                        </svg>
-                        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', fontSize: '0.7rem', fontWeight: '700', color: 'var(--text-main)', textAlign: 'center' }}>
-                            Leave<br />Types
                         </div>
                     </div>
-                    {/* Legend */}
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.75rem', justifyContent: 'center' }}>
-                        {[
-                            { label: 'Casual', color: '#ff00cc' },
-                            { label: 'Paid', color: '#ffab00' },
-                            { label: 'Sick', color: '#10b981' },
-                            { label: 'Comp Off', color: '#3b82f6' },
-                        ].map(l => (
-                            <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: l.color }}></div>
-                                <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: '600' }}>{l.label}</span>
-                            </div>
-                        ))}
+
+                    <div style={bentoPanelStyle}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1.5rem' }}>
+                            <Calendar size={16} color="var(--primary)" />
+                            <span style={{ fontSize: '0.85rem', fontWeight: '800', color: 'var(--text-main)' }}>Monthly Insights</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', height: '100px', gap: '3px' }}>
+                            {['J','F','M','A','M','J','J','A','S','O','N','D'].map((month, i) => {
+                                const val = leaveStats.monthlyStats?.[i] || 0;
+                                const maxVal = Math.max(...(leaveStats.monthlyStats || [1]));
+                                const height = val > 0 ? (val / maxVal) * 80 + 4 : 4;
+                                const isCurrent = i === new Date().getMonth();
+                                return (
+                                    <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
+                                        <div style={{ width: '100%', height: `${height}px`, background: isCurrent ? 'var(--primary)' : (val > 0 ? 'rgba(var(--primary-rgb), 0.4)' : (isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.03)')), borderRadius: '4px', transition: 'height 0.6s cubic-bezier(0.4, 0, 0.2, 1)' }}></div>
+                                        <span style={{ fontSize: '0.55rem', fontWeight: '800', color: isCurrent ? 'var(--primary)' : 'var(--text-muted)' }}>{month}</span>
+                                    </div>
+                                );
+                            })}
+                        </div>
                     </div>
                 </div>
             </div>
 
             {/* ── Leave Balances ── */}
-            <div style={sectionTitleStyle}>Leave Balances</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.25rem' }}>
-                {[
-                    { type: 'Casual Leave', key: 'Casual', color: '#ff00cc', gradient: 'linear-gradient(135deg, rgba(255,0,204,0.08), rgba(255,0,204,0.02))' },
-                    { type: 'Paid Leave', key: 'Paid', color: '#ffab00', gradient: 'linear-gradient(135deg, rgba(255,171,0,0.08), rgba(255,171,0,0.02))' },
-                    { type: 'Sick Leave', key: 'Sick', color: '#10b981', gradient: 'linear-gradient(135deg, rgba(16,185,129,0.08), rgba(16,185,129,0.02))' },
-                    { type: 'Comp Off', key: 'Comp Off', color: '#3b82f6', gradient: 'linear-gradient(135deg, rgba(59,130,246,0.08), rgba(59,130,246,0.02))' }
-                ].map(item => {
-                    const data = leaveStats.balances?.[item.key] || { total: 0, consumed: 0 };
-                    const available = Math.max(0, data.total - data.consumed);
+            <div style={sectionTitleStyle}>
+                <TrendingUp size={18} />
+                Leave Balances
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '1rem' }}>
+                {Object.entries(leaveStats.balances || {}).map(([key, data]) => {
+                    const color = getLeaveColor(key);
+                    const isUnpaid = key === 'Unpaid';
+                    const available = data.total - data.consumed;
                     const percentage = data.total > 0 ? (available / data.total) * 100 : 0;
+
                     return (
-                        <div key={item.key} style={{
-                            ...bentoPanelStyle,
-                            background: isLightMode ? item.gradient : bentoPanelStyle.background,
-                            borderColor: `${item.color}15`,
+                        <div key={key} style={{
+                            ...bentoPanelStyle, position: 'relative', overflow: 'hidden', display: 'flex',
+                            flexDirection: 'column', gap: '1.5rem', paddingTop: '1.75rem'
                         }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-                                <span style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-main)' }}>{item.type}</span>
-                                <span 
-                                    onClick={() => {
-                                        setSelectedType(item.key);
-                                        setShowDetailModal(true);
-                                    }}
-                                    style={{ 
-                                        fontSize: '0.7rem', 
-                                        color: isLightMode ? (item.key === 'Sick' || item.key === 'Comp Off' ? 'var(--text-main)' : item.color) : item.color, 
-                                        cursor: 'pointer', 
-                                        fontWeight: '700', 
-                                        opacity: 0.9, 
-                                        transition: 'all 0.2s',
-                                        padding: '4px 8px',
-                                        borderRadius: '8px',
-                                        background: isLightMode ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.03)'
-                                    }}
-                                    onMouseEnter={e => { e.currentTarget.style.background = isLightMode ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.08)'; e.currentTarget.style.opacity = '1'; }}
-                                    onMouseLeave={e => { e.currentTarget.style.background = isLightMode ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.03)'; e.currentTarget.style.opacity = '0.9'; }}
-                                >
-                                    View details
-                                </span>
+                            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '4px', background: color, boxShadow: `0 2px 10px ${color}33` }}></div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span style={{ fontSize: '0.95rem', fontWeight: '900', color: 'var(--text-main)', letterSpacing: '-0.3px' }}>{key} Leave</span>
+                                {!isUnpaid && (
+                                    <div onClick={() => { setSelectedType(key); setShowDetailModal(true); }} style={{ padding: '6px', borderRadius: '10px', background: isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.05)', cursor: 'pointer' }}>
+                                        <Info size={14} color="var(--primary)" />
+                                    </div>
+                                )}
                             </div>
-                            <div style={{ position: 'relative', width: '90px', height: '90px', margin: '0 auto 1.25rem' }}>
-                                <svg viewBox="0 0 36 36" style={{ transform: 'rotate(-90deg)', width: '100%', height: '100%' }}>
-                                    <circle cx="18" cy="18" r="15.915" fill="transparent" stroke={`${item.color}18`} strokeWidth="3.5"></circle>
-                                    <circle
-                                        cx="18" cy="18" r="15.915"
-                                        fill="transparent"
-                                        stroke={item.color}
-                                        strokeWidth="3.5"
-                                        strokeDasharray={`${percentage} ${100 - percentage}`}
-                                        strokeDashoffset="25"
-                                        strokeLinecap="round"
-                                        style={{ filter: `drop-shadow(0 0 6px ${item.color}40)`, transition: 'stroke-dasharray 0.8s ease' }}
-                                    ></circle>
-                                </svg>
-                                <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center' }}>
-                                    <div style={{ fontSize: '1rem', fontWeight: '800', color: 'var(--text-main)', letterSpacing: '-0.5px' }}>{available === Infinity ? '∞' : available} Days</div>
-                                    <div style={{ fontSize: '0.55rem', color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Available</div>
-                                </div>
-                            </div>
-                            <div style={{
-                                display: 'grid',
-                                gridTemplateColumns: '1fr 1fr',
-                                gap: '0.75rem',
-                                borderTop: `1px solid ${isLightMode ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)'}`,
-                                paddingTop: '1rem',
-                                marginTop: 'auto',
-                            }}>
-                                <div>
-                                    <div style={labelStyle}>Available</div>
-                                    <div style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-main)', marginTop: '0.2rem' }}>{available === Infinity ? '∞' : `${available} days`}</div>
-                                </div>
-                                <div style={{ textAlign: 'right' }}>
-                                    <div style={labelStyle}>Consumed</div>
-                                    <div style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-main)', marginTop: '0.2rem' }}>{data.consumed} days</div>
-                                </div>
-                                <div style={{ gridColumn: 'span 2' }}>
-                                    <div style={labelStyle}>Annual Quota</div>
-                                    <div style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-main)', marginTop: '0.2rem' }}>{data.total === Infinity ? '∞' : `${data.total} days`}</div>
+
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                {!isUnpaid ? (
+                                    <div style={{ position: 'relative', width: '60px', height: '60px' }}>
+                                        <svg viewBox="0 0 36 36" style={{ transform: 'rotate(-90deg)', width: '100%', height: '100%' }}>
+                                            <circle cx="18" cy="18" r="15.915" fill="transparent" stroke={isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.05)'} strokeWidth="4"></circle>
+                                            <circle cx="18" cy="18" r="15.915" fill="transparent" stroke={color} strokeWidth="4" strokeDasharray={`${percentage} ${100 - percentage}`} strokeDashoffset="25" strokeLinecap="round" style={{ transition: 'stroke-dasharray 1s ease' }}></circle>
+                                        </svg>
+                                        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', fontSize: '0.75rem', fontWeight: '900', color: 'var(--text-main)' }}>{available === Infinity ? '∞' : available}</div>
+                                    </div>
+                                ) : (
+                                    <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: `${color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Info size={24} color={color} opacity={0.5} /></div>
+                                )}
+                                <div style={{ flex: 1 }}>
+                                    {!isUnpaid ? (
+                                        <>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}><span style={labelStyle}>Avail</span><span style={{ fontSize: '0.8rem', fontWeight: '900', color: 'var(--text-main)' }}>{available}d</span></div>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={labelStyle}>Used</span><span style={{ fontSize: '0.8rem', fontWeight: '800', color: 'var(--text-muted)' }}>{data.consumed}d</span></div>
+                                        </>
+                                    ) : (
+                                        <div style={{ textAlign: 'center' }}><div style={labelStyle}>Consumed</div><div style={{ fontSize: '1.25rem', fontWeight: '900', color: 'var(--text-main)' }}>{data.consumed}d</div></div>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -187,208 +241,70 @@ const LeaveTab = ({
             </div>
 
             {/* ── Leave History ── */}
-            <div style={sectionTitleStyle}>Leave History</div>
-            <div style={{ borderRadius: '20px', border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.06)'}`, overflow: 'hidden', background: isLightMode ? 'rgba(255,255,255,0.7)' : 'rgba(15,23,42,0.5)', backdropFilter: 'blur(16px)', boxShadow: isLightMode ? '0 4px 24px rgba(0,0,0,0.04)' : '0 4px 24px rgba(0,0,0,0.2)' }}>
-                <table className="data-table" style={{ margin: 0 }}>
+            <div style={sectionTitleStyle}><TrendingUp size={18} />Leave History</div>
+            <div style={{ ...bentoPanelStyle, padding: 0, overflow: 'hidden' }}>
+                <table className="data-table" style={{ margin: 0, width: '100%', borderCollapse: 'collapse' }}>
                     <thead>
-                        <tr style={{
-                            background: isLightMode ? '#f8fafc' : 'rgba(0,0,0,0.2)',
-                            fontSize: '0.75rem',
-                            color: 'var(--text-muted)',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.5px',
-                        }}>
-                            <th style={{ padding: '1.25rem', fontWeight: '800' }}>Leave Dates</th>
-                            <th style={{ padding: '1.25rem', fontWeight: '800' }}>Leave Type</th>
-                            <th style={{ padding: '1.25rem', fontWeight: '800' }}>Status</th>
-                            <th style={{ padding: '1.25rem', fontWeight: '800' }}>Requested By</th>
-                            <th style={{ padding: '1.25rem', fontWeight: '800' }}>Action Taken On</th>
-                            <th style={{ padding: '1.25rem', fontWeight: '800' }}>Leave Note</th>
-                            <th style={{ padding: '1.25rem', fontWeight: '800' }}>Reject/Cancellation Reason</th>
+                        <tr style={{ background: isLightMode ? '#f8fafc' : 'rgba(0,0,0,0.2)', fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px', borderBottom: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.06)'}` }}>
+                            <th style={{ padding: '1.25rem', fontWeight: '800', textAlign: 'left' }}>Duration</th>
+                            <th style={{ padding: '1.25rem', fontWeight: '800', textAlign: 'left' }}>Type</th>
+                            <th style={{ padding: '1.25rem', fontWeight: '800', textAlign: 'left' }}>Status</th>
+                            <th style={{ padding: '1.25rem', fontWeight: '800', textAlign: 'left' }}>Action Taken</th>
+                            <th style={{ padding: '1.25rem', fontWeight: '800', textAlign: 'left' }}>Note</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {myRequests.filter(r => ['Leave Application', 'Half Day', 'Comp Off', 'Leave Cancellation'].includes(r.type)).length > 0 ? myRequests.filter(r => ['Leave Application', 'Half Day', 'Comp Off', 'Leave Cancellation'].includes(r.type)).map(h => (
-                            <tr key={h._id} style={{
-                                borderBottom: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.06)'}`,
-                                transition: 'background 0.2s',
-                                cursor: 'default',
-                            }}
-                                onMouseOver={e => e.currentTarget.style.backgroundColor = isLightMode ? '#f8fafc' : 'rgba(255,255,255,0.02)'}
-                                onMouseOut={e => e.currentTarget.style.backgroundColor = 'transparent'}
-                            >
-                                <td style={{ fontSize: '0.85rem', fontWeight: '700', padding: '1.25rem', color: 'var(--text-main)' }}>
-                                    {new Date(h.startDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
-                                    {h.startDate !== h.endDate && ` - ${new Date(h.endDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}`}
-                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '3px', fontWeight: '500' }}>
-                                        {Math.ceil((new Date(h.endDate) - new Date(h.startDate)) / (1000 * 60 * 60 * 24)) + 1} day(s)
-                                    </div>
-                                </td>
-                                <td style={{ fontSize: '0.85rem', padding: '1.25rem', fontWeight: '600', color: 'var(--text-main)' }}>
-                                    {h.type === 'Comp Off' ? 'Comp Off' : (h.leaveType ? `${h.leaveType} Leave` : h.type)}
-                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: '500', marginTop: '3px' }}>Requested on {new Date(h.createdAt).toLocaleDateString()}</div>
-                                </td>
-                                <td style={{ padding: '1.25rem' }}>
-                                    <span style={{
-                                        padding: '0.4rem 0.8rem',
-                                        borderRadius: '20px',
-                                        fontSize: '0.7rem',
-                                        fontWeight: '700',
-                                        textTransform: 'uppercase',
-                                        letterSpacing: '0.5px',
-                                        ...getStatusStyle(h.status)
-                                    }}>
-                                        {h.status}
-                                    </span>
-                                    {h.status !== 'Pending' && h.actionBy && (
-                                        <div style={{ fontSize: '0.65rem', color: isLightMode ? 'rgba(0,0,0,0.6)' : 'var(--text-muted)', marginTop: '5px', fontWeight: '500' }}>by {h.actionBy.name}</div>
-                                    )}
-                                </td>
-                                <td style={{ fontSize: '0.85rem', padding: '1.25rem', fontWeight: '600' }}>{user.name}</td>
-                                <td style={{ fontSize: '0.85rem', padding: '1.25rem', fontWeight: '500', color: 'var(--text-muted)' }}>{h.status !== 'Pending' && h.actionDate ? new Date(h.actionDate).toLocaleDateString() : '-'}</td>
-                                <td style={{ fontSize: '0.8rem', color: 'var(--text-muted)', maxWidth: '150px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', padding: '1.25rem', fontWeight: '500' }}>{h.message || '-'}</td>
-                                <td style={{ fontSize: '0.8rem', color: 'var(--text-muted)', maxWidth: '150px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', padding: '1.25rem', fontWeight: '500' }}>{h.actionNote || '-'}</td>
-                            </tr>
-                        )) : (
-                            <tr style={{ border: 'none' }}><td colSpan="7" style={{ textAlign: 'center', padding: '5rem', color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: '500' }}>No leave history found.</td></tr>
+                        {myRequests.filter(r => ['Leave Application', 'Half Day', 'Comp Off', 'Leave Cancellation'].includes(r.type)).length > 0 ? (
+                            myRequests.filter(r => ['Leave Application', 'Half Day', 'Comp Off', 'Leave Cancellation'].includes(r.type)).map((h, idx) => (
+                                <tr key={h._id} style={{ borderBottom: idx === myRequests.length - 1 ? 'none' : `1px solid ${isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.03)'}` }}>
+                                    <td style={{ padding: '1.25rem' }}>
+                                        <div style={{ fontSize: '0.85rem', fontWeight: '800', color: 'var(--text-main)', marginBottom: '4px' }}>{new Date(h.startDate).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}{h.startDate !== h.endDate && ` — ${new Date(h.endDate).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}`}</div>
+                                        <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>Requested {new Date(h.createdAt).toLocaleDateString()}</div>
+                                    </td>
+                                    <td style={{ padding: '1.25rem' }}>
+                                        <span style={{ fontSize: '0.8rem', fontWeight: '700', color: getLeaveColor(h.leaveType || h.type), display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: '6px', height: '6px', borderRadius: '50%', background: getLeaveColor(h.leaveType || h.type) }}></div>{h.leaveType ? `${h.leaveType} Leave` : h.type}</span>
+                                    </td>
+                                    <td style={{ padding: '1.25rem' }}><span style={{ padding: '0.4rem 0.8rem', borderRadius: '30px', fontSize: '0.65rem', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '0.5px', ...getStatusStyle(h.status) }}>{h.status}</span></td>
+                                    <td style={{ padding: '1.25rem' }}>{h.status !== 'Pending' ? <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}><div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--primary)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: '900' }}>{h.actionBy?.name?.charAt(0) || 'A'}</div><div><div style={{ fontSize: '0.8rem', fontWeight: '700', color: 'var(--text-main)' }}>{h.actionBy?.name || 'Admin'}</div><div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{new Date(h.actionDate).toLocaleDateString()}</div></div></div> : <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>Pending</span>}</td>
+                                    <td style={{ padding: '1.25rem' }}><div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', maxWidth: '200px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{h.message || h.actionNote || '—'}</div></td>
+                                </tr>
+                            ))
+                        ) : (
+                            <tr><td colSpan="5" style={{ textAlign: 'center', padding: '5rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>No records found.</td></tr>
                         )}
                     </tbody>
                 </table>
             </div>
-            {/* ── Leave Detail Modal ── */}
+
+            {/* ── Detail Modal ── */}
             {showDetailModal && (
-                <div style={{
-                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                    zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    padding: '1.5rem', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)'
-                }}>
-                    <div style={{
-                        ...bentoPanelStyle,
-                        maxWidth: '800px', width: '100%', maxHeight: '85vh',
-                        padding: '2.5rem', position: 'relative', overflow: 'hidden',
-                        animation: 'modalSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
-                    }}>
-                        <div style={{
-                            position: 'absolute', top: 0, left: 0, right: 0, height: '6px',
-                            background: `linear-gradient(90deg, ${[
-                                { key: 'Casual', color: '#ff00cc' },
-                                { key: 'Paid', color: '#ffab00' },
-                                { key: 'Sick', color: '#10b981' },
-                                { key: 'Comp Off', color: '#3b82f6' }
-                            ].find(l => l.key === selectedType)?.color || 'var(--primary)'}, transparent)`
-                        }}></div>
-
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem' }}>
-                            <div>
-                                <h2 style={{ margin: 0, fontSize: '1.8rem', fontWeight: '900', color: 'var(--text-main)', letterSpacing: '-0.8px' }}>
-                                    {selectedType} Leave <span style={{ color: 'var(--text-muted)', fontWeight: '500', marginLeft: '0.5rem' }}>Details</span>
-                                </h2>
-                                <p style={{ margin: '0.5rem 0 0', fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: '500' }}>Review your {selectedType?.toLowerCase()} leave usage and history</p>
-                            </div>
-                            <div 
-                                onClick={() => setShowDetailModal(false)}
-                                style={{ 
-                                    width: '40px', height: '40px', borderRadius: '12px', background: isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.05)',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-muted)',
-                                    transition: 'all 0.2s'
-                                }}
-                                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'; e.currentTarget.style.color = '#ef4444'; }}
-                                onMouseLeave={e => { e.currentTarget.style.background = isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = 'var(--text-muted)'; }}
-                            >
-                                <X size={20} />
-                            </div>
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)' }}>
+                    <div style={{ ...bentoPanelStyle, maxWidth: '700px', width: '90%', maxHeight: '80vh', padding: '2rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}><div style={{ width: '48px', height: '48px', borderRadius: '16px', background: `${getLeaveColor(selectedType)}15`, color: getLeaveColor(selectedType), display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FileText size={24} /></div><h3 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '900', color: 'var(--text-main)' }}>{selectedType} Details</h3></div>
+                            <div onClick={() => setShowDetailModal(false)} style={{ cursor: 'pointer', opacity: 0.5 }}><X size={24} /></div>
                         </div>
-
-                        <div style={{ overflowY: 'auto', flex: 1, paddingRight: '0.5rem' }} className="custom-scrollbar">
-                            {myRequests.filter(r => 
-                                (r.type === 'Leave Application' && r.leaveType === selectedType) || 
-                                (r.type === 'Comp Off' && selectedType === 'Comp Off')
-                            ).length > 0 ? (
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                                    {myRequests.filter(r => 
-                                        (r.type === 'Leave Application' && r.leaveType === selectedType) || 
-                                        (r.type === 'Comp Off' && selectedType === 'Comp Off')
-                                    ).map((req, i) => (
-                                        <div key={req._id} style={{
-                                            padding: '1.5rem', borderRadius: '20px',
-                                            background: isLightMode ? 'rgba(0,0,0,0.02)' : 'rgba(255,255,255,0.03)',
-                                            border: `1px solid ${isLightMode ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)'}`,
-                                            display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.5rem'
-                                        }}>
-                                            <div style={{ gridColumn: 'span 1' }}>
-                                                <div style={labelStyle}>Duration</div>
-                                                <div style={{ fontSize: '0.9rem', fontWeight: '800', color: 'var(--text-main)', marginTop: '0.4rem' }}>
-                                                    {new Date(req.startDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                                                    {req.startDate !== req.endDate && ` — ${new Date(req.endDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`}
-                                                </div>
-                                                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '4px', fontWeight: '600' }}>
-                                                    {Math.ceil((new Date(req.endDate) - new Date(req.startDate)) / (1000 * 60 * 60 * 24)) + 1} day(s)
-                                                </div>
-                                            </div>
-                                            
-                                            <div style={{ gridColumn: 'span 1' }}>
-                                                <div style={labelStyle}>Approver</div>
-                                                <div style={{ fontSize: '0.9rem', fontWeight: '700', color: 'var(--text-main)', marginTop: '0.4rem' }}>
-                                                    {req.actionBy?.name || req.recipients?.[0]?.name || '-'}
-                                                </div>
-                                                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '4px', fontWeight: '500' }}>
-                                                    {req.status === 'Pending' ? 'Awaiting Action' : `Action on ${new Date(req.actionDate).toLocaleDateString()}`}
-                                                </div>
-                                            </div>
-
-                                            <div style={{ gridColumn: 'span 1' }}>
-                                                <div style={labelStyle}>Status</div>
-                                                <div style={{ marginTop: '0.4rem' }}>
-                                                    <span style={{
-                                                        padding: '0.4rem 0.8rem', borderRadius: '20px',
-                                                        fontSize: '0.7rem', fontWeight: '800',
-                                                        textTransform: 'uppercase', letterSpacing: '0.5px',
-                                                        ...getStatusStyle(req.status)
-                                                    }}>
-                                                        {req.status}
-                                                    </span>
-                                                </div>
-                                            </div>
-
-                                            <div style={{ gridColumn: 'span 4', borderTop: `1px solid ${isLightMode ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)'}`, paddingTop: '1rem' }}>
-                                                <div style={labelStyle}>Reason</div>
-                                                <p style={{ margin: '0.4rem 0 0', fontSize: '0.85rem', color: 'var(--text-main)', lineHeight: '1.6', fontWeight: '500' }}>
-                                                    {req.message || 'No reason provided.'}
-                                                </p>
-                                                {req.actionNote && (
-                                                    <div style={{ marginTop: '0.75rem', padding: '0.75rem 1rem', background: isLightMode ? '#fff' : 'rgba(0,0,0,0.2)', borderRadius: '12px', borderLeft: `3px solid var(--primary)` }}>
-                                                        <div style={{ fontSize: '0.65rem', color: 'var(--primary)', fontWeight: '800', textTransform: 'uppercase', marginBottom: '0.2rem' }}>Approver Note</div>
-                                                        <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-main)', fontWeight: '500' }}>{req.actionNote}</p>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <div style={{ textAlign: 'center', padding: '4rem 2rem', color: 'var(--text-muted)' }}>
-                                    <TrendingUp size={48} style={{ opacity: 0.1, marginBottom: '1rem' }} />
-                                    <p style={{ fontSize: '1rem', fontWeight: '600' }}>No history found for this leave type.</p>
-                                </div>
-                            )}
+                        <div style={{ overflowY: 'auto', maxHeight: '50vh' }}>
+                            {myRequests.filter(r => (r.type === 'Leave Application' && r.leaveType === selectedType) || (r.type === 'Comp Off' && selectedType === 'Comp Off')).length > 0 ? (
+                                myRequests.filter(r => (r.type === 'Leave Application' && r.leaveType === selectedType) || (r.type === 'Comp Off' && selectedType === 'Comp Off')).map(req => (
+                                    <div key={req._id} style={{ padding: '1.5rem', borderRadius: '24px', background: isLightMode ? '#f8fafc' : 'rgba(255,255,255,0.03)', marginBottom: '1rem', border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.06)'}` }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}><span style={{ fontSize: '0.95rem', fontWeight: '900', color: 'var(--text-main)' }}>{new Date(req.startDate).toLocaleDateString()} — {new Date(req.endDate).toLocaleDateString()}</span><span style={{ fontSize: '0.7rem', fontWeight: '900', textTransform: 'uppercase', ...getStatusStyle(req.status), padding: '4px 10px', borderRadius: '20px' }}>{req.status}</span></div>
+                                        <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-muted)', lineHeight: '1.6' }}>{req.message || 'No reason provided.'}</p>
+                                        {req.actionNote && <div style={{ marginTop: '1rem', padding: '1rem', background: 'rgba(var(--primary-rgb), 0.05)', borderRadius: '16px', borderLeft: '4px solid var(--primary)' }}><div style={{ fontSize: '0.65rem', color: 'var(--primary)', fontWeight: '900', textTransform: 'uppercase', marginBottom: '6px' }}>Approver Note</div><p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-main)' }}>{req.actionNote}</p></div>}
+                                    </div>
+                                ))
+                            ) : <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>No records found</div>}
                         </div>
                     </div>
                 </div>
             )}
 
             <style>{`
-                @keyframes modalSlideIn {
-                    from { opacity: 0; transform: translateY(20px) scale(0.98); }
-                    to { opacity: 1; transform: translateY(0) scale(1); }
-                }
-                .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-                .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-                .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); borderRadius: 10px; }
-                ${isLightMode ? '.custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); }' : ''}
+                @keyframes modalSlideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+                .data-table th, .data-table td { border: none !important; }
             `}</style>
         </div>
     );
 };
-
 
 export default LeaveTab;
