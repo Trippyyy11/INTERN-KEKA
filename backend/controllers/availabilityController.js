@@ -1,5 +1,7 @@
 import FutureAvailability from '../models/FutureAvailability.js';
 import User from '../models/User.js';
+import { getVisibilityQuery } from '../utils/userHelper.js';
+import { createAuditLog } from './auditController.js';
 
 // @desc    Get future availability
 // @route   GET /api/availability
@@ -19,26 +21,15 @@ export const getAvailability = async (req, res) => {
         }
         end.setHours(23, 59, 59, 999);
 
-        let userIds;
-
-        if (userRole === 'Super Admin') {
-            // Super Admin: all users, optionally filtered by department
-            const userFilter = { isActive: true, isDeleted: { $ne: true } };
-            if (department) userFilter.department = department;
-            const users = await User.find(userFilter).select('_id');
-            userIds = users.map(u => u._id);
-        } else if (userRole === 'Reporting Manager') {
-            // Reporting Officer: team members (users who report to them) + self
-            const teamMembers = await User.find({
-                reportingManager: req.user._id,
-                isActive: true,
-                isDeleted: { $ne: true }
-            }).select('_id');
-            userIds = [req.user._id, ...teamMembers.map(u => u._id)];
-        } else {
-            // Intern: only self
-            userIds = [req.user._id];
+        const visibilityQuery = getVisibilityQuery(req.user);
+        
+        // Merge department filter if present
+        if (department) {
+            visibilityQuery.department = { $regex: `^${department.trim()}$`, $options: 'i' };
         }
+
+        const users = await User.find(visibilityQuery).select('_id name email department designation').sort({ name: 1 });
+        const userIds = users.map(u => u._id);
 
         const availability = await FutureAvailability.find({
             user: { $in: userIds },
@@ -46,11 +37,6 @@ export const getAvailability = async (req, res) => {
         }).populate('user', 'name email department designation')
           .populate('updatedBy', 'name')
           .sort({ date: 1 });
-
-        // Also return the user list for the grid
-        const users = await User.find({ _id: { $in: userIds } })
-            .select('name email department designation')
-            .sort({ name: 1 });
 
         res.status(200).json({ availability, users, startDate: start, endDate: end });
     } catch (error) {
@@ -70,7 +56,9 @@ export const upsertAvailability = async (req, res) => {
             return res.status(400).json({ message: 'No entries provided.' });
         }
 
-        // Validate permissions
+        const normalizedRole = req.user.role?.toLowerCase().replace(/\s/g, '');
+        
+        // Validate permissions: ONLY self-edit allowed for everyone
         for (const entry of entries) {
             if (entry.userId !== req.user._id.toString()) {
                 return res.status(403).json({ message: 'Users can only edit their own availability.' });
@@ -97,6 +85,9 @@ export const upsertAvailability = async (req, res) => {
         }
 
         res.status(200).json({ message: `${results.length} entries updated.`, results });
+        if (results.length > 0) {
+            await createAuditLog(req.user._id, 'AVAILABILITY_UPDATED', `Updated ${results.length} availability entries for ${results[0].user}`, { targetModel: 'FutureAvailability', ipAddress: req.ip });
+        }
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -116,22 +107,9 @@ export const exportAvailability = async (req, res) => {
         if (!endDate) end.setDate(end.getDate() + 4);
         end.setHours(23, 59, 59, 999);
 
-        let userIds;
-        if (userRole === 'Super Admin') {
-            const userFilter = { isActive: true, isDeleted: { $ne: true } };
-            if (department) userFilter.department = department;
-            const users = await User.find(userFilter).select('_id');
-            userIds = users.map(u => u._id);
-        } else if (userRole === 'Reporting Manager') {
-            const teamMembers = await User.find({
-                reportingManager: req.user._id,
-                isActive: true,
-                isDeleted: { $ne: true }
-            }).select('_id');
-            userIds = [req.user._id, ...teamMembers.map(u => u._id)];
-        } else {
-            userIds = [req.user._id];
-        }
+        const visibilityQuery = getVisibilityQuery(req.user);
+        const usersToExport = await User.find(visibilityQuery).select('_id');
+        const userIds = usersToExport.map(u => u._id);
 
         const availability = await FutureAvailability.find({
             user: { $in: userIds },

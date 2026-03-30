@@ -3,20 +3,18 @@ import Settings from '../models/Settings.js';
 import OrgConfig from '../models/OrgConfig.js';
 import Notification from '../models/Notification.js';
 import { createAuditLog } from './auditController.js';
+import { getVisibilityQuery } from '../utils/userHelper.js';
 
 // @desc    Get all users (with approval status)
 export const getUsers = async (req, res) => {
     try {
+        const { scope } = req.query;
         let filter = { isDeleted: { $ne: true } };
         
-        const { scope } = req.query;
-        
-        // Reporting Manager: typically only see team members
-        // IF scope === 'org', allow seeing all (for tree building)
-        if (req.user.role === 'Reporting Manager' && scope !== 'org') {
-            filter.reportingManager = req.user._id;
+        if (scope !== 'org') {
+            const visibilityFilter = getVisibilityQuery(req.user);
+            filter = { ...filter, ...visibilityFilter };
         }
-        // Super Admin: sees all (no additional filter)
         
         const users = await User.find(filter).populate('reportingManager', 'name email');
         res.json(users);
@@ -93,6 +91,55 @@ export const updateUserDetails = async (req, res) => {
             await createAuditLog(req.user._id, 'USER_UPDATED', `Updated details for: ${user.name}`, { targetModel: 'User', targetId: user._id, ipAddress: req.ip });
             res.json(user);
         } else { res.status(404).json({ message: 'User not found' }); }
+    } catch (error) { res.status(500).json({ message: error.message }); }
+};
+
+// @desc    Create a new user directly
+export const createUser = async (req, res) => {
+    try {
+        const { name, role, department, designation, reportingManager, phoneNumber } = req.body;
+        const email = req.body.email.toLowerCase();
+        const password = req.body.password;
+        
+        const existingUser = await User.findOne({ email });
+        if (existingUser) return res.status(400).json({ message: 'User already exists' });
+
+        const newUser = new User({
+            name,
+            email,
+            password,
+            role,
+            department,
+            designation,
+            reportingManager,
+            phoneNumber,
+            isVerified: true,
+            isApproved: true,
+            isActive: true
+        });
+
+        await newUser.save();
+        await createAuditLog(req.user._id, 'USER_CREATED', `Created new user: ${name} (${email})`, { targetModel: 'User', targetId: newUser._id, ipAddress: req.ip });
+        
+        res.status(201).json(newUser);
+    } catch (error) { res.status(500).json({ message: error.message }); }
+};
+
+// @desc    Update user permissions
+export const updateUserPermissions = async (req, res) => {
+    try {
+        const { canCreateUsers } = req.body;
+        const user = await User.findById(req.params.id);
+        if (!user) return res.status(404).json({ message: 'User not found' });
+        
+        user.permissions = {
+            ...user.permissions,
+            canCreateUsers: !!canCreateUsers
+        };
+        
+        await user.save();
+        await createAuditLog(req.user._id, 'PERMISSIONS_UPDATED', `Updated permissions for: ${user.name}`, { targetModel: 'User', targetId: user._id, ipAddress: req.ip });
+        res.json({ message: 'Permissions updated successfully', permissions: user.permissions });
     } catch (error) { res.status(500).json({ message: error.message }); }
 };
 

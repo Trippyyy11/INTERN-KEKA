@@ -84,7 +84,7 @@ const FutureAvailabilityTab = ({ user, isLightMode }) => {
     };
 
     const canEdit = (targetUserId) => {
-        return targetUserId === user?._id;
+        return targetUserId === user?._id; // STRICT: Everyone can only edit their own
     };
 
     const handleStatusChange = async (userId, date, newStatus) => {
@@ -181,7 +181,7 @@ const FutureAvailabilityTab = ({ user, isLightMode }) => {
                     </p>
                 </div>
                 <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-                    {user?.role === 'Super Admin' && departments.length > 0 && (
+                    {(user?.role?.toLowerCase().replace(/\s/g, '') === 'superadmin' || user?.role?.toLowerCase().replace(/\s/g, '') === 'reportingmanager') && departments.length > 0 && (
                         <select
                             value={departmentFilter}
                             onChange={e => setDepartmentFilter(e.target.value)}
@@ -312,19 +312,34 @@ const FutureAvailabilityTab = ({ user, isLightMode }) => {
                                             const editable = canEdit(u._id);
 
                                             return (
-                                                <td key={date.toISOString()} style={{ padding: '0.5rem 0.75rem', textAlign: 'center' }}>
+                                                <td key={date.toISOString()} style={{ padding: '0.85rem 0.75rem', textAlign: 'center', position: 'relative' }}>
                                                     {isEditing ? (
-                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                                                        <div style={{ 
+                                                            position: 'absolute', 
+                                                            top: '50%', 
+                                                            left: '50%', 
+                                                            transform: 'translate(-50%, -50%)',
+                                                            zIndex: 10,
+                                                            background: isLightMode ? '#ffffff' : '#1e293b',
+                                                            border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.1)'}`,
+                                                            borderRadius: '14px',
+                                                            padding: '0.5rem',
+                                                            display: 'flex',
+                                                            gap: '0.5rem',
+                                                            boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
+                                                            width: 'max-content'
+                                                        }}>
                                                             {Object.entries(statusConfig).map(([key, cfg]) => (
                                                                 <button
                                                                     key={key}
                                                                     onClick={() => handleStatusChange(u._id, date, key)}
                                                                     style={{
-                                                                        padding: '0.3rem 0.5rem', borderRadius: '8px',
-                                                                        border: status === key ? `2px solid ${cfg.color}` : `1px solid ${isLightMode ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.08)'}`,
+                                                                        padding: '0.5rem 0.75rem', borderRadius: '10px',
+                                                                        border: status === key ? `2px solid ${cfg.color}` : `1px solid transparent`,
                                                                         background: cfg.bg, color: cfg.color,
-                                                                        fontSize: '0.7rem', fontWeight: '700', cursor: 'pointer',
-                                                                        transition: 'all 0.15s'
+                                                                        fontSize: '0.75rem', fontWeight: '800', cursor: 'pointer',
+                                                                        transition: 'all 0.2s',
+                                                                        whiteSpace: 'nowrap'
                                                                     }}
                                                                 >
                                                                     {cfg.emoji} {cfg.label}
@@ -333,9 +348,9 @@ const FutureAvailabilityTab = ({ user, isLightMode }) => {
                                                             <button
                                                                 onClick={() => setEditingCell(null)}
                                                                 style={{
-                                                                    padding: '0.25rem', borderRadius: '6px', border: 'none',
-                                                                    background: 'transparent', color: 'var(--text-muted)',
-                                                                    fontSize: '0.7rem', cursor: 'pointer'
+                                                                    padding: '0.5rem 0.75rem', borderRadius: '10px',
+                                                                    border: 'none', background: 'rgba(244, 63, 94, 0.1)', color: '#f43f5e',
+                                                                    fontSize: '0.75rem', fontWeight: '800', cursor: 'pointer'
                                                                 }}
                                                             >
                                                                 Cancel
@@ -343,30 +358,34 @@ const FutureAvailabilityTab = ({ user, isLightMode }) => {
                                                         </div>
                                                     ) : (
                                                         <div
-                                                            onClick={() => editable && setEditingCell({ userId: u._id, date })}
+                                                            onClick={(e) => {
+                                                                if (editable) {
+                                                                    setEditingCell({ userId: u._id, date });
+                                                                }
+                                                            }}
                                                             style={{
-                                                                display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
-                                                                padding: '0.4rem 0.85rem', borderRadius: '10px',
+                                                                display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
+                                                                padding: '0.45rem 0.9rem', borderRadius: '10px',
                                                                 background: status ? statusConfig[status]?.bg : (isLightMode ? '#f8fafc' : 'rgba(255,255,255,0.04)'),
                                                                 color: status ? statusConfig[status]?.color : 'var(--text-muted)',
-                                                                fontSize: '0.78rem', fontWeight: '700',
+                                                                fontSize: '0.8rem', fontWeight: '700',
                                                                 cursor: editable ? 'pointer' : 'default',
                                                                 transition: 'all 0.2s',
-                                                                border: `1px solid ${status ? statusConfig[status]?.color + '25' : 'transparent'}`,
-                                                                minWidth: '90px', justifyContent: 'center'
+                                                                border: `1px solid ${status ? statusConfig[status]?.color + '30' : 'transparent'}`,
+                                                                minWidth: '100px', justifyContent: 'center'
                                                             }}
-                                                            onMouseOver={e => editable && (e.currentTarget.style.transform = 'scale(1.05)')}
-                                                            onMouseOut={e => editable && (e.currentTarget.style.transform = 'scale(1)')}
+                                                            onMouseOver={e => editable && (e.currentTarget.style.filter = 'brightness(1.1)')}
+                                                            onMouseOut={e => editable && (e.currentTarget.style.filter = 'brightness(1)')}
                                                         >
                                                             {status ? (
-                                                                <>
+                                                                <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                                                                     {statusConfig[status]?.emoji} {statusConfig[status]?.label}
-                                                                </>
+                                                                </span>
                                                             ) : (
-                                                                <span style={{ opacity: 0.4 }}>—</span>
+                                                                <span style={{ opacity: 0.3 }}>Not set</span>
                                                             )}
                                                             {editable && (
-                                                                <Edit3 size={11} style={{ opacity: 0.4, marginLeft: '0.25rem' }} />
+                                                                <Edit3 size={12} style={{ opacity: 0.5, marginLeft: '0.3rem' }} />
                                                             )}
                                                         </div>
                                                     )}

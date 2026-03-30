@@ -1347,7 +1347,8 @@ export default function Dashboard({ user, onLogout, setUser }) {
         }
 
         if (activeSidebar === 'Admin') {
-            const isAdminOrSuper = user?.role === 'Reporting Officer' || user?.role === 'Super Admin';
+            const normalizedRole = user?.role?.toLowerCase().replace(/\s/g, '');
+            const isAdminOrSuper = normalizedRole === 'reportingofficer' || normalizedRole === 'superadmin' || normalizedRole === 'reportingmanager' || user?.permissions?.canCreateUsers;
             if (!isAdminOrSuper) return <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>Access Denied. Admin privileges required.</div>;
 
             return (
@@ -2778,7 +2779,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
                     <nav className="sidebar-nav">
                     {sidebarItems.filter(item => {
                         const normalizedRole = user?.role?.toLowerCase().replace(/\s/g, '');
-                        if (item.name === 'Admin' && !(normalizedRole === 'reportingofficer' || normalizedRole === 'superadmin')) return false;
+                        if (item.name === 'Admin' && !(normalizedRole === 'superadmin' || normalizedRole === 'reportingofficer' || normalizedRole === 'reportingmanager' || user?.permissions?.canCreateUsers)) return false;
                         if (item.name === 'Slack' && !(normalizedRole === 'reportingofficer' || normalizedRole === 'superadmin')) return false;
 
                         // Hide personal employee tabs from Admins and Managers

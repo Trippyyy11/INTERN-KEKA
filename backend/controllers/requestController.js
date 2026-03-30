@@ -3,6 +3,7 @@ import User from '../models/User.js';
 import Leave from '../models/Leave.js';
 import { createNotification } from './notificationController.js';
 import { getVisibilityQuery } from '../utils/userHelper.js';
+import { createAuditLog } from './auditController.js';
 
 // @desc    Create a new request (Leave/WFH/Half Day)
 // @route   POST /api/requests
@@ -116,6 +117,8 @@ export const createRequest = async (req, res) => {
                 'Request'
             );
         }
+
+        await createAuditLog(req.user._id, 'REQUEST_CREATED', `Created new ${type} request`, { targetModel: 'Request', targetId: request._id, ipAddress: req.ip });
 
         res.status(201).json(populated);
     } catch (error) {

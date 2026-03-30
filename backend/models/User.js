@@ -58,6 +58,9 @@ const userSchema = new mongoose.Schema(
         },
         isDeleted: { type: Boolean, default: false },
         profilePicture: { type: String, default: '' },
+        permissions: {
+            canCreateUsers: { type: Boolean, default: false }
+        },
         slackBotToken: { type: String, default: '' }
     },
     { timestamps: true }

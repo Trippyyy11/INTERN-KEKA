@@ -39,3 +39,13 @@ export const authorize = (roles = []) => {
     };
 };
 
+export const hasPermission = (permission) => {
+    return (req, res, next) => {
+        const isSuperAdmin = req.user?.role?.toLowerCase().replace(/\s/g, '') === 'superadmin';
+        if (isSuperAdmin || req.user?.permissions?.[permission]) {
+            return next();
+        }
+        return res.status(403).json({ message: `You do not have the required permission: ${permission}` });
+    };
+};
+

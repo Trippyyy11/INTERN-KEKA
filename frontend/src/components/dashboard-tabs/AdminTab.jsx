@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import AuditTab from './AuditTab';
+import api from '../../api/axios';
 import {
     MoreVertical,
     Users,
@@ -21,7 +22,12 @@ import {
     Briefcase,
     Sparkles,
     ChevronDown,
-    HelpCircle
+    HelpCircle,
+    X,
+    Lock,
+    ToggleLeft,
+    ToggleRight,
+    UserPlus
 } from 'lucide-react';
 
 /* ======= HELPER COMPONENTS (Moved outside to prevent remounting) ======= */
@@ -153,6 +159,61 @@ const AdminTab = ({
     const [payrollYear, setPayrollYear] = useState(new Date().getFullYear());
     const pagedUsers = allUsers.filter(u => u.status !== 'Pending');
     const filteredConfigs = filterType === 'All' ? orgConfigs : orgConfigs.filter(c => c.type === filterType);
+
+    // Create User state
+    const [showCreateUserModal, setShowCreateUserModal] = useState(false);
+    const [createUserForm, setCreateUserForm] = useState({ name: '', email: '', password: '', role: 'Intern', department: '', designation: '', reportingManager: '', phoneNumber: '' });
+    const [createUserLoading, setCreateUserLoading] = useState(false);
+    const [createUserError, setCreateUserError] = useState('');
+
+    // Permissions state
+    const [permissionsUsers, setPermissionsUsers] = useState([]);
+    const [permissionsLoading, setPermissionsLoading] = useState(false);
+
+    const normalizedRole = user?.role?.toLowerCase().replace(/\s/g, '');
+    const isSuperAdmin = normalizedRole === 'superadmin';
+    const canCreateUsersPermission = isSuperAdmin || user?.permissions?.canCreateUsers;
+
+    // Departments and designations from orgConfigs
+    const departments = orgConfigs.filter(c => c.type === 'Department').map(c => c.name);
+    const designations = orgConfigs.filter(c => c.type === 'Designation').map(c => c.name);
+    const managers = allUsers.filter(u => u.role === 'Reporting Manager' || u.role === 'Super Admin');
+
+    // Load permissions users when Permissions tab is active
+    useEffect(() => {
+        if (activeSubTab === 'Permissions' && isSuperAdmin) {
+            setPermissionsLoading(true);
+            api.get('/admin/org-users').then(res => {
+                setPermissionsUsers(res.data.filter(u => !u.isDeleted));
+                setPermissionsLoading(false);
+            }).catch(() => setPermissionsLoading(false));
+        }
+    }, [activeSubTab, isSuperAdmin]);
+
+    const handleCreateUser = async (e) => {
+        e.preventDefault();
+        setCreateUserLoading(true);
+        setCreateUserError('');
+        try {
+            await api.post('/admin/users', createUserForm);
+            setShowCreateUserModal(false);
+            setCreateUserForm({ name: '', email: '', password: '', role: 'Intern', department: '', designation: '', reportingManager: '', phoneNumber: '' });
+            window.location.reload(); // refresh user list
+        } catch (err) {
+            setCreateUserError(err.response?.data?.message || 'Failed to create user');
+        } finally {
+            setCreateUserLoading(false);
+        }
+    };
+
+    const handleTogglePermission = async (userId, permission, currentValue) => {
+        try {
+            await api.patch(`/admin/users/${userId}/permissions`, { [permission]: !currentValue });
+            setPermissionsUsers(prev => prev.map(u => u._id === userId ? { ...u, permissions: { ...u.permissions, [permission]: !currentValue } } : u));
+        } catch (err) {
+            console.error('Failed to update permission', err);
+        }
+    };
     
     /* ======= CLICK OUTSIDE HANDLER ======= */
     useEffect(() => {
@@ -221,13 +282,13 @@ const AdminTab = ({
             }}>
                 {[
                     { key: 'Leave', label: 'USERS' },
-                    { key: 'Attendance', label: 'ATTENDANCE' },
-                    { key: 'Approvals', label: 'APPROVALS', count: pendingUsers.length },
-                    { key: 'Configs', label: 'ORG CONFIGS' },
-                    { key: 'Settings', label: 'SYSTEM SETTINGS' },
-                    { key: 'Bank', label: 'BANK INFO' },
-                    { key: 'Payroll', label: 'PAYROLL' },
-                    ...(user?.role === 'Super Admin' ? [{ key: 'Audit', label: 'AUDIT LOGS' }] : [])
+                    ...(isSuperAdmin || normalizedRole === 'reportingmanager' || normalizedRole === 'reportingofficer' ? [{ key: 'Attendance', label: 'ATTENDANCE' }] : []),
+                    ...(isSuperAdmin || normalizedRole === 'reportingmanager' || normalizedRole === 'reportingofficer' ? [{ key: 'Configs', label: 'ORG CONFIGS' }] : []),
+                    ...(isSuperAdmin ? [{ key: 'Settings', label: 'SYSTEM SETTINGS' }] : []),
+                    ...(isSuperAdmin ? [{ key: 'Bank', label: 'BANK INFO' }] : []),
+                    ...(isSuperAdmin ? [{ key: 'Payroll', label: 'PAYROLL' }] : []),
+                    ...(isSuperAdmin ? [{ key: 'Permissions', label: 'PERMISSIONS' }] : []),
+                    ...(isSuperAdmin ? [{ key: 'Audit', label: 'AUDIT LOGS' }] : [])
                 ].map(t => {
                     const active = activeSubTab === t.key;
                     return (
@@ -256,7 +317,18 @@ const AdminTab = ({
             {/* ===== USERS ===== */}
             {activeSubTab === 'Leave' && (
                 <div style={{ ...glass, padding: '2rem', overflow: activeActionMenu ? 'visible' : 'hidden' }}>
-                    <SectionHeader icon={<Users size={24} />} title="Active Employees" subtitle={`${pagedUsers.length} team members in your organization`} />
+                    <SectionHeader icon={<Users size={24} />} title="Active Employees" subtitle={`${pagedUsers.length} team members in your organization`}
+                        extra={canCreateUsersPermission && (
+                            <button onClick={() => setShowCreateUserModal(true)} style={{
+                                padding: '0.7rem 1.5rem', borderRadius: '14px', border: 'none', cursor: 'pointer',
+                                background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', color: '#fff',
+                                fontWeight: '800', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.5rem',
+                                boxShadow: '0 4px 16px rgba(99,102,241,0.35)', transition: 'all 0.2s'
+                            }} onMouseOver={e => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseOut={e => e.currentTarget.style.transform = 'translateY(0)'}>
+                                <UserPlus size={16} /> Create User
+                            </button>
+                        )}
+                    />
 
                     <div style={{ overflowX: 'auto', margin: '0 -2rem -2rem', borderBottomLeftRadius: '28px', borderBottomRightRadius: '28px' }}>
                         <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '800px' }}>
@@ -447,63 +519,51 @@ const AdminTab = ({
                 </div>
             )}
 
-            {/* ===== APPROVALS ===== */}
-            {activeSubTab === 'Approvals' && (
+            {/* ===== PERMISSIONS (Super Admin Only) ===== */}
+            {activeSubTab === 'Permissions' && isSuperAdmin && (
                 <div style={{ ...glass, padding: '2rem' }}>
-                    <SectionHeader icon={<UserCheck size={24} />} title="Pending Approvals" subtitle="Review new employee registrations" />
+                    <SectionHeader icon={<Lock size={24} />} title="User Permissions" subtitle="Grant or revoke granular permissions for individual users" />
 
-                    {pendingUsers.length > 0 ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                            {pendingUsers.map((u, idx) => (
-                                <div key={u._id} style={{
-                                    display: 'flex', alignItems: 'center', gap: '1.5rem', padding: '1.25rem 1.5rem',
-                                    background: isLightMode ? '#f8fafc' : 'rgba(0,0,0,0.12)',
-                                    borderRadius: '20px', border: `1px solid ${isLightMode ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.04)'}`,
-                                    transition: 'all 0.2s'
-                                }} onMouseOver={e => e.currentTarget.style.borderColor = 'var(--primary)'} onMouseOut={e => e.currentTarget.style.borderColor = isLightMode ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.04)'}>
-                                    <AdminAvatar name={u.name} idx={idx} gradientColors={gradientColors} />
-                                    <div style={{ flex: 1, minWidth: 0 }}>
-                                        <div style={{ fontWeight: '700', fontSize: '0.95rem', color: 'var(--text-main)' }}>{u.name}</div>
-                                        <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'flex', gap: '1rem', flexWrap: 'wrap', marginTop: '2px' }}>
-                                            <span>{u.email}</span>
-                                            {u.designation && <span>• {u.designation}</span>}
-                                            {u.department && <span>• {u.department}</span>}
-                                            {u.phoneNumber && <span>• {u.phoneNumber}</span>}
-                                        </div>
-                                    </div>
-                                    <div style={{ display: 'flex', gap: '0.6rem', flexShrink: 0 }}>
-                                        <button onClick={() => handleApproveUser(u._id)} style={{
-                                            padding: '0.6rem 1.25rem', borderRadius: '12px', border: 'none', cursor: 'pointer',
-                                            background: 'linear-gradient(135deg,#10b981,#34d399)', color: '#fff',
-                                            fontWeight: '800', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.4rem',
-                                            boxShadow: '0 4px 12px rgba(16,185,129,0.3)', transition: 'all 0.2s'
-                                        }} onMouseOver={e => e.currentTarget.style.transform = 'translateY(-1px)'} onMouseOut={e => e.currentTarget.style.transform = 'translateY(0)'}>
-                                            <UserCheck size={14} /> Approve
-                                        </button>
-                                        <button onClick={() => handleDenyUser(u._id)} style={{
-                                            padding: '0.6rem 1.25rem', borderRadius: '12px', cursor: 'pointer',
-                                            background: 'transparent', border: `1.5px solid ${isLightMode ? '#fecaca' : 'rgba(239,68,68,0.3)'}`,
-                                            color: '#ef4444', fontWeight: '800', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.4rem', transition: 'all 0.2s'
-                                        }} onMouseOver={e => { e.currentTarget.style.background = '#ef4444'; e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = '#ef4444'; }}
-                                           onMouseOut={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.borderColor = isLightMode ? '#fecaca' : 'rgba(239,68,68,0.3)'; }}>
-                                            <UserX size={14} /> Deny
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
+                    {permissionsLoading ? (
+                        <div style={{ padding: '4rem', textAlign: 'center', color: 'var(--text-muted)' }}>Loading users...</div>
                     ) : (
-                        <div style={{ padding: '6rem 2rem', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                            <div style={{ 
-                                width: '64px', height: '64px', borderRadius: '20px', 
-                                background: 'rgba(16, 185, 129, 0.1)', color: '#10b981',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                marginBottom: '1.25rem'
-                            }}>
-                                <CheckCircle2 size={32} />
-                            </div>
-                            <h3 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '900', color: 'var(--text-main)', letterSpacing: '-0.3px' }}>All caught up!</h3>
-                            <p style={{ margin: '0.4rem 0 0', fontSize: '0.9rem', fontWeight: '500', color: 'var(--text-muted)' }}>No pending approval requests at the moment.</p>
+                        <div style={{ overflowX: 'auto', margin: '0 -2rem -2rem', borderBottomLeftRadius: '28px', borderBottomRightRadius: '28px' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '700px' }}>
+                                <thead>
+                                    <tr>
+                                        <th style={{ ...thStyle, paddingLeft: '2rem' }}>EMPLOYEE</th>
+                                        <th style={thStyle}>ROLE</th>
+                                        <th style={{ ...thStyle, textAlign: 'center' }}>CAN CREATE USERS</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {permissionsUsers.map((u, idx) => (
+                                        <tr key={u._id} style={{ borderTop: rowBorder, transition: 'background 0.2s' }}
+                                            onMouseOver={e => e.currentTarget.style.background = isLightMode ? 'rgba(99,102,241,0.03)' : 'rgba(255,255,255,0.02)'}
+                                            onMouseOut={e => e.currentTarget.style.background = 'transparent'}>
+                                            <td style={{ ...tdStyle, paddingLeft: '2rem' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                                    <AdminAvatar name={u.name} idx={idx} gradientColors={gradientColors} />
+                                                    <div>
+                                                        <div style={{ fontWeight: '700', fontSize: '0.95rem', color: 'var(--text-main)' }}>{u.name}</div>
+                                                        <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{u.email}</div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td style={tdStyle}><RoleBadge role={u.role} isLightMode={isLightMode} /></td>
+                                            <td style={{ ...tdStyle, textAlign: 'center' }}>
+                                                <button onClick={() => handleTogglePermission(u._id, 'canCreateUsers', u.permissions?.canCreateUsers)} style={{
+                                                    background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.8rem',
+                                                    color: u.permissions?.canCreateUsers ? '#10b981' : (isLightMode ? '#cbd5e1' : 'rgba(255,255,255,0.15)'),
+                                                    transition: 'all 0.2s', display: 'inline-flex', alignItems: 'center'
+                                                }}>
+                                                    {u.permissions?.canCreateUsers ? <ToggleRight size={32} /> : <ToggleLeft size={32} />}
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
                         </div>
                     )}
                 </div>
@@ -891,8 +951,129 @@ const AdminTab = ({
             )}
 
             {/* ===== AUDIT LOGS (Super Admin Only) ===== */}
-            {activeSubTab === 'Audit' && user?.role === 'Super Admin' && (
+            {activeSubTab === 'Audit' && isSuperAdmin && (
                 <AuditTab isLightMode={isLightMode} />
+            )}
+
+            {/* ===== CREATE USER MODAL ===== */}
+            {showCreateUserModal && (
+                <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.7)', zIndex: 9999, display: 'flex', justifyContent: 'center', alignItems: 'center', backdropFilter: 'blur(4px)' }}
+                    onClick={(e) => { if (e.target === e.currentTarget) setShowCreateUserModal(false); }}>
+                    <div style={{
+                        background: isLightMode ? '#ffffff' : '#0f172a', borderRadius: '28px', padding: '2.5rem',
+                        width: '90%', maxWidth: '650px', maxHeight: '85vh', overflowY: 'auto',
+                        border: `1px solid ${isLightMode ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.08)'}`,
+                        boxShadow: '0 25px 60px rgba(0,0,0,0.4)'
+                    }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                            <div>
+                                <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '900', color: 'var(--text-main)' }}>Create New User</h2>
+                                <p style={{ margin: '0.3rem 0 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>Provision a new employee account</p>
+                            </div>
+                            <button onClick={() => setShowCreateUserModal(false)} style={{
+                                width: '38px', height: '38px', borderRadius: '12px', border: 'none', cursor: 'pointer',
+                                background: isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.06)', color: 'var(--text-muted)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center'
+                            }}><X size={18} /></button>
+                        </div>
+
+                        {createUserError && (
+                            <div style={{ padding: '0.75rem 1rem', borderRadius: '12px', background: 'rgba(239,68,68,0.1)', color: '#ef4444', fontSize: '0.85rem', fontWeight: '700', marginBottom: '1.5rem', border: '1px solid rgba(239,68,68,0.2)' }}>
+                                {createUserError}
+                            </div>
+                        )}
+
+                        <form onSubmit={handleCreateUser} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+                                <InputField label="Full Name *" isLightMode={isLightMode}>
+                                    <FormInput isLightMode={isLightMode} required type="text" placeholder="John Doe" value={createUserForm.name} onChange={e => setCreateUserForm({ ...createUserForm, name: e.target.value })} />
+                                </InputField>
+                                <InputField label="Email *" isLightMode={isLightMode}>
+                                    <FormInput isLightMode={isLightMode} required type="email" placeholder="john@company.com" value={createUserForm.email} onChange={e => setCreateUserForm({ ...createUserForm, email: e.target.value })} />
+                                </InputField>
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+                                <InputField label="Password *" isLightMode={isLightMode}>
+                                    <FormInput isLightMode={isLightMode} required type="password" placeholder="Set initial password" value={createUserForm.password} onChange={e => setCreateUserForm({ ...createUserForm, password: e.target.value })} />
+                                </InputField>
+                                <InputField label="Phone Number" isLightMode={isLightMode}>
+                                    <FormInput isLightMode={isLightMode} type="text" placeholder="+91 1234567890" value={createUserForm.phoneNumber} onChange={e => setCreateUserForm({ ...createUserForm, phoneNumber: e.target.value })} />
+                                </InputField>
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+                                <InputField label="Role *" isLightMode={isLightMode}>
+                                    <div style={{ position: 'relative' }}>
+                                        <select value={createUserForm.role} onChange={e => setCreateUserForm({ ...createUserForm, role: e.target.value })} style={{
+                                            width: '100%', padding: '0.9rem 2.8rem 0.9rem 1.2rem', fontSize: '0.95rem', fontWeight: '600',
+                                            background: isLightMode ? '#f8fafc' : 'rgba(0,0,0,0.2)',
+                                            border: `1.5px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.08)'}`,
+                                            borderRadius: '14px', color: 'var(--text-main)', outline: 'none', cursor: 'pointer', appearance: 'none'
+                                        }}>
+                                            <option value="Intern">Intern</option>
+                                            <option value="Reporting Manager">Reporting Manager</option>
+                                            <option value="Super Admin">Super Admin</option>
+                                        </select>
+                                        <div style={{ position: 'absolute', right: '1.2rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }}><ChevronDown size={18} /></div>
+                                    </div>
+                                </InputField>
+                                <InputField label="Department" isLightMode={isLightMode}>
+                                    <div style={{ position: 'relative' }}>
+                                        <select value={createUserForm.department} onChange={e => setCreateUserForm({ ...createUserForm, department: e.target.value })} style={{
+                                            width: '100%', padding: '0.9rem 2.8rem 0.9rem 1.2rem', fontSize: '0.95rem', fontWeight: '600',
+                                            background: isLightMode ? '#f8fafc' : 'rgba(0,0,0,0.2)',
+                                            border: `1.5px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.08)'}`,
+                                            borderRadius: '14px', color: 'var(--text-main)', outline: 'none', cursor: 'pointer', appearance: 'none'
+                                        }}>
+                                            <option value="">Select Department</option>
+                                            {departments.map(d => <option key={d} value={d}>{d}</option>)}
+                                        </select>
+                                        <div style={{ position: 'absolute', right: '1.2rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }}><ChevronDown size={18} /></div>
+                                    </div>
+                                </InputField>
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+                                <InputField label="Designation" isLightMode={isLightMode}>
+                                    <div style={{ position: 'relative' }}>
+                                        <select value={createUserForm.designation} onChange={e => setCreateUserForm({ ...createUserForm, designation: e.target.value })} style={{
+                                            width: '100%', padding: '0.9rem 2.8rem 0.9rem 1.2rem', fontSize: '0.95rem', fontWeight: '600',
+                                            background: isLightMode ? '#f8fafc' : 'rgba(0,0,0,0.2)',
+                                            border: `1.5px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.08)'}`,
+                                            borderRadius: '14px', color: 'var(--text-main)', outline: 'none', cursor: 'pointer', appearance: 'none'
+                                        }}>
+                                            <option value="">Select Designation</option>
+                                            {designations.map(d => <option key={d} value={d}>{d}</option>)}
+                                        </select>
+                                        <div style={{ position: 'absolute', right: '1.2rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }}><ChevronDown size={18} /></div>
+                                    </div>
+                                </InputField>
+                                <InputField label="Reporting Manager" isLightMode={isLightMode}>
+                                    <div style={{ position: 'relative' }}>
+                                        <select value={createUserForm.reportingManager} onChange={e => setCreateUserForm({ ...createUserForm, reportingManager: e.target.value })} style={{
+                                            width: '100%', padding: '0.9rem 2.8rem 0.9rem 1.2rem', fontSize: '0.95rem', fontWeight: '600',
+                                            background: isLightMode ? '#f8fafc' : 'rgba(0,0,0,0.2)',
+                                            border: `1.5px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.08)'}`,
+                                            borderRadius: '14px', color: 'var(--text-main)', outline: 'none', cursor: 'pointer', appearance: 'none'
+                                        }}>
+                                            <option value="">Select Manager</option>
+                                            {managers.map(m => <option key={m._id} value={m._id}>{m.name}</option>)}
+                                        </select>
+                                        <div style={{ position: 'absolute', right: '1.2rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }}><ChevronDown size={18} /></div>
+                                    </div>
+                                </InputField>
+                            </div>
+
+                            <button type="submit" disabled={createUserLoading} style={{
+                                padding: '1rem', borderRadius: '16px', border: 'none', cursor: createUserLoading ? 'wait' : 'pointer',
+                                background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', color: '#fff',
+                                fontWeight: '800', fontSize: '0.95rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                                boxShadow: '0 6px 20px rgba(99,102,241,0.35)', transition: 'all 0.2s', marginTop: '0.5rem',
+                                opacity: createUserLoading ? 0.7 : 1
+                            }} onMouseOver={e => !createUserLoading && (e.currentTarget.style.transform = 'translateY(-2px)')} onMouseOut={e => e.currentTarget.style.transform = 'translateY(0)'}>
+                                <UserPlus size={18} /> {createUserLoading ? 'Creating...' : 'Create User Account'}
+                            </button>
+                        </form>
+                    </div>
+                </div>
             )}
 
             <style>{`

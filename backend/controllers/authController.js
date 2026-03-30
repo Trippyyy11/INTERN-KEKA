@@ -188,28 +188,31 @@ export const updateProfile = async (req, res) => {
 // @route   POST /api/auth/login
 export const loginUser = async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const email = req.body.email?.toLowerCase();
+        const { password } = req.body;
         const user = await User.findOne({ email, isDeleted: { $ne: true } }).populate('reportingManager', 'name email');
 
-        if (user && user.password && (await user.matchPassword(password))) {
-            // isVerified check disabled for improvement period
-            // if (!user.isVerified) return res.status(401).json({ message: 'Verify email first.', unverified: true });
-            if (!user.isApproved) return res.status(401).json({ message: 'Account pending approval from Admin.' });
+        if (user) {
+            if (!user.password) {
+                return res.status(401).json({ message: 'Account incomplete: No password set. Please contact admin.' });
+            }
+            if (await user.matchPassword(password)) {
+                if (!user.isApproved) return res.status(401).json({ message: 'Account pending approval from Admin.' });
 
-            res.json({
-                _id: user.id,
-                name: user.name,
-                email: user.email,
-                role: user.role,
-                designation: user.designation,
-                place: user.place,
-                reportingManager: user.reportingManager,
-                welcomeProfile: user.welcomeProfile,
-                token: generateToken(user._id),
-            });
-        } else {
-            res.status(401).json({ message: 'Invalid credentials or account incomplete' });
+                return res.json({
+                    _id: user.id,
+                    name: user.name,
+                    email: user.email,
+                    role: user.role,
+                    designation: user.designation,
+                    place: user.place,
+                    reportingManager: user.reportingManager,
+                    welcomeProfile: user.welcomeProfile,
+                    token: generateToken(user._id),
+                });
+            }
         }
+        res.status(401).json({ message: 'Invalid email or password' });
     } catch (error) { res.status(500).json({ message: error.message }); }
 };
 
