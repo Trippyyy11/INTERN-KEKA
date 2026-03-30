@@ -6,7 +6,8 @@ const InboxTab = ({
     inboxRequests,
     handleRequestAction,
     getStatusStyle,
-    isLightMode
+    isLightMode,
+    showAlert
 }) => {
     const [localNotes, setLocalNotes] = React.useState({});
     const [showEditModal, setShowEditModal] = React.useState(false);
@@ -60,16 +61,18 @@ const InboxTab = ({
     const handleSaveEdit = async () => {
         setIsSavingEdit(true);
         try {
-            await api.put(`/attendance/logs/${editLogData.associatedAttendance._id}`, {
-                clockInTime: editForm.clockInTime || null,
-                clockOutTime: editForm.clockOutTime || null
-            });
+            // Updated to use the single-step atomic approval with overrides
+            await handleRequestAction(
+                editLogData._id, 
+                'Approved', 
+                'Attendance updated by manager during regularization.',
+                editForm.clockInTime || null,
+                editForm.clockOutTime || null
+            );
             setShowEditModal(false);
-            // Auto approve the request since they just fixed the attendance
-            await handleRequestAction(editLogData._id, 'Approved', 'Attendance updated by manager during regularization.');
         } catch (err) {
             console.error(err);
-            alert("Failed to update attendance.");
+            showAlert("Failed to update and approve attendance.", "error");
         } finally {
             setIsSavingEdit(false);
         }

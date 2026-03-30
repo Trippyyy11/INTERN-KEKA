@@ -6,7 +6,7 @@ const userSchema = new mongoose.Schema(
         name: { type: String, required: true },
         email: { type: String, required: true, unique: true },
         password: { type: String, required: false }, // Made optional for initial OTP stage
-        role: { type: String, enum: ['Super Admin', 'Reporting Manager', 'Intern'], default: 'Intern' },
+        role: { type: String, enum: ['Super Admin', 'Reporting Manager', 'Reporting Officer', 'Intern'], default: 'Intern' },
         reportingManager: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
         department: { type: String },
         designation: { type: String },
