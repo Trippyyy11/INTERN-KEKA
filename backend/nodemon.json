@@ -1,0 +1,13 @@
+{
+  "watch": ["."],
+  "ext": "js,mjs,json",
+  "ignore": [
+    "node_modules",
+    "scripts",
+    "*.csv",
+    "*.log",
+    "temp",
+    "audit_logs_*.csv"
+  ],
+  "delay": "1000"
+}

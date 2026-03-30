@@ -19,10 +19,10 @@ const Sidebar = ({
                 {sidebarItems.filter(item => {
                     const normalizedRole = user?.role?.toLowerCase().replace(/\s/g, '');
                     if (item.name === 'My Team' && teammates.length === 0) return false;
-                    if (item.name === 'Admin' && !(normalizedRole === 'reportingofficer' || normalizedRole === 'superadmin')) return false;
+                    if (item.name === 'Admin' && !(normalizedRole === 'reportingmanager' || normalizedRole === 'superadmin')) return false;
                     
                     // Hide personal employee tabs from Admins and Managers
-                    if ((item.name === 'Me' || item.name === 'My Finances') && (normalizedRole === 'superadmin' || normalizedRole === 'reportingmanager' || normalizedRole === 'reportingofficer')) {
+                    if ((item.name === 'Me' || item.name === 'My Finances') && (normalizedRole === 'superadmin' || normalizedRole === 'reportingmanager')) {
                         return false;
                     }
                     

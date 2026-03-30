@@ -5,10 +5,18 @@ import sendEmail from '../utils/sendEmail.js';
 // Helper: Create an audit log entry (called from other controllers)
 export const createAuditLog = async (userId, action, details, options = {}) => {
     try {
+        let nameToLog = options.userName;
+
+        if (!nameToLog) {
+            const user = await User.findById(userId).select('name');
+            nameToLog = user ? user.name : 'System';
+        }
+
         await AuditLog.create({
             user: userId,
             action,
             details,
+            userName: nameToLog,
             targetModel: options.targetModel || null,
             targetId: options.targetId || null,
             ipAddress: options.ipAddress || '',
@@ -77,7 +85,9 @@ export const exportAuditLogs = async (req, res) => {
         const csvHeader = 'Date,Time,User,Email,Action,Details,Target Model,IP Address\n';
         const csvRows = logs.map(log => {
             const date = new Date(log.createdAt);
-            return `"${date.toLocaleDateString()}","${date.toLocaleTimeString()}","${log.user?.name || 'System'}","${log.user?.email || 'N/A'}","${log.action}","${(log.details || '').replace(/"/g, '""')}","${log.targetModel || 'N/A'}","${log.ipAddress || 'N/A'}"`;
+            const performerName = log.userName || log.user?.name || 'System';
+            const performerEmail = log.user?.email || 'N/A';
+            return `"${date.toLocaleDateString()}","${date.toLocaleTimeString()}","${performerName}","${performerEmail}","${log.action}","${(log.details || '').replace(/"/g, '""')}","${log.targetModel || 'N/A'}","${log.ipAddress || 'N/A'}"`;
         }).join('\n');
         const csvContent = csvHeader + csvRows;
 

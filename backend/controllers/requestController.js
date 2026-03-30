@@ -118,7 +118,7 @@ export const createRequest = async (req, res) => {
             );
         }
 
-        await createAuditLog(req.user._id, 'REQUEST_CREATED', `Created new ${type} request`, { targetModel: 'Request', targetId: request._id, ipAddress: req.ip });
+        await createAuditLog(req.user._id, 'REQUEST_CREATED', `Created new ${type} request for ${new Date(startDate).toLocaleDateString()}`, { targetModel: 'Request', targetId: request._id, ipAddress: req.ip, userName: req.user.name });
 
         res.status(201).json(populated);
     } catch (error) {
@@ -192,7 +192,7 @@ export const updateRequestStatus = async (req, res) => {
         const isSuperAdmin = normalizedRole === 'superadmin';
         let isManagerOfUser = false;
 
-        if (normalizedRole === 'reportingmanager' || normalizedRole === 'reportingofficer') {
+        if (normalizedRole === 'reportingmanager') {
             const requestUser = await User.findById(request.user);
             if (requestUser && requestUser.reportingManager?.toString() === req.user._id.toString()) {
                 isManagerOfUser = true;
@@ -239,6 +239,23 @@ export const updateRequestStatus = async (req, res) => {
                     }
                     leave.cancelledDates.push(...datesToCancel);
                     await leave.save();
+
+                    // Sync with Attendance (Team Calendar) - Remove the 'Leave' mark
+                    import('../models/Attendance.js').then(async ({ default: Attendance }) => {
+                        const dateObjects = datesToCancel.map(d => {
+                            const date = new Date(d);
+                            date.setHours(0,0,0,0);
+                            return date;
+                        });
+                        
+                        // Delete attendance records for these dates where status was 'Leave'
+                        // This makes them 'empty' again on the calendar
+                        await Attendance.deleteMany({
+                            user: updated.user,
+                            date: { $in: dateObjects },
+                            status: 'Leave'
+                        });
+                    });
                 }
             }
         }
@@ -300,6 +317,10 @@ export const updateRequestStatus = async (req, res) => {
                 'Request'
             );
         }
+
+        // Audit log
+        const targetUser = await User.findById(updated.user).select('name');
+        await createAuditLog(req.user._id, status === 'Approved' ? 'REQUEST_APPROVED' : 'REQUEST_REJECTED', `${status} ${updated.type} for ${targetUser?.name || updated.user}`, { targetModel: 'Request', targetId: updated._id, ipAddress: req.ip, userName: req.user.name });
 
         res.json(populated);
     } catch (error) {

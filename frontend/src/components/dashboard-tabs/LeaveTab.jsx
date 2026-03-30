@@ -43,37 +43,9 @@ const LeaveTab = ({
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', padding: '1.5rem' }}>
             {/* ── My Leave Stats ── */}
             <div style={sectionTitleStyle}>My Leave Stats</div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1.25rem' }}>
-                {/* Weekly Pattern */}
-                <div style={bentoPanelStyle}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'rgba(var(--primary-rgb), 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <Calendar size={16} color="var(--primary)" />
-                            </div>
-                            <span style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-main)' }}>Weekly Pattern</span>
-                        </div>
-                        <Info size={14} color="var(--text-muted)" style={{ opacity: 0.5 }} />
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', height: '100px', padding: '0 0.5rem', flex: 1 }}>
-                        {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, i) => (
-                            <div key={day} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', flex: 1 }}>
-                                <div style={{
-                                    width: '14px',
-                                    height: `${(leaveStats.weeklyPattern?.[i] || 0) * 20 + 4}px`,
-                                    minHeight: '4px',
-                                    background: `linear-gradient(180deg, var(--primary), rgba(var(--primary-rgb), 0.4))`,
-                                    borderRadius: '4px',
-                                    transition: 'height 0.5s ease',
-                                }}></div>
-                                <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: '600' }}>{day[0]}</span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Consumed Leave Types */}
-                <div style={{ ...bentoPanelStyle, alignItems: 'center' }}>
+            {/* Consumed Leave Types (Centered) */}
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
+                <div style={{ ...bentoPanelStyle, alignItems: 'center', maxWidth: '400px', width: '100%' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: '1rem' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                             <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'rgba(var(--primary-rgb), 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -120,35 +92,7 @@ const LeaveTab = ({
                         ].map(l => (
                             <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                                 <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: l.color }}></div>
-                                <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)', fontWeight: '600' }}>{l.label}</span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Monthly Stats */}
-                <div style={bentoPanelStyle}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'rgba(var(--primary-rgb), 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <TrendingUp size={16} color="var(--primary)" />
-                            </div>
-                            <span style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-main)' }}>Monthly Stats</span>
-                        </div>
-                        <Info size={14} color="var(--text-muted)" style={{ opacity: 0.5 }} />
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', height: '100px', padding: '0 0.25rem', gap: '3px', flex: 1 }}>
-                        {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((m, i) => (
-                            <div key={m} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', flex: 1 }}>
-                                <div style={{
-                                    width: '100%',
-                                    height: `${(leaveStats.monthlyStats?.[i] || 0) * 10 + 2}px`,
-                                    minHeight: '2px',
-                                    background: i < new Date().getMonth() + 1 ? `linear-gradient(180deg, var(--primary), rgba(var(--primary-rgb), 0.3))` : (isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.05)'),
-                                    borderRadius: '3px',
-                                    transition: 'height 0.5s ease',
-                                }}></div>
-                                <span style={{ fontSize: '0.55rem', color: 'var(--text-muted)', fontWeight: '600' }}>{m[0]}</span>
+                                <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: '600' }}>{l.label}</span>
                             </div>
                         ))}
                     </div>
@@ -264,7 +208,7 @@ const LeaveTab = ({
                         </tr>
                     </thead>
                     <tbody>
-                        {myRequests.filter(r => ['Leave Application', 'Half Day', 'Comp Off'].includes(r.type)).length > 0 ? myRequests.filter(r => ['Leave Application', 'Half Day', 'Comp Off'].includes(r.type)).map(h => (
+                        {myRequests.filter(r => ['Leave Application', 'Half Day', 'Comp Off', 'Leave Cancellation'].includes(r.type)).length > 0 ? myRequests.filter(r => ['Leave Application', 'Half Day', 'Comp Off', 'Leave Cancellation'].includes(r.type)).map(h => (
                             <tr key={h._id} style={{
                                 borderBottom: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.06)'}`,
                                 transition: 'background 0.2s',

@@ -319,7 +319,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
         const timer = setInterval(() => setCurrentTime(new Date().toLocaleTimeString()), 1000);
         fetchStats();
         fetchSystemSettings();
-        if (user?.role === 'Reporting Manager' || user?.role === 'Super Admin' || user?.role === 'Reporting Officer') {
+        if (user?.role === 'Reporting Manager' || user?.role === 'Super Admin') {
             fetchAdminData();
             fetchOrgConfigs();
             fetchGlobalFinances();
@@ -469,12 +469,34 @@ export default function Dashboard({ user, onLogout, setUser }) {
 
 
     const submitRequest = async () => {
-        if (!requestType || (requestType === 'Leave Application' && !requestLeaveType) || !requestStartDate || !requestEndDate) {
+        // General required field check (Adjusted for Leave Cancellation)
+        const isLeaveCancel = requestType === 'Leave Cancellation';
+        const isLeaveApp = requestType === 'Leave Application';
+        const isAttReg = requestType === 'Attendance Regularization';
+
+        if (!requestType) {
             setCustomAlert({ message: 'Please fill in all required fields.', type: 'info' });
             return;
         }
 
-        if (requestType === 'Attendance Regularization' && (!requestExpectedClockIn || !requestExpectedClockOut)) {
+        if (isLeaveApp && !requestLeaveType) {
+            setCustomAlert({ message: 'Please select a leave type.', type: 'info' });
+            return;
+        }
+
+        if (isLeaveCancel) {
+            if (!selectedLeaveForCancel || !datesToCancel || datesToCancel.length === 0) {
+                setCustomAlert({ message: 'Please select an approved leave and at least one date to cancel.', type: 'info' });
+                return;
+            }
+        } else {
+            if (!requestStartDate || !requestEndDate) {
+                setCustomAlert({ message: 'Please fill in all required fields.', type: 'info' });
+                return;
+            }
+        }
+
+        if (isAttReg && (!requestExpectedClockIn || !requestExpectedClockOut)) {
             setCustomAlert({ message: 'Please provide Expected Clock In and Clock Out times for regularization.', type: 'info' });
             return;
         }
@@ -1348,7 +1370,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
 
         if (activeSidebar === 'Admin') {
             const normalizedRole = user?.role?.toLowerCase().replace(/\s/g, '');
-            const isAdminOrSuper = normalizedRole === 'reportingofficer' || normalizedRole === 'superadmin' || normalizedRole === 'reportingmanager' || user?.permissions?.canCreateUsers;
+            const isAdminOrSuper = normalizedRole === 'superadmin' || normalizedRole === 'reportingmanager' || user?.permissions?.canCreateUsers;
             if (!isAdminOrSuper) return <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>Access Denied. Admin privileges required.</div>;
 
             return (
@@ -2107,7 +2129,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
                         <div><label style={labelStyle}>Email</label><div style={{ fontSize: '0.9rem', color: 'var(--text-main)' }}>{u.email}</div></div>
                         <div><label style={labelStyle}>Department</label><div style={{ fontSize: '0.9rem', color: 'var(--text-main)' }}>{u.department}</div></div>
                         <div><label style={labelStyle}>Joining Date</label><div style={{ fontSize: '0.9rem', color: 'var(--text-main)' }}>{u.joiningDate ? new Date(u.joiningDate).toLocaleDateString() : 'N/A'}</div></div>
-                        <div><label style={labelStyle}>Employee ID</label><div style={{ fontSize: '0.9rem', color: 'var(--text-main)' }}>KEKA-{u._id?.substring(u._id.length - 6).toUpperCase() || 'ID'}</div></div>
+                        <div><label style={labelStyle}>Intern ID</label><div style={{ fontSize: '0.9rem', color: 'var(--text-main)' }}>{u.internId || 'N/A'}</div></div>
                     </div>
                     {u.welcomeProfile?.about && (
                         <div style={{ marginTop: '1.5rem' }}>
@@ -2267,7 +2289,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
     const renderEditModal = () => {
         if (!showEditModal || !selectedUser) return null;
         const u = selectedUser;
-        const isAdmin = user?.role === 'Reporting Officer' || user?.role === 'Super Admin';
+        const isAdmin = user?.role === 'Reporting Manager' || user?.role === 'Super Admin';
 
         const modalBentoStyle = getModalBentoStyle(isLightMode);
         const modalHeaderGrad = isLightMode 
@@ -2421,6 +2443,10 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                             {editMode ? (
                                                 <input type="text" value={u.bloodGroup || ''} onChange={e => setSelectedUser({ ...u, bloodGroup: e.target.value })} style={modalInputStyle} placeholder="e.g., O+" />
                                             ) : <div style={{ fontSize: '1.05rem', fontWeight: '700', color: 'var(--text-main)' }}>{u.bloodGroup || 'N/A'}</div>}
+                                        </FormField>
+                                        <FormField isLightMode={isLightMode} label="Intern ID">
+                                            <div style={{ fontSize: '1.05rem', fontWeight: '900', color: 'var(--primary)' }}>{u.internId || 'TPINTXXX'}</div>
+                                            <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>System Generated ID</div>
                                         </FormField>
                                     </div>
                                 </>
@@ -2602,7 +2628,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                 }} 
                                 onClick={handleUpdateUser}
                             >
-                                Update Employee
+                                Update Intern
                             </button>
                         )}
                     </div>
@@ -2779,11 +2805,11 @@ export default function Dashboard({ user, onLogout, setUser }) {
                     <nav className="sidebar-nav">
                     {sidebarItems.filter(item => {
                         const normalizedRole = user?.role?.toLowerCase().replace(/\s/g, '');
-                        if (item.name === 'Admin' && !(normalizedRole === 'superadmin' || normalizedRole === 'reportingofficer' || normalizedRole === 'reportingmanager' || user?.permissions?.canCreateUsers)) return false;
-                        if (item.name === 'Slack' && !(normalizedRole === 'reportingofficer' || normalizedRole === 'superadmin')) return false;
+                        if (item.name === 'Admin' && !(normalizedRole === 'superadmin' || normalizedRole === 'reportingmanager' || user?.permissions?.canCreateUsers)) return false;
+                        if (item.name === 'Slack' && !(normalizedRole === 'reportingmanager' || normalizedRole === 'superadmin')) return false;
 
                         // Hide personal employee tabs from Admins and Managers
-                        if ((item.name === 'Me' || item.name === 'My Finances') && (normalizedRole === 'superadmin' || normalizedRole === 'reportingmanager' || normalizedRole === 'reportingofficer')) {
+                        if ((item.name === 'Me' || item.name === 'My Finances') && (normalizedRole === 'superadmin' || normalizedRole === 'reportingmanager')) {
                             return false;
                         }
 

@@ -106,8 +106,9 @@ const FormInput = ({ isLightMode, ...props }) => {
 };
 
 const RoleBadge = ({ role, isLightMode }) => {
-    const isSA = role === 'Super Admin';
-    const isAdmin = role === 'Reporting Manager';
+    const r = role?.toLowerCase().replace(/\s/g, '');
+    const isSA = r === 'superadmin';
+    const isAdmin = r === 'reportingmanager';
     const bg = isSA ? 'linear-gradient(135deg,#6366f1,#8b5cf6)' : isAdmin ? 'linear-gradient(135deg,#3b82f6,#06b6d4)' : (isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.06)');
     const color = (isSA || isAdmin) ? '#fff' : 'var(--text-muted)';
     return (
@@ -169,6 +170,7 @@ const AdminTab = ({
     // Permissions state
     const [permissionsUsers, setPermissionsUsers] = useState([]);
     const [permissionsLoading, setPermissionsLoading] = useState(false);
+    const [potentialManagers, setPotentialManagers] = useState([]);
 
     const normalizedRole = user?.role?.toLowerCase().replace(/\s/g, '');
     const isSuperAdmin = normalizedRole === 'superadmin';
@@ -177,7 +179,17 @@ const AdminTab = ({
     // Departments and designations from orgConfigs
     const departments = orgConfigs.filter(c => c.type === 'Department').map(c => c.name);
     const designations = orgConfigs.filter(c => c.type === 'Designation').map(c => c.name);
-    const managers = allUsers.filter(u => u.role === 'Reporting Manager' || u.role === 'Super Admin');
+    
+    // Potential managers for the dropdown
+    useEffect(() => {
+        if (canCreateUsersPermission) {
+            api.get('/admin/potential-managers').then(res => {
+                setPotentialManagers(res.data);
+            }).catch(err => console.error('Failed to fetch potential managers', err));
+        }
+    }, [canCreateUsersPermission]);
+
+    const managers = potentialManagers;
 
     // Load permissions users when Permissions tab is active
     useEffect(() => {
@@ -282,8 +294,8 @@ const AdminTab = ({
             }}>
                 {[
                     { key: 'Leave', label: 'USERS' },
-                    ...(isSuperAdmin || normalizedRole === 'reportingmanager' || normalizedRole === 'reportingofficer' ? [{ key: 'Attendance', label: 'ATTENDANCE' }] : []),
-                    ...(isSuperAdmin || normalizedRole === 'reportingmanager' || normalizedRole === 'reportingofficer' ? [{ key: 'Configs', label: 'ORG CONFIGS' }] : []),
+                    ...(isSuperAdmin || normalizedRole === 'reportingmanager' ? [{ key: 'Attendance', label: 'ATTENDANCE' }] : []),
+                    ...(isSuperAdmin || normalizedRole === 'reportingmanager' ? [{ key: 'Configs', label: 'ORG CONFIGS' }] : []),
                     ...(isSuperAdmin ? [{ key: 'Settings', label: 'SYSTEM SETTINGS' }] : []),
                     ...(isSuperAdmin ? [{ key: 'Bank', label: 'BANK INFO' }] : []),
                     ...(isSuperAdmin ? [{ key: 'Payroll', label: 'PAYROLL' }] : []),
@@ -317,7 +329,7 @@ const AdminTab = ({
             {/* ===== USERS ===== */}
             {activeSubTab === 'Leave' && (
                 <div style={{ ...glass, padding: '2rem', overflow: activeActionMenu ? 'visible' : 'hidden' }}>
-                    <SectionHeader icon={<Users size={24} />} title="Active Employees" subtitle={`${pagedUsers.length} team members in your organization`}
+                    <SectionHeader icon={<Users size={24} />} title="Active Interns" subtitle={`${pagedUsers.length} team members in your organization`}
                         extra={canCreateUsersPermission && (
                             <button onClick={() => setShowCreateUserModal(true)} style={{
                                 padding: '0.7rem 1.5rem', borderRadius: '14px', border: 'none', cursor: 'pointer',
@@ -325,7 +337,7 @@ const AdminTab = ({
                                 fontWeight: '800', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.5rem',
                                 boxShadow: '0 4px 16px rgba(99,102,241,0.35)', transition: 'all 0.2s'
                             }} onMouseOver={e => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseOut={e => e.currentTarget.style.transform = 'translateY(0)'}>
-                                <UserPlus size={16} /> Create User
+                                <UserPlus size={16} /> Create Intern
                             </button>
                         )}
                     />
@@ -334,7 +346,7 @@ const AdminTab = ({
                         <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '800px' }}>
                             <thead>
                                 <tr>
-                                    <th style={{ ...thStyle, paddingLeft: '2rem' }}>EMPLOYEE</th>
+                                    <th style={{ ...thStyle, paddingLeft: '2rem' }}>INTERN</th>
                                     <th style={thStyle}>DESIGNATION</th>
                                     <th style={thStyle}>DEPARTMENT</th>
                                     <th style={thStyle}>ROLE</th>
@@ -387,7 +399,7 @@ const AdminTab = ({
                                                         { icon: Eye, label: 'View Profile', action: () => { setSelectedUser(u); setShowEditModal(true); setEditMode(false); setModalTab('Personal'); setActiveActionMenu(null); } },
                                                         { icon: Edit3, label: 'Edit Details', action: () => { setSelectedUser(u); setEditMode(true); setShowEditModal(true); setModalTab('Personal'); setActiveActionMenu(null); } },
                                                         { icon: Clock, label: 'Attendance Log', action: () => { handleShowAttendance(u); setActiveActionMenu(null); } },
-                                                        { icon: Trash2, label: 'Delete User', variant: 'danger', action: () => { handleDeleteUser(u._id); setActiveActionMenu(null); } }
+                                                        { icon: Trash2, label: 'Delete Intern', variant: 'danger', action: () => { handleDeleteUser(u._id); setActiveActionMenu(null); } }
                                                     ].map((item, i) => (
                                                         <div key={i} onClick={item.action} style={{
                                                             display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', borderRadius: '12px',
@@ -425,7 +437,7 @@ const AdminTab = ({
                         <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '800px' }}>
                             <thead>
                                 <tr>
-                                    <th style={{ ...thStyle, paddingLeft: '2rem' }}>EMPLOYEE</th>
+                                    <th style={{ ...thStyle, paddingLeft: '2rem' }}>INTERN</th>
                                     <th style={thStyle}>DATE</th>
                                     <th style={thStyle}>CLOCK IN</th>
                                     <th style={thStyle}>CLOCK OUT</th>
@@ -531,7 +543,7 @@ const AdminTab = ({
                             <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '700px' }}>
                                 <thead>
                                     <tr>
-                                        <th style={{ ...thStyle, paddingLeft: '2rem' }}>EMPLOYEE</th>
+                                        <th style={{ ...thStyle, paddingLeft: '2rem' }}>INTERN</th>
                                         <th style={thStyle}>ROLE</th>
                                         <th style={{ ...thStyle, textAlign: 'center' }}>CAN CREATE USERS</th>
                                     </tr>
@@ -731,7 +743,7 @@ const AdminTab = ({
                             <h3 style={{ fontSize: '1rem', fontWeight: '800', color: 'var(--text-main)', marginBottom: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
                                 <Calendar size={18} color="var(--primary)" /> Default Leave Quotas
                             </h3>
-                            <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>These values are applied to all new employees globally.</p>
+                            <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>These values are applied to all new interns globally.</p>
 
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.25rem' }}>
                                 {[
@@ -788,12 +800,12 @@ const AdminTab = ({
             {/* ===== BANK INFO ===== */}
             {activeSubTab === 'Bank' && (
                 <div style={{ ...glass, padding: '2rem' }}>
-                    <SectionHeader icon={<Landmark size={24} />} title="Employee Bank Directory" subtitle="Confidential payout information for all employees" />
+                    <SectionHeader icon={<Landmark size={24} />} title="Intern Bank Directory" subtitle="Confidential payout information for all interns" />
                     <div style={{ overflowX: 'auto', margin: '0 -2rem -2rem', borderBottomLeftRadius: '28px', borderBottomRightRadius: '28px' }}>
                         <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '950px' }}>
                             <thead>
                                 <tr>
-                                    <th style={{ ...thStyle, paddingLeft: '2rem' }}>EMPLOYEE</th>
+                                    <th style={{ ...thStyle, paddingLeft: '2rem' }}>INTERN</th>
                                     <th style={thStyle}>HOLDER</th>
                                     <th style={thStyle}>BANK</th>
                                     <th style={thStyle}>ACCOUNT NO.</th>
@@ -836,7 +848,7 @@ const AdminTab = ({
                     <SectionHeader 
                         icon={<Landmark size={24} />} 
                         title="Payroll Management" 
-                        subtitle="Review and update payout status for all employees" 
+                        subtitle="Review and update payout status for all interns" 
                         extra={
                             <div style={{ display: 'flex', gap: '1rem' }}>
                                 <select 
@@ -875,7 +887,7 @@ const AdminTab = ({
                         <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '950px' }}>
                             <thead>
                                 <tr>
-                                    <th style={{ ...thStyle, paddingLeft: '2rem' }}>EMPLOYEE</th>
+                                    <th style={{ ...thStyle, paddingLeft: '2rem' }}>INTERN</th>
                                     <th style={thStyle}>NET PAY</th>
                                     <th style={thStyle}>STATUS</th>
                                     <th style={thStyle}>PAID ON</th>
@@ -968,7 +980,7 @@ const AdminTab = ({
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                             <div>
                                 <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '900', color: 'var(--text-main)' }}>Create New User</h2>
-                                <p style={{ margin: '0.3rem 0 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>Provision a new employee account</p>
+                                <p style={{ margin: '0.3rem 0 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>Provision a new intern account</p>
                             </div>
                             <button onClick={() => setShowCreateUserModal(false)} style={{
                                 width: '38px', height: '38px', borderRadius: '12px', border: 'none', cursor: 'pointer',

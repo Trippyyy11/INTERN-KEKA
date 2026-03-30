@@ -139,6 +139,7 @@ export const completeRegistration = async (req, res) => {
                 name: user.name,
                 email: user.email,
                 role: user.role,
+                internId: user.internId,
                 token: generateToken(user._id),
                 message: 'First user registered and auto-approved!'
             });
@@ -208,6 +209,7 @@ export const loginUser = async (req, res) => {
                     place: user.place,
                     reportingManager: user.reportingManager,
                     welcomeProfile: user.welcomeProfile,
+                    internId: user.internId,
                     token: generateToken(user._id),
                 });
             }

@@ -6,7 +6,7 @@ const userSchema = new mongoose.Schema(
         name: { type: String, required: true },
         email: { type: String, required: true, unique: true },
         password: { type: String, required: false }, // Made optional for initial OTP stage
-        role: { type: String, enum: ['Super Admin', 'Reporting Manager', 'Reporting Officer', 'Intern'], default: 'Intern' },
+        role: { type: String, enum: ['Super Admin', 'Reporting Manager', 'Intern'], default: 'Intern' },
         reportingManager: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
         department: { type: String },
         designation: { type: String },
@@ -61,18 +61,41 @@ const userSchema = new mongoose.Schema(
         permissions: {
             canCreateUsers: { type: Boolean, default: false }
         },
-        slackBotToken: { type: String, default: '' }
+        slackBotToken: { type: String, default: '' },
+        internId: { type: String, unique: true, sparse: true } // Sparse allows multiple nulls for non-interns
     },
     { timestamps: true }
 );
 
-// Encrypt password before saving
+// Encrypt password AND auto-generate Intern ID
 userSchema.pre('save', async function () {
-    if (!this.password || !this.isModified('password')) {
-        return;
+    // 1. Handle password encryption
+    if (this.password && this.isModified('password')) {
+        const salt = await bcrypt.genSalt(10);
+        this.password = await bcrypt.hash(this.password, salt);
     }
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
+
+    // 2. Handle auto-generation of Intern ID (Only for Intern role)
+    if (!this.internId && this.role === 'Intern') {
+        try {
+            const User = mongoose.model('User');
+            // Find the user with the highest numeric internId suffix
+            // We look for IDs starting with TPINT
+            const lastUser = await User.findOne({ internId: /^TPINT/ }).sort({ internId: -1 });
+            
+            let nextId = 101;
+            if (lastUser && lastUser.internId) {
+                const lastIdMatch = lastUser.internId.match(/TPINT(\d+)/);
+                if (lastIdMatch) {
+                    nextId = parseInt(lastIdMatch[1]) + 1;
+                }
+            }
+            
+            this.internId = `TPINT${nextId}`;
+        } catch (error) {
+            throw error;
+        }
+    }
 });
 
 // Compare password function
