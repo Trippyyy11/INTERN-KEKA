@@ -6,7 +6,7 @@ const userSchema = new mongoose.Schema(
         name: { type: String, required: true },
         email: { type: String, required: true, unique: true },
         password: { type: String, required: false }, // Made optional for initial OTP stage
-        role: { type: String, enum: ['Super Admin', 'Reporting Manager', 'Intern'], default: 'Intern' },
+        role: { type: String, enum: ['Super Admin', 'Reporting Manager', 'Intern', 'Employee', 'Admin'], default: 'Intern' },
         reportingManager: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
         department: { type: String },
         designation: { type: String },
@@ -84,25 +84,30 @@ userSchema.pre('save', async function () {
     }
 
     // 2. Handle auto-generation of Intern ID (Only for Intern role)
-    if (!this.internId && this.role === 'Intern') {
-        try {
-            const User = mongoose.model('User');
-            // Find the user with the highest numeric internId suffix
-            // We look for IDs starting with TPINT
-            const lastUser = await User.findOne({ internId: /^TPINT/ }).sort({ internId: -1 });
-            
-            let nextId = 101;
-            if (lastUser && lastUser.internId) {
-                const lastIdMatch = lastUser.internId.match(/TPINT(\d+)/);
-                if (lastIdMatch) {
-                    nextId = parseInt(lastIdMatch[1]) + 1;
+    if (this.role === 'Intern') {
+        if (!this.internId) {
+            try {
+                const User = mongoose.model('User');
+                // Find the user with the highest numeric internId suffix
+                // We look for IDs starting with TPINT
+                const lastUser = await User.findOne({ internId: /^TPINT/ }).sort({ internId: -1 });
+                
+                let nextId = 101;
+                if (lastUser && lastUser.internId) {
+                    const lastIdMatch = lastUser.internId.match(/TPINT(\d+)/);
+                    if (lastIdMatch) {
+                        nextId = parseInt(lastIdMatch[1]) + 1;
+                    }
                 }
+                
+                this.internId = `TPINT${nextId}`;
+            } catch (error) {
+                throw error;
             }
-            
-            this.internId = `TPINT${nextId}`;
-        } catch (error) {
-            throw error;
         }
+    } else {
+        // Clear internId if not an Intern
+        this.internId = undefined;
     }
 });
 

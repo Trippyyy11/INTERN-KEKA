@@ -201,6 +201,7 @@ const MyTeamTab = ({
             holiday: '#ffe030',
             weekOff: '#121212',
             halfDay: '#fb923c', // Amber 400
+            noAttendance: '#a855f7', // Purple
         };
 
         const getStatusForCell = (member, dateStr, dayNameLong, isWeekend, isPastOrToday) => {
@@ -236,6 +237,11 @@ const MyTeamTab = ({
                 const userWeekOffs = (member.workingSchedule?.weekOffs?.length > 0) ? member.workingSchedule.weekOffs : ['Sunday'];
                 if (userWeekOffs.includes(dayNameLong)) return { color: statusColors.weekOff, label: '', tooltip: 'Week Off' };
                 if (att && att.status === 'Present') return { color: statusColors.present, label: 'P', tooltip: 'Present' };
+                
+                // Gap detection for past dates
+                if (moment(dateStr).isBefore(moment(), 'day')) {
+                    return { color: statusColors.noAttendance, label: 'N', tooltip: 'No Attendance Recorded' };
+                }
             }
             return null;
         };
@@ -363,6 +369,7 @@ const MyTeamTab = ({
                         { label: 'WFH', color: statusColors.wfh, desc: 'Remote' },
                         { label: 'Holiday', color: statusColors.holiday, desc: 'Global' },
                         { label: 'Off', color: statusColors.weekOff, desc: 'Weekend' },
+                        { label: 'Gap', color: statusColors.noAttendance, desc: 'No Data' },
                     ].map(l => (
                         <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
                             <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: l.color, boxShadow: `0 0 5px ${l.color}40` }}></div>

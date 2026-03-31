@@ -16,10 +16,32 @@ connectDB();
 // Initialize Express
 const app = express();
 
+// Express 5 Compatibility: Ensure req.query is writable for older middlewares (mongo-sanitize/xss-clean)
+app.use((req, res, next) => {
+    Object.defineProperty(req, 'query', {
+        value: { ...req.query },
+        writable: true,
+        configurable: true,
+        enumerable: true,
+    });
+    next();
+});
+
 // 1. CORS & COOKIE PARSING (MUST BE TOP FOR PREFLIGHT)
 app.use(cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-    credentials: true
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps or curl)
+        if (!origin) return callback(null, true);
+        const allowedOrigins = [process.env.FRONTEND_URL, 'http://localhost:5173', 'http://127.0.0.1:5173'];
+        if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === 'development') {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 app.use(cookieParser());
 
@@ -30,8 +52,8 @@ app.use(xss()); // Data sanitization against XSS
 
 // 3. RATE LIMITING
 const limiter = rateLimit({
-    max: 100, // limit each IP to 100 requests per windowMs
-    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: process.env.NODE_ENV === 'development' ? 1000 : 100, // 1000 requests per 15 mins for dev
+    windowMs: 15 * 60 * 1000, 
     message: 'Too many requests from this IP, please try again in 15 minutes!'
 });
 app.use('/api', limiter);

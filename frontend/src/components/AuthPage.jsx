@@ -32,6 +32,14 @@ export default function AuthPage({ onLogin }) {
     const [formData, setFormData] = useState({
         email: '', password: ''
     });
+    const [forgotStep, setForgotStep] = useState(null); // 'email', 'otp', 'reset'
+    const [resetData, setResetData] = useState({
+        email: '',
+        otp: '',
+        password: '',
+        confirmPassword: ''
+    });
+
     const handleLogin = async (e) => {
         if (e) e.preventDefault();
         setError('');
@@ -44,10 +52,234 @@ export default function AuthPage({ onLogin }) {
         } finally { setIsLoading(false); }
     };
 
+    const handleForgotPassword = async (e) => {
+        e.preventDefault();
+        setError('');
+        setIsLoading(true);
+        try {
+            await api.post('/auth/forgot-password', { email: resetData.email });
+            setForgotStep('otp');
+        } catch (err) {
+            setError(err.response?.data?.message || 'Failed to send OTP');
+        } finally { setIsLoading(false); }
+    };
+
+    const handleVerifyResetOTP = async (e) => {
+        e.preventDefault();
+        setError('');
+        setIsLoading(true);
+        try {
+            await api.post('/auth/verify-reset-otp', { email: resetData.email, otp: resetData.otp });
+            setForgotStep('reset');
+        } catch (err) {
+            setError(err.response?.data?.message || 'Invalid or expired OTP');
+        } finally { setIsLoading(false); }
+    };
+
+    const handleResetPassword = async (e) => {
+        e.preventDefault();
+        if (resetData.password !== resetData.confirmPassword) {
+            setError('Passwords do not match');
+            return;
+        }
+        setError('');
+        setIsLoading(true);
+        try {
+            await api.post('/auth/reset-password', { 
+                email: resetData.email, 
+                otp: resetData.otp, 
+                password: resetData.password 
+            });
+            setForgotStep(null);
+            setResetData({ email: '', otp: '', password: '', confirmPassword: '' });
+            setError('');
+            // Optional: Auto-fill login email?
+            setFormData(prev => ({ ...prev, email: resetData.email }));
+            alert('Password reset successful! Please login with your new password.');
+        } catch (err) {
+            setError(err.response?.data?.message || 'Reset failed');
+        } finally { setIsLoading(false); }
+    };
+
     const completeLogin = (data) => {
         localStorage.setItem('user', JSON.stringify(data));
         onLogin(data);
     };
+
+    const renderLoginForm = () => (
+        <form onSubmit={handleLogin} className="flex flex-col gap-6">
+            <div className="flex flex-col gap-4">
+                <InputGroup className="h-12 border-slate-200 overflow-hidden shadow-sm">
+                    <InputGroupAddon align="inline-start" className="!pl-6 pr-0">
+                        <AtSignIcon size={18} className="text-muted-foreground/70" />
+                    </InputGroupAddon>
+                    <InputGroupInput
+                        required
+                        type="email"
+                        placeholder="your.email@example.com"
+                        value={formData.email}
+                        onChange={e => setFormData({ ...formData, email: e.target.value })}
+                        className="bg-transparent tracking-wider placeholder:text-slate-800 !pl-6 !text-slate-900 dark:text-slate-900"
+                        style={{ color: '#0f172a' }}
+                    />
+                </InputGroup>
+                
+                <InputGroup className="h-12 border-slate-200 overflow-hidden shadow-sm">
+                    <InputGroupAddon align="inline-start" className="!pl-6 pr-0">
+                        <LockIcon size={18} className="text-muted-foreground/70" />
+                    </InputGroupAddon>
+                    <InputGroupInput
+                        required
+                        type="password"
+                        placeholder="Enter your password"
+                        value={formData.password}
+                        onChange={e => setFormData({ ...formData, password: e.target.value })}
+                        className="bg-transparent tracking-wider placeholder:text-slate-800 !pl-6 !text-slate-900 dark:text-slate-900"
+                        style={{ color: '#0f172a' }}
+                    />
+                </InputGroup>
+            </div>
+            <div className="flex justify-end mt-2 mb-4">
+                <button 
+                    type="button"
+                    onClick={() => { setForgotStep('email'); setError(''); }}
+                    className="text-base font-extrabold !text-blue-700 hover:!text-blue-800 underline underline-offset-4"
+                    style={{ color: '#1d4ed8', opacity: 1, visibility: 'visible' }}
+                >
+                    Forgot password?
+                </button>
+            </div>
+            <Button 
+                type="submit" 
+                className="w-full h-12 !bg-blue-600 !text-white hover:!bg-blue-700 rounded-xl text-base font-bold shadow-lg shadow-blue-600/30 active:scale-[0.98] transition-all" 
+                disabled={isLoading}
+            >
+                {isLoading ? <Loader2 className="animate-spin" /> : 'Sign In'}
+            </Button>
+        </form>
+    );
+
+    const renderForgotEmailStep = () => (
+        <form onSubmit={handleForgotPassword} className="flex flex-col gap-6">
+            <div className="flex flex-col gap-4">
+                <p className="text-sm text-muted-foreground mb-2">Enter your email address and we'll send you an OTP to reset your password.</p>
+                <InputGroup className="h-12 border-slate-200 overflow-hidden shadow-sm">
+                    <InputGroupAddon align="inline-start" className="!pl-6 pr-0">
+                        <AtSignIcon size={18} className="text-muted-foreground/70" />
+                    </InputGroupAddon>
+                    <InputGroupInput
+                        required
+                        type="email"
+                        placeholder="your.email@example.com"
+                        value={resetData.email}
+                        onChange={e => setResetData({ ...resetData, email: e.target.value })}
+                        className="bg-transparent tracking-wider placeholder:text-slate-800 !pl-6 !text-slate-900"
+                        style={{ color: '#0f172a' }}
+                    />
+                </InputGroup>
+            </div>
+            <div className="flex flex-col gap-3">
+                <Button 
+                    type="submit" 
+                    className="w-full h-12 !bg-blue-600 !text-white hover:!bg-blue-700 rounded-xl text-base font-bold" 
+                    disabled={isLoading}
+                >
+                    {isLoading ? <Loader2 className="animate-spin" /> : 'Send OTP'}
+                </Button>
+                <Button 
+                    type="button" 
+                    variant="ghost"
+                    onClick={() => { setForgotStep(null); setError(''); }}
+                    className="w-full h-12 text-muted-foreground"
+                >
+                    Back to Login
+                </Button>
+            </div>
+        </form>
+    );
+
+    const renderForgotOTPStep = () => (
+        <form onSubmit={handleVerifyResetOTP} className="flex flex-col gap-6">
+            <div className="flex flex-col gap-4">
+                <p className="text-sm text-muted-foreground mb-2">We've sent a 6-digit OTP to <b>{resetData.email}</b>. Please enter it below.</p>
+                <InputGroup className="h-12 border-slate-200 overflow-hidden shadow-sm">
+                    <InputGroupAddon align="inline-start" className="!pl-6 pr-0">
+                        <LockIcon size={18} className="text-muted-foreground/70" />
+                    </InputGroupAddon>
+                    <InputGroupInput
+                        required
+                        type="text"
+                        maxLength={6}
+                        placeholder="Enter 6-digit OTP"
+                        value={resetData.otp}
+                        onChange={e => setResetData({ ...resetData, otp: e.target.value })}
+                        className="bg-transparent tracking-widest placeholder:tracking-normal !pl-6 font-mono text-lg"
+                        style={{ color: '#0f172a' }}
+                    />
+                </InputGroup>
+            </div>
+            <div className="flex flex-col gap-3">
+                <Button 
+                    type="submit" 
+                    className="w-full h-12 !bg-blue-600 !text-white hover:!bg-blue-700 rounded-xl text-base font-bold" 
+                    disabled={isLoading}
+                >
+                    {isLoading ? <Loader2 className="animate-spin" /> : 'Verify OTP'}
+                </Button>
+                <button 
+                    type="button"
+                    onClick={handleForgotPassword}
+                    disabled={isLoading}
+                    className="text-sm font-semibold text-blue-600 hover:underline mt-2"
+                >
+                    Resend OTP
+                </button>
+            </div>
+        </form>
+    );
+
+    const renderForgotResetStep = () => (
+        <form onSubmit={handleResetPassword} className="flex flex-col gap-6">
+            <div className="flex flex-col gap-4">
+                <p className="text-sm text-muted-foreground mb-2">Set a new secure password for your account.</p>
+                <InputGroup className="h-12 border-slate-200 overflow-hidden shadow-sm">
+                    <InputGroupAddon align="inline-start" className="!pl-6 pr-0">
+                        <LockIcon size={18} className="text-muted-foreground/70" />
+                    </InputGroupAddon>
+                    <InputGroupInput
+                        required
+                        type="password"
+                        placeholder="New Password"
+                        value={resetData.password}
+                        onChange={e => setResetData({ ...resetData, password: e.target.value })}
+                        className="bg-transparent tracking-wider !pl-6"
+                        style={{ color: '#0f172a' }}
+                    />
+                </InputGroup>
+                <InputGroup className="h-12 border-slate-200 overflow-hidden shadow-sm">
+                    <InputGroupAddon align="inline-start" className="!pl-6 pr-0">
+                        <LockIcon size={18} className="text-muted-foreground/70" />
+                    </InputGroupAddon>
+                    <InputGroupInput
+                        required
+                        type="password"
+                        placeholder="Confirm New Password"
+                        value={resetData.confirmPassword}
+                        onChange={e => setResetData({ ...resetData, confirmPassword: e.target.value })}
+                        className="bg-transparent tracking-wider !pl-6"
+                        style={{ color: '#0f172a' }}
+                    />
+                </InputGroup>
+            </div>
+            <Button 
+                type="submit" 
+                className="w-full h-12 !bg-blue-600 !text-white hover:!bg-blue-700 rounded-xl text-base font-bold shadow-lg" 
+                disabled={isLoading}
+            >
+                {isLoading ? <Loader2 className="animate-spin" /> : 'Reset Password'}
+            </Button>
+        </form>
+    );
 
     return (
         <main className="relative md:h-screen md:overflow-hidden lg:grid lg:grid-cols-2 bg-background">
@@ -107,11 +339,14 @@ export default function AuthPage({ onLogin }) {
 
                 <div className="w-full max-w-md mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700">
                     <div className="flex flex-col items-start mb-6">
-                        <h1 className="font-bold text-3xl tracking-wide text-foreground mb-1">
-                            Welcome Back!
+                        <h1 className="font-bold text-3xl tracking-wide text-slate-900 dark:text-white mb-1">
+                            {forgotStep ? 'Reset Password' : 'Welcome Back!'}
                         </h1>
-                        <p className="text-base text-muted-foreground">
-                            Sign in to your Zora account.
+                        <p className="text-base text-slate-500 dark:text-slate-400">
+                            {forgotStep === 'email' && 'Step 1: Enter your registered email'}
+                            {forgotStep === 'otp' && 'Step 2: Verify your OTP'}
+                            {forgotStep === 'reset' && 'Step 3: Set your new password'}
+                            {!forgotStep && 'Sign in to your Zora account.'}
                         </p>
                     </div>
 
@@ -121,46 +356,10 @@ export default function AuthPage({ onLogin }) {
                         </div>
                     )}
 
-                    <form onSubmit={handleLogin} className="flex flex-col gap-6">
-                        <div className="flex flex-col gap-4">
-                            <InputGroup className="h-12 border-slate-200 overflow-hidden shadow-sm">
-                                <InputGroupAddon align="inline-start" className="!pl-6 pr-0">
-                                    <AtSignIcon size={18} className="text-muted-foreground/70" />
-                                </InputGroupAddon>
-                                <InputGroupInput
-                                    required
-                                    type="email"
-                                    placeholder="your.email@example.com"
-                                    value={formData.email}
-                                    onChange={e => setFormData({ ...formData, email: e.target.value })}
-                                    className="bg-transparent tracking-wider placeholder:text-slate-800 !pl-6 !text-slate-900 dark:text-slate-900"
-                                    style={{ color: '#0f172a' }}
-                                />
-                            </InputGroup>
-                            
-                            <InputGroup className="h-12 border-slate-200 overflow-hidden shadow-sm">
-                                <InputGroupAddon align="inline-start" className="!pl-6 pr-0">
-                                    <LockIcon size={18} className="text-muted-foreground/70" />
-                                </InputGroupAddon>
-                                <InputGroupInput
-                                    required
-                                    type="password"
-                                    placeholder="Enter your password"
-                                    value={formData.password}
-                                    onChange={e => setFormData({ ...formData, password: e.target.value })}
-                                    className="bg-transparent tracking-wider placeholder:text-slate-800 !pl-6 !text-slate-900 dark:text-slate-900"
-                                    style={{ color: '#0f172a' }}
-                                />
-                            </InputGroup>
-                        </div>
-                        <Button 
-                            type="submit" 
-                            className="w-full h-12 !bg-blue-600 !text-white hover:!bg-blue-700 rounded-xl text-base font-bold shadow-lg shadow-blue-600/30 active:scale-[0.98] transition-all" 
-                            disabled={isLoading}
-                        >
-                            {isLoading ? <Loader2 className="animate-spin" /> : 'Sign In'}
-                        </Button>
-                    </form>
+                    {!forgotStep && renderLoginForm()}
+                    {forgotStep === 'email' && renderForgotEmailStep()}
+                    {forgotStep === 'otp' && renderForgotOTPStep()}
+                    {forgotStep === 'reset' && renderForgotResetStep()}
                 </div>
             </div>
         </main>

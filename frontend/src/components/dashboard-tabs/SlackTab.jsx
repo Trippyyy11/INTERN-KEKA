@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Search, RefreshCw, Hash, MessageSquare, AlertCircle, Users, Settings, Eye, EyeOff, Check, X, Key, Trash2, Maximize2, Minimize2 } from 'lucide-react';
+import { Search, RefreshCw, Hash, MessageSquare, AlertCircle, Users, Settings, Eye, EyeOff, Check, X, Key, Trash2, Maximize2, Minimize2, HelpCircle } from 'lucide-react';
 import api from '../../api/axios';
 
 const SlackTab = ({ user }) => {
@@ -236,66 +236,164 @@ const SlackTab = ({ user }) => {
         return '1fr 1fr';
     };
 
+    // ---- GUIDE MODAL STATE ----
+    const [showGuide, setShowGuide] = useState(false);
+
     // ──────── SETUP / CONFIGURATION BANNER ────────
+    const renderGuideModal = () => {
+        if (!showGuide) return null;
+        return (
+            <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.85)', zIndex: 2000, display: 'flex', justifyContent: 'center', alignItems: 'center', backdropFilter: 'blur(10px)' }}>
+                <div style={{ background: 'var(--bg-panel)', padding: '2.5rem', borderRadius: '32px', width: '90%', maxWidth: '650px', boxShadow: '0 25px 50px rgba(0,0,0,0.5)', border: '1px solid var(--border-dark)', position: 'relative', maxHeight: '90vh', overflowY: 'auto' }}>
+                    <button onClick={() => setShowGuide(false)} style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', background: 'rgba(255,255,255,0.05)', border: 'none', color: 'var(--text-main)', cursor: 'pointer', width: '36px', height: '36px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onMouseOver={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'} onMouseOut={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}>
+                        <X size={20} />
+                    </button>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', marginBottom: '2rem' }}>
+                        <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: 'linear-gradient(135deg, #61dafb, #8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', boxShadow: '0 8px 20px rgba(97, 218, 251, 0.3)' }}>
+                            <Settings size={28} />
+                        </div>
+                        <div>
+                            <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '800', color: 'var(--text-main)', letterSpacing: '-0.5px' }}>Slack Bot Setup Guide</h2>
+                            <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '500' }}>Follow these steps to connect your workspace</p>
+                        </div>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                        <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1.5rem', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                            <h3 style={{ fontSize: '0.95rem', fontWeight: '700', color: 'var(--primary)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <span style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'var(--primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem' }}>1</span>
+                                Create Slack App
+                            </h3>
+                            <p style={{ fontSize: '0.85rem', color: 'var(--text-main)', lineHeight: '1.6', margin: 0 }}>
+                                Go to <a href="https://api.slack.com/apps" target="_blank" rel="noreferrer" style={{ color: '#61dafb', textDecoration: 'underline' }}>Slack API Dashboard</a> and click <strong>"Create New App"</strong>. Select <strong>"From scratch"</strong> and name it (e.g., "Zora Bot").
+                            </p>
+                        </div>
+
+                        <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1.5rem', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                            <h3 style={{ fontSize: '0.95rem', fontWeight: '700', color: 'var(--primary)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <span style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'var(--primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem' }}>2</span>
+                                Set Permissions (Scopes)
+                            </h3>
+                            <p style={{ fontSize: '0.85rem', color: 'var(--text-main)', lineHeight: '1.6', marginBottom: '1rem' }}>
+                                Navigate to <strong>OAuth & Permissions</strong> and add the following <strong>Bot Token Scopes</strong>:
+                            </p>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                                {['channels:read', 'channels:history', 'groups:read', 'groups:history', 'users:read', 'chat:write'].map(scope => (
+                                    <code key={scope} style={{ background: 'rgba(97, 218, 251, 0.1)', color: '#61dafb', padding: '0.3rem 0.6rem', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '600', border: '1px solid rgba(97, 218, 251, 0.2)' }}>{scope}</code>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1.5rem', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                            <h3 style={{ fontSize: '0.95rem', fontWeight: '700', color: 'var(--primary)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <span style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'var(--primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem' }}>3</span>
+                                Install & Copy Token
+                            </h3>
+                            <p style={{ fontSize: '0.85rem', color: 'var(--text-main)', lineHeight: '1.6', margin: 0 }}>
+                                Click <strong>"Install to Workspace"</strong>. Once installed, copy the <strong>"Bot User OAuth Token"</strong> (starts with <code>xoxb-</code>) and paste it into the setup field in this dashboard.
+                            </p>
+                        </div>
+                    </div>
+
+                    <button onClick={() => setShowGuide(false)} style={{ width: '100%', marginTop: '2rem', padding: '1rem', borderRadius: '16px', background: 'var(--primary)', color: 'white', fontWeight: '800', fontSize: '0.9rem', cursor: 'pointer', boxShadow: '0 8px 20px rgba(var(--primary-rgb), 0.3)', border: 'none' }}>
+                        Got it, I'll set it up!
+                    </button>
+                </div>
+            </div>
+        );
+    };
+
     const renderSettingsBanner = () => (
         <div style={{
             position: 'absolute', top: '1.5rem', right: '2rem', zIndex: 100,
             display: 'flex', flexDirection: 'column', alignItems: 'flex-end'
         }}>
-            <button
-                onClick={() => setShowSettings(!showSettings)}
-                style={{
-                    background: hasToken ? 'rgba(34, 197, 94, 0.1)' : 'rgba(245, 158, 11, 0.1)',
-                    border: `1px solid ${hasToken ? 'rgba(34, 197, 94, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`,
-                    borderRadius: '24px', padding: '0.4rem 1rem 0.4rem 0.6rem',
-                    color: hasToken ? '#22c55e' : '#f59e0b', cursor: 'pointer',
-                    display: 'flex', alignItems: 'center', gap: '0.5rem',
-                    fontSize: '0.8rem', fontWeight: '500', backdropFilter: 'blur(8px)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)', transition: 'all 0.2s ease'
-                }}
-                title="Slack Configuration"
-            >
-                <div style={{
-                    width: '24px', height: '24px', borderRadius: '50%',
-                    background: hasToken ? 'rgba(34, 197, 94, 0.2)' : 'rgba(245, 158, 11, 0.2)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center'
-                }}>
-                    <Settings size={14} />
-                </div>
-                {hasToken ? `Connected: ${tokenPreview}` : 'Bot Setup Required'}
-            </button>
+            <div style={{ display: 'flex', gap: '0.75rem' }}>
+                {!hasToken && (
+                    <button
+                        onClick={() => setShowGuide(true)}
+                        style={{
+                            background: 'rgba(99, 102, 241, 0.1)',
+                            border: '1px solid rgba(99, 102, 241, 0.3)',
+                            borderRadius: '24px', padding: '0.4rem 1rem',
+                            color: '#818cf8', cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', gap: '0.5rem',
+                            fontSize: '0.8rem', fontWeight: '600', backdropFilter: 'blur(8px)',
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.1)', transition: 'all 0.2s ease'
+                        }}
+                    >
+                        <HelpCircle size={14} /> Setup Guide
+                    </button>
+                )}
+                <button
+                    onClick={() => setShowSettings(!showSettings)}
+                    style={{
+                        background: hasToken ? 'rgba(34, 197, 94, 0.1)' : 'rgba(245, 158, 11, 0.1)',
+                        border: `1px solid ${hasToken ? 'rgba(34, 197, 94, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`,
+                        borderRadius: '24px', padding: '0.4rem 1rem 0.4rem 0.6rem',
+                        color: hasToken ? '#22c55e' : '#f59e0b', cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', gap: '0.5rem',
+                        fontSize: '0.8rem', fontWeight: '500', backdropFilter: 'blur(8px)',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)', transition: 'all 0.2s ease'
+                    }}
+                    title="Slack Configuration"
+                >
+                    <div style={{
+                        width: '24px', height: '24px', borderRadius: '50%',
+                        background: hasToken ? 'rgba(34, 197, 94, 0.2)' : 'rgba(245, 158, 11, 0.2)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center'
+                    }}>
+                        <Settings size={14} />
+                    </div>
+                    {hasToken ? `Connected: ${tokenPreview}` : 'Bot Setup Required'}
+                </button>
+            </div>
 
             {showSettings && (
                 <div className="panel" style={{
                     position: 'absolute', top: 'calc(100% + 0.75rem)', right: 0,
-                    width: '380px', padding: '1.25rem', borderRadius: '12px',
-                    boxShadow: '0 10px 30px rgba(0,0,0,0.3)', border: '1px solid var(--border-dark)',
+                    width: '380px', padding: '1.5rem', borderRadius: '24px',
+                    boxShadow: '0 20px 50px rgba(0,0,0,0.3)', border: '1px solid var(--border-dark)',
+                    background: 'var(--bg-panel)', backdropFilter: 'blur(20px)',
                     animation: 'slideDown 0.2s ease-out'
                 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                        <h4 style={{ margin: 0, color: 'var(--text-main)', fontSize: '0.95rem' }}>Slack Configuration</h4>
-                        <button onClick={() => setShowSettings(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
-                            <X size={16} />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                            <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'rgba(97, 218, 251, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <Settings size={16} color="#61dafb" />
+                            </div>
+                            <h4 style={{ margin: 0, color: 'var(--text-main)', fontSize: '1rem', fontWeight: '800' }}>Slack Config</h4>
+                        </div>
+                        <button onClick={() => setShowSettings(false)} style={{ width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.05)', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
+                            <X size={14} />
                         </button>
                     </div>
 
                     {!hasToken && (
                         <div style={{
-                            background: 'rgba(97, 218, 251, 0.04)', borderRadius: '8px',
-                            padding: '0.85rem', marginBottom: '1rem', fontSize: '0.75rem',
-                            color: 'var(--text-muted)', lineHeight: '1.6',
-                            border: '1px solid rgba(97, 218, 251, 0.08)'
+                            background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(245, 158, 11, 0.05))', borderRadius: '16px',
+                            padding: '1.25rem', marginBottom: '1.5rem', fontSize: '0.8rem',
+                            color: '#f59e0b', lineHeight: '1.6',
+                            border: '1px solid rgba(245, 158, 11, 0.2)',
+                            boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.05)'
                         }}>
-                            <div style={{ fontWeight: '600', color: 'var(--text-main)', marginBottom: '0.25rem' }}>
-                                <Key size={12} style={{ marginRight: '0.35rem', verticalAlign: 'middle', color: '#61dafb' }} />
-                                Required Scopes:
+                            <div style={{ fontWeight: '800', color: '#f59e0b', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <AlertCircle size={16} /> SETUP INSTRUCTIONS
                             </div>
-                            <code style={{ color: '#61dafb' }}>channels:read</code>, <code>channels:history</code><br />
-                            <code style={{ color: '#61dafb' }}>groups:read</code>, <code>groups:history</code>, <code style={{ color: '#61dafb' }}>users:read</code>
+                            <p style={{ margin: '0 0 0.75rem', opacity: 0.9 }}>Connect your Slack workspace by providing a <strong>Bot User OAuth Token</strong> (starts with <code>xoxb-</code>).</p>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                                {['channels:read', 'users:read', 'chat:write'].map(s => (
+                                    <span key={s} style={{ background: 'rgba(245, 158, 11, 0.15)', padding: '2px 8px', borderRadius: '6px', fontSize: '0.7rem', fontWeight: '700' }}>{s}</span>
+                                ))}
+                            </div>
+                            <button onClick={() => setShowGuide(true)} style={{ marginTop: '1rem', background: 'rgba(245, 158, 11, 0.2)', border: 'none', borderRadius: '8px', padding: '0.4rem 0.8rem', color: '#f59e0b', fontSize: '0.75rem', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                View Detailed Guide →
+                            </button>
                         </div>
                     )}
 
-                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'stretch' }}>
+                    <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'stretch' }}>
                         <div style={{ position: 'relative', flex: 1 }}>
                             <input
                                 type={showToken ? 'text' : 'password'}
@@ -304,32 +402,37 @@ const SlackTab = ({ user }) => {
                                 onChange={(e) => { setTokenInput(e.target.value); setTokenError(''); setTokenSuccess(''); }}
                                 style={{
                                     width: '100%', boxSizing: 'border-box',
-                                    background: 'var(--bg-dashboard)', border: '1px solid var(--border-light)',
-                                    borderRadius: '8px', padding: '0.5rem 2.2rem 0.5rem 0.75rem',
-                                    color: 'var(--text-main)', fontSize: '0.8rem', outline: 'none',
-                                    fontFamily: 'monospace'
+                                    background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border-light)',
+                                    borderRadius: '12px', padding: '0.75rem 2.5rem 0.75rem 1rem',
+                                    color: 'var(--text-main)', fontSize: '0.85rem', outline: 'none',
+                                    fontFamily: 'monospace', transition: 'all 0.2s'
                                 }}
+                                onFocus={e => e.currentTarget.style.borderColor = 'var(--primary)'}
+                                onBlur={e => e.currentTarget.style.borderColor = 'var(--border-light)'}
                             />
                             <button
                                 onClick={() => setShowToken(!showToken)}
                                 style={{
-                                    position: 'absolute', right: '0.4rem', top: '50%', transform: 'translateY(-50%)',
+                                    position: 'absolute', right: '0.6rem', top: '50%', transform: 'translateY(-50%)',
                                     background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)',
                                     display: 'flex', alignItems: 'center', padding: '0.2rem'
                                 }}
                             >
-                                {showToken ? <EyeOff size={14} /> : <Eye size={14} />}
+                                {showToken ? <EyeOff size={16} /> : <Eye size={16} />}
                             </button>
                         </div>
                         <button
                             onClick={handleSaveToken}
                             disabled={savingToken || !tokenInput.trim()}
                             style={{
-                                background: savingToken ? 'rgba(97, 218, 251, 0.1)' : 'linear-gradient(135deg, #61dafb, #8b5cf6)',
-                                border: 'none', borderRadius: '8px', padding: '0.5rem 1rem',
+                                background: savingToken ? 'rgba(97, 218, 251, 0.1)' : 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
+                                border: 'none', borderRadius: '12px', padding: '0 1.25rem',
                                 color: 'white', cursor: savingToken || !tokenInput.trim() ? 'not-allowed' : 'pointer',
-                                fontSize: '0.8rem', fontWeight: '600', opacity: !tokenInput.trim() ? 0.5 : 1, transition: 'opacity 0.2s'
+                                fontSize: '0.85rem', fontWeight: '800', boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)',
+                                transition: 'all 0.2s'
                             }}
+                            onMouseOver={e => !savingToken && tokenInput.trim() && (e.currentTarget.style.transform = 'translateY(-1px)')}
+                            onMouseOut={e => e.currentTarget.style.transform = 'translateY(0)'}
                         >
                             {savingToken ? '...' : 'Save'}
                         </button>
@@ -340,24 +443,27 @@ const SlackTab = ({ user }) => {
                             onClick={handleRemoveToken}
                             disabled={savingToken}
                             style={{
-                                width: '100%', marginTop: '0.75rem', padding: '0.55rem',
-                                background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)',
-                                borderRadius: '8px', color: '#ef4444', fontSize: '0.8rem', cursor: 'pointer',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
+                                width: '100%', marginTop: '1rem', padding: '0.75rem',
+                                background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.1)',
+                                borderRadius: '12px', color: '#f87171', fontSize: '0.8rem', cursor: 'pointer',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                                fontWeight: '700', transition: 'all 0.2s'
                             }}
+                            onMouseOver={e => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'}
+                            onMouseOut={e => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.05)'}
                         >
-                            <Trash2 size={14} /> Remove Token (Disconnect)
+                            <Trash2 size={14} /> Disconnect Workpace
                         </button>
                     )}
 
                     {tokenError && (
-                        <div style={{ marginTop: '0.75rem', color: '#ef4444', fontSize: '0.75rem', display: 'flex', gap: '0.35rem' }}>
-                            <AlertCircle size={12} style={{ marginTop: '2px' }} /> <div>{tokenError}</div>
+                        <div style={{ marginTop: '1rem', padding: '0.75rem', borderRadius: '10px', background: 'rgba(239, 68, 68, 0.1)', color: '#f87171', fontSize: '0.75rem', display: 'flex', gap: '0.5rem', border: '1px solid rgba(239, 68, 68, 0.1)' }}>
+                            <AlertCircle size={14} style={{ flexShrink: 0 }} /> <div>{tokenError}</div>
                         </div>
                     )}
                     {tokenSuccess && (
-                        <div style={{ marginTop: '0.75rem', color: '#22c55e', fontSize: '0.75rem', display: 'flex', gap: '0.35rem' }}>
-                            <Check size={12} style={{ marginTop: '2px' }} /> <div>{tokenSuccess}</div>
+                        <div style={{ marginTop: '1rem', padding: '0.75rem', borderRadius: '10px', background: 'rgba(34, 197, 94, 0.1)', color: '#4ade80', fontSize: '0.75rem', display: 'flex', gap: '0.5rem', border: '1px solid rgba(34, 197, 94, 0.1)' }}>
+                            <Check size={14} style={{ flexShrink: 0 }} /> <div>{tokenSuccess}</div>
                         </div>
                     )}
                 </div>
@@ -436,6 +542,9 @@ const SlackTab = ({ user }) => {
 
     return (
         <div className="page-content" style={{ display: 'flex', flexDirection: 'column', height: '100%', position: 'relative' }}>
+
+            {/* Setup Guide Modal */}
+            {renderGuideModal()}
 
             {/* Corner Settings Banner */}
             {renderSettingsBanner()}

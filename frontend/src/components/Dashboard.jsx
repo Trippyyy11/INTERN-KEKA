@@ -503,8 +503,8 @@ export default function Dashboard({ user, onLogout, setUser }) {
             return;
         }
 
-        // Rule Validation: Block today and tomorrow for non-cancellation requests. Past dates allowed.
-        if (requestType !== 'Leave Cancellation') {
+        // Rule Validation: Block today and tomorrow for non-cancellation requests (excluding WFH). Past dates allowed.
+        if (requestType !== 'Leave Cancellation' && requestType !== 'Work From Home') {
             const start = new Date(requestStartDate);
             const today = new Date();
             today.setHours(0, 0, 0, 0);
@@ -2309,7 +2309,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
 
     const renderAnnouncementModal = () => {
         if (!showAnnouncementModal) return null;
-        const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+        const isLight = isLightMode;
         return (
             <div style={modalOverlay}>
                 <div style={{
@@ -2359,11 +2359,11 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                     width: '100%', padding: '0.9rem 1.2rem', fontSize: '0.95rem', fontWeight: '600',
                                     background: isLight ? '#f8fafc' : 'rgba(0,0,0,0.2)',
                                     border: `1.5px solid ${isLight ? '#e2e8f0' : 'rgba(255,255,255,0.08)'}`,
-                                    borderRadius: '14px', color: 'var(--text-main)', outline: 'none',
+                                    borderRadius: '14px', color: isLight ? '#0f172a' : 'var(--text-main)', outline: 'none',
                                     transition: 'all 0.25s', boxSizing: 'border-box'
                                 }}
-                                onFocus={e => { e.target.style.borderColor = '#6366f1'; e.target.style.boxShadow = '0 0 0 4px rgba(99,102,241,0.12)'; }}
-                                onBlur={e => { e.target.style.borderColor = isLight ? '#e2e8f0' : 'rgba(255,255,255,0.08)'; e.target.style.boxShadow = 'none'; }}
+                                onFocus={e => { e.target.style.borderColor = '#6366f1'; e.target.style.boxShadow = '0 0 0 4px rgba(99,102,241,0.12)'; e.target.style.color = isLight ? '#000' : 'var(--text-main)'; }}
+                                onBlur={e => { e.target.style.borderColor = isLight ? '#e2e8f0' : 'rgba(255,255,255,0.08)'; e.target.style.boxShadow = 'none'; e.target.style.color = isLight ? '#0f172a' : 'var(--text-main)'; }}
                             />
                         </div>
                         <div>
@@ -2376,12 +2376,12 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                     width: '100%', padding: '0.9rem 1.2rem', fontSize: '0.95rem', fontWeight: '500',
                                     background: isLight ? '#f8fafc' : 'rgba(0,0,0,0.2)',
                                     border: `1.5px solid ${isLight ? '#e2e8f0' : 'rgba(255,255,255,0.08)'}`,
-                                    borderRadius: '14px', color: 'var(--text-main)', outline: 'none',
+                                    borderRadius: '14px', color: isLight ? '#0f172a' : 'var(--text-main)', outline: 'none',
                                     minHeight: '120px', resize: 'vertical',
                                     transition: 'all 0.25s', boxSizing: 'border-box', lineHeight: '1.6'
                                 }}
-                                onFocus={e => { e.target.style.borderColor = '#6366f1'; e.target.style.boxShadow = '0 0 0 4px rgba(99,102,241,0.12)'; }}
-                                onBlur={e => { e.target.style.borderColor = isLight ? '#e2e8f0' : 'rgba(255,255,255,0.08)'; e.target.style.boxShadow = 'none'; }}
+                                onFocus={e => { e.target.style.borderColor = '#6366f1'; e.target.style.boxShadow = '0 0 0 4px rgba(99,102,241,0.12)'; e.target.style.color = isLight ? '#000' : 'var(--text-main)'; }}
+                                onBlur={e => { e.target.style.borderColor = isLight ? '#e2e8f0' : 'rgba(255,255,255,0.08)'; e.target.style.boxShadow = 'none'; e.target.style.color = isLight ? '#0f172a' : 'var(--text-main)'; }}
                             />
                         </div>
                         <div>
@@ -2632,6 +2632,20 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                             {editMode ? (
                                                 <input type="text" value={u.designation || ''} onChange={e => setSelectedUser({ ...u, designation: e.target.value })} style={modalInputStyle} />
                                             ) : <div style={{ fontSize: '1.05rem', fontWeight: '700', color: 'var(--text-main)' }}>{u.designation}</div>}
+                                        </FormField>
+                                        <FormField isLightMode={isLightMode} label="User Role">
+                                            {editMode ? (
+                                                <select 
+                                                    value={u.role || 'Intern'} 
+                                                    onChange={e => setSelectedUser({ ...u, role: e.target.value })} 
+                                                    style={modalInputStyle}
+                                                >
+                                                    <option value="Intern">Intern</option>
+                                                    <option value="Reporting Manager">Reporting Manager</option>
+                                                    <option value="Employee">Employee</option>
+                                                    <option value="Admin">Admin</option>
+                                                </select>
+                                            ) : <div style={{ fontSize: '1.05rem', fontWeight: '700', color: 'var(--text-main)' }}>{u.role || 'Intern'}</div>}
                                         </FormField>
                                         <FormField isLightMode={isLightMode} label="Joining Date">
                                             {editMode ? (

@@ -308,3 +308,94 @@ export const updateProfilePicture = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+// @desc    Forgot Password - Step 1: Send OTP
+// @route   POST /api/auth/forgot-password
+export const forgotPassword = async (req, res) => {
+    try {
+        const { email } = req.body;
+        const user = await User.findOne({ email: email.toLowerCase(), isDeleted: { $ne: true } });
+
+        if (!user) {
+            return res.status(404).json({ message: 'User with this email does not exist.' });
+        }
+
+        const otp = crypto.randomInt(100000, 999999).toString();
+        user.otp = otp;
+        user.otpExpiry = Date.now() + 10 * 60 * 1000; // 10 minutes
+        await user.save();
+
+        try {
+            await sendEmail({
+                email: user.email,
+                subject: 'Password Reset OTP - Zora',
+                message: `Your OTP for password reset is: ${otp}. It expires in 10 minutes.`,
+                html: `
+                    <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
+                        <h2 style="color: #3b82f6;">Password Reset Request</h2>
+                        <p>You requested a password reset for your Zora account.</p>
+                        <p>Your verification code is:</p>
+                        <h1 style="background: #f1f5f9; padding: 10px 20px; border-radius: 10px; display: inline-block; letter-spacing: 5px; color: #1d4ed8;">${otp}</h1>
+                        <p>This code expires in 10 minutes.</p>
+                        <p>If you did not request this, please ignore this email.</p>
+                    </div>
+                `
+            });
+            res.status(200).json({ message: 'OTP sent to your email.' });
+        } catch (err) {
+            console.error('Email sending failed:', err);
+            // In dev, we might want to return the OTP if email fails
+            res.status(200).json({ 
+                message: 'OTP could not be sent to email, but generated (Check server logs in dev).',
+                devOtp: process.env.NODE_ENV !== 'production' ? otp : undefined 
+            });
+        }
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Verify Reset OTP - Step 2
+// @route   POST /api/auth/verify-reset-otp
+export const verifyResetOTP = async (req, res) => {
+    try {
+        const { email, otp } = req.body;
+        const user = await User.findOne({ email: email.toLowerCase(), isDeleted: { $ne: true } });
+
+        if (!user) return res.status(404).json({ message: 'User not found.' });
+        
+        if (user.otp !== otp || user.otpExpiry < Date.now()) {
+            return res.status(400).json({ message: 'Invalid or expired OTP.' });
+        }
+
+        res.status(200).json({ message: 'OTP verified. You can now reset your password.' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Reset Password - Step 3
+// @route   POST /api/auth/reset-password
+export const resetPassword = async (req, res) => {
+    try {
+        const { email, otp, password } = req.body;
+        const user = await User.findOne({ email: email.toLowerCase(), isDeleted: { $ne: true } });
+
+        if (!user) return res.status(404).json({ message: 'User not found.' });
+
+        if (user.otp !== otp || user.otpExpiry < Date.now()) {
+            return res.status(400).json({ message: 'Invalid or expired OTP session.' });
+        }
+
+        // Update password
+        user.password = password;
+        user.otp = undefined;
+        user.otpExpiry = undefined;
+        await user.save();
+
+        await createAuditLog(user._id, 'PASSWORD_RESET', `Password reset successful for: ${user.name}`, { targetModel: 'User', targetId: user._id });
+
+        res.status(200).json({ message: 'Password reset successful. You can now login.' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};

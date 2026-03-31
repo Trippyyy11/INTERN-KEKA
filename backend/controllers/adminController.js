@@ -97,12 +97,20 @@ export const updateUserDetails = async (req, res) => {
 // @desc    Create a new user directly
 export const createUser = async (req, res) => {
     try {
-        const { name, role, department, designation, reportingManager, phoneNumber } = req.body;
+        const { name, role, department, designation, reportingManager, phoneNumber, weekOff } = req.body;
         const email = req.body.email.toLowerCase();
         const password = req.body.password;
         
         const existingUser = await User.findOne({ email });
         if (existingUser) return res.status(400).json({ message: 'User already exists' });
+
+        const settings = await Settings.findOne();
+        const leaveQuotas = settings?.defaultLeaveQuotas || {
+            paid: 12,
+            sick: 6,
+            casual: 6,
+            compOff: 0
+        };
 
         const newUser = new User({
             name,
@@ -113,6 +121,10 @@ export const createUser = async (req, res) => {
             designation,
             reportingManager,
             phoneNumber,
+            workingSchedule: {
+                weekOffs: weekOff ? [weekOff] : ['Sunday']
+            },
+            leaveQuotas,
             isVerified: true,
             isApproved: true,
             isActive: true

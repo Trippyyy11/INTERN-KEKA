@@ -164,7 +164,7 @@ const AdminTab = ({
 
     // Create User state
     const [showCreateUserModal, setShowCreateUserModal] = useState(false);
-    const [createUserForm, setCreateUserForm] = useState({ name: '', email: '', password: '', role: 'Intern', department: '', designation: '', reportingManager: '', phoneNumber: '' });
+    const [createUserForm, setCreateUserForm] = useState({ name: '', email: '', password: '', role: 'Intern', department: '', designation: '', reportingManager: '', phoneNumber: '', weekOff: 'Sunday' });
     const [createUserLoading, setCreateUserLoading] = useState(false);
     const [createUserError, setCreateUserError] = useState('');
 
@@ -199,25 +199,25 @@ const AdminTab = ({
     
     // Potential managers for the dropdown
     useEffect(() => {
-        if (canCreateUsersPermission) {
+        if (canCreateUsersPermission && potentialManagers.length === 0) {
             api.get('/admin/potential-managers').then(res => {
                 setPotentialManagers(res.data);
             }).catch(err => console.error('Failed to fetch potential managers', err));
         }
-    }, [canCreateUsersPermission]);
+    }, [canCreateUsersPermission, potentialManagers.length]);
 
     const managers = potentialManagers;
 
     // Load permissions users when Permissions tab is active
     useEffect(() => {
-        if (activeSubTab === 'Permissions' && (isSuperAdmin || user?.permissions?.canViewPermissionsTab)) {
+        if (activeSubTab === 'Permissions' && (isSuperAdmin || user?.permissions?.canViewPermissionsTab) && permissionsUsers.length === 0) {
             setPermissionsLoading(true);
             api.get('/admin/org-users').then(res => {
                 setPermissionsUsers(res.data.filter(u => !u.isDeleted));
                 setPermissionsLoading(false);
             }).catch(() => setPermissionsLoading(false));
         }
-    }, [activeSubTab, isSuperAdmin, user?.permissions?.canViewPermissionsTab]);
+    }, [activeSubTab, isSuperAdmin, user?.permissions?.canViewPermissionsTab, permissionsUsers.length]);
 
     const handleCreateUser = async (e) => {
         e.preventDefault();
@@ -226,7 +226,7 @@ const AdminTab = ({
         try {
             await api.post('/admin/users', createUserForm);
             setShowCreateUserModal(false);
-            setCreateUserForm({ name: '', email: '', password: '', role: 'Intern', department: '', designation: '', reportingManager: '', phoneNumber: '' });
+            setCreateUserForm({ name: '', email: '', password: '', role: 'Intern', department: '', designation: '', reportingManager: '', phoneNumber: '', weekOff: 'Sunday' });
             window.location.reload(); // refresh user list
         } catch (err) {
             setCreateUserError(err.response?.data?.message || 'Failed to create user');
@@ -578,12 +578,12 @@ const AdminTab = ({
                                                 <div 
                                                     data-action-menu="panel"
                                                     style={{
-                                                        position: 'absolute', top: '50%', right: '3.5rem', zIndex: 200, minWidth: '200px',
+                                                        position: 'absolute', top: 'calc(50% + 1.5rem)', right: '0', zIndex: 250, minWidth: '220px',
                                                         background: isLightMode ? '#ffffff' : '#1e293b',
-                                                        borderRadius: '18px', padding: '0.6rem',
-                                                        boxShadow: '0 20px 60px rgba(0,0,0,0.25), 0 0 0 1px rgba(0,0,0,0.05)',
-                                                        animation: 'flyoutIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-                                                        transform: 'translateY(-50%)'
+                                                        borderRadius: '20px', padding: '0.6rem',
+                                                        boxShadow: isLightMode ? '0 20px 60px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.05)' : '0 20px 60px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05)',
+                                                        animation: 'flyoutIn 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+                                                        transformOrigin: 'top right'
                                                     }}>
                                                     {[
                                                         { icon: Eye, label: 'View Profile', action: () => { setSelectedUser(u); setShowEditModal(true); setEditMode(false); setModalTab('Personal'); setActiveActionMenu(null); } },
@@ -1351,7 +1351,25 @@ const AdminTab = ({
                                         }}>
                                             <option value="Intern">Intern</option>
                                             <option value="Reporting Manager">Reporting Manager</option>
-                                            <option value="Super Admin">Super Admin</option>
+                                        </select>
+                                        <div style={{ position: 'absolute', right: '1.2rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }}><ChevronDown size={18} /></div>
+                                    </div>
+                                </InputField>
+                                <InputField label="Weekly Off *" isLightMode={isLightMode}>
+                                    <div style={{ position: 'relative' }}>
+                                        <select value={createUserForm.weekOff} onChange={e => setCreateUserForm({ ...createUserForm, weekOff: e.target.value })} style={{
+                                            width: '100%', padding: '0.9rem 2.8rem 0.9rem 1.2rem', fontSize: '0.95rem', fontWeight: '600',
+                                            background: isLightMode ? '#f8fafc' : 'rgba(0,0,0,0.2)',
+                                            border: `1.5px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.08)'}`,
+                                            borderRadius: '14px', color: 'var(--text-main)', outline: 'none', cursor: 'pointer', appearance: 'none'
+                                        }}>
+                                            <option value="Sunday">Sunday</option>
+                                            <option value="Saturday">Saturday</option>
+                                            <option value="Monday">Monday</option>
+                                            <option value="Tuesday">Tuesday</option>
+                                            <option value="Wednesday">Wednesday</option>
+                                            <option value="Thursday">Thursday</option>
+                                            <option value="Friday">Friday</option>
                                         </select>
                                         <div style={{ position: 'absolute', right: '1.2rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }}><ChevronDown size={18} /></div>
                                     </div>

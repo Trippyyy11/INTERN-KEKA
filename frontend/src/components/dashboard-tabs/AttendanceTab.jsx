@@ -49,12 +49,14 @@ const AttendanceTab = ({
     const [isSubmittingRegularize, setIsSubmittingRegularize] = useState(false);
     const [showSessionDetailModal, setShowSessionDetailModal] = useState(false);
     const [selectedLogForDetail, setSelectedLogForDetail] = useState(null);
+    const [noAttendanceMenu, setNoAttendanceMenu] = useState(null); // { date, x, y }
 
     // Auto-close dropdown when clicking outside
     React.useEffect(() => {
         const handleClickOutside = (event) => {
-            if (!event.target.closest('.action-menu-container')) {
+            if (!event.target.closest('.action-menu-container') && !event.target.closest('.no-attendance-menu')) {
                 setActiveMenu(null);
+                setNoAttendanceMenu(null);
             }
         };
         document.addEventListener('mousedown', handleClickOutside);
@@ -409,6 +411,15 @@ const AttendanceTab = ({
                 bgColor = 'rgba(248, 113, 113, 0.15)';
             }
 
+            // Identify past days with no records (No Attendance)
+            const isPast = dateObj < new Date().setHours(0, 0, 0, 0);
+            if (isPast && !status) {
+                status = 'no-attendance';
+                label = 'NO ATTENDANCE';
+                color = '#a855f7'; // Purple
+                bgColor = 'rgba(168, 85, 247, 0.12)';
+            }
+
             currentMonthData.push({ day: d, status, label, date: dateStr, color, bgColor, type, isToday: dateStr === todayStr, leave: associatedLeave });
         }
 
@@ -474,7 +485,8 @@ const AttendanceTab = ({
                             { color: '#00ff88', label: 'Office' },
                             { color: '#00ffa2', label: 'Remote' },
                             { color: '#00f2fe', label: 'Leave' },
-                            { color: '#f87171', label: 'Holiday' }
+                            { color: '#f87171', label: 'Holiday' },
+                            { color: '#a855f7', label: 'No Attendance' }
                         ].map(legend => (
                             <div key={legend.label} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: '600' }}>
                                 <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: legend.color, boxShadow: `0 0 10px ${legend.color}40` }}></div>
@@ -500,8 +512,8 @@ const AttendanceTab = ({
                     {currentMonthData.map((item, i) => (
                         <div 
                             key={i} 
-                            className="calendar-cell" 
-                            onClick={() => {
+                            className={`calendar-cell ${item.status === 'no-attendance' ? 'no-attendance-cell' : ''}`}
+                            onClick={(e) => {
                                 if (item.status === 'leave' && item.leave) {
                                     const leaveDate = new Date(item.date).setHours(0, 0, 0, 0);
                                     const todayDate = new Date().setHours(0, 0, 0, 0);
@@ -514,6 +526,13 @@ const AttendanceTab = ({
                                     } else {
                                         showAlert('Cannot cancel past leaves from the calendar.', 'info');
                                     }
+                                } else if (item.status === 'no-attendance') {
+                                    const rect = e.currentTarget.getBoundingClientRect();
+                                    setNoAttendanceMenu({
+                                        date: item.date,
+                                        x: rect.left + rect.width / 2,
+                                        y: rect.top
+                                    });
                                 }
                             }}
                             style={{
@@ -526,9 +545,10 @@ const AttendanceTab = ({
                             flexDirection: 'column',
                             justifyContent: 'space-between',
                             transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                            cursor: item.type === 'empty' ? 'default' : (item.status === 'leave' ? 'pointer' : 'default'),
-                            overflow: 'hidden',
-                            boxShadow: item.isToday ? '0 0 20px rgba(var(--primary-rgb, 155, 89, 182), 0.15)' : 'none'
+                            cursor: item.type === 'empty' ? 'default' : (['leave', 'no-attendance'].includes(item.status) ? 'pointer' : 'default'),
+                            overflow: 'visible',
+                            boxShadow: item.isToday ? '0 0 20px rgba(var(--primary-rgb, 155, 89, 182), 0.15)' : 'none',
+                            position: 'relative'
                         }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                 <span style={{
@@ -556,6 +576,82 @@ const AttendanceTab = ({
                                     {item.label}
                                 </div>
                             )}
+
+                            {/* No Attendance Gap Action Menu */}
+                            {noAttendanceMenu && noAttendanceMenu.date === item.date && (
+                                <div className="no-attendance-menu" style={{
+                                    position: 'absolute',
+                                    bottom: '105%',
+                                    left: '50%',
+                                    transform: 'translateX(-50%)',
+                                    background: isLightMode ? '#ffffff' : 'var(--bg-panel)',
+                                    borderRadius: '16px',
+                                    boxShadow: '0 10px 30px rgba(0,0,0,0.2)',
+                                    border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.1)'}`,
+                                    zIndex: 100,
+                                    padding: '8px',
+                                    minWidth: '160px',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '4px',
+                                    animation: 'popIn 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)'
+                                }}>
+                                    <button 
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setRegularizeLog({ date: item.date, _id: null }); // No existing log
+                                            setRegularizeExpectedClockIn(user?.workingSchedule?.shiftStart || '11:00');
+                                            setRegularizeExpectedClockOut(user?.workingSchedule?.shiftEnd || '20:00');
+                                            setShowRegularizeModal(true);
+                                            setNoAttendanceMenu(null);
+                                        }}
+                                        style={{
+                                            padding: '8px 12px',
+                                            borderRadius: '10px',
+                                            background: 'transparent',
+                                            border: 'none',
+                                            color: 'var(--text-main)',
+                                            fontSize: '0.75rem',
+                                            fontWeight: '700',
+                                            textAlign: 'left',
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '8px'
+                                        }}
+                                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(var(--primary-rgb), 0.1)'}
+                                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                                    >
+                                        <Edit2 size={14} color="var(--primary)" /> Regularize Gap
+                                    </button>
+                                    <button 
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setNoAttendanceMenu(null);
+                                            setAttendanceTab('Leave'); // Navigate to Leave Tab
+                                            // Optional: pass the date to pre-fill? Requires change to LeaveTab
+                                        }}
+                                        style={{
+                                            padding: '8px 12px',
+                                            borderRadius: '10px',
+                                            background: 'transparent',
+                                            border: 'none',
+                                            color: 'var(--text-main)',
+                                            fontSize: '0.75rem',
+                                            fontWeight: '700',
+                                            textAlign: 'left',
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '8px'
+                                        }}
+                                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(var(--primary-rgb), 0.1)'}
+                                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                                    >
+                                        <FileText size={14} color="var(--primary)" /> Apply for Leave
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     ))}
                 </div>
@@ -569,6 +665,13 @@ const AttendanceTab = ({
                     @keyframes fadeIn {
                         from { opacity: 0; transform: translateY(10px); }
                         to { opacity: 1; transform: translateY(0); }
+                    }
+                    @keyframes popIn {
+                        from { opacity: 0; transform: translateX(-50%) scale(0.9) translateY(10px); }
+                        to { opacity: 1; transform: translateX(-50%) scale(1) translateY(0); }
+                    }
+                    .no-attendance-cell:hover {
+                        border-color: #a855f7 !important;
                     }
                 `}</style>
             </div>

@@ -12,6 +12,11 @@ router.post('/login', loginUser);
 router.post('/logout', logoutUser);
 router.get('/options', getOrgOptions); // For registration dropdowns
 
+// Forgot Password Flow
+router.post('/forgot-password', (req, res, next) => import('../controllers/authController.js').then(m => m.forgotPassword(req, res, next))); 
+router.post('/verify-reset-otp', (req, res, next) => import('../controllers/authController.js').then(m => m.verifyResetOTP(req, res, next)));
+router.post('/reset-password', (req, res, next) => import('../controllers/authController.js').then(m => m.resetPassword(req, res, next)));
+
 router.get('/me', protect, getMe);
 router.put('/profile', protect, updateProfile);
 router.put('/welcome-profile', protect, updateWelcomeProfile);
