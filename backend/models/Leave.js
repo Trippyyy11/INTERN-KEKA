@@ -9,6 +9,7 @@ const leaveSchema = new mongoose.Schema(
         reason: { type: String },
         status: { type: String, enum: ['Pending', 'Approved', 'Rejected'], default: 'Pending' },
         approvedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        isHalfDay: { type: Boolean, default: false },
         cancelledDates: [{ type: Date }]
     },
     { timestamps: true }

@@ -216,11 +216,12 @@ const MyTeamTab = ({
             });
 
             if (leave) {
-                const isHalfDay = leave.type === 'Half Day';
+                const isHalfDay = leave.isHalfDay || leave.type === 'Half Day';
+                const leaveTypeName = (leave.type === 'Half Day' ? 'Leave' : (leave.type || 'Leave'));
                 return {
                     color: isHalfDay ? statusColors.halfDay : statusColors.leave,
                     label: isHalfDay ? 'H' : 'L',
-                    tooltip: isHalfDay ? 'Half Day' : `${leave.type || 'Leave'}`
+                    tooltip: isHalfDay ? `Half day (${leaveTypeName})` : leaveTypeName
                 };
             }
 

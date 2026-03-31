@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, Clock, FileText, HelpCircle, Info, Home, LogOut, Zap, LayoutDashboard, MoreVertical, Edit3, X, Send, CheckCircle2, History, ArrowRight, MapPin } from 'lucide-react';
+import { Calendar, Clock, FileText, HelpCircle, Info, Home, LogOut, Zap, LayoutDashboard, MoreVertical, Edit2, Edit3, X, Send, CheckCircle2, History, ArrowRight, ArrowDownLeft, ArrowUpRight, MessageSquare, MapPin } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import api from '../../api/axios.js';
 
@@ -47,6 +47,8 @@ const AttendanceTab = ({
     const [regularizeExpectedClockIn, setRegularizeExpectedClockIn] = useState('');
     const [regularizeExpectedClockOut, setRegularizeExpectedClockOut] = useState('');
     const [isSubmittingRegularize, setIsSubmittingRegularize] = useState(false);
+    const [showSessionDetailModal, setShowSessionDetailModal] = useState(false);
+    const [selectedLogForDetail, setSelectedLogForDetail] = useState(null);
 
     // Auto-close dropdown when clicking outside
     React.useEffect(() => {
@@ -58,6 +60,209 @@ const AttendanceTab = ({
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
+
+    const displayStats = React.useMemo(() => {
+        if (isClockedIn && activeLog?.clockInTime) {
+            return calculateElapsedTime(activeLog.clockInTime, activeLog.breaks, activeLog.lastClockInTime);
+        }
+
+        // Find most recent session within the last 16 hours
+        const sixteenHoursAgo = new Date(Date.now() - 16 * 60 * 60 * 1000);
+        const lastSession = attendanceLogs.find(log => new Date(log.clockInTime) > sixteenHoursAgo);
+
+        if (lastSession) {
+            const formatTime = (val) => {
+                const hours = Math.floor(Number(val) || 0);
+                const mins = Math.round(((Number(val) || 0) % 1) * 60);
+                return `${hours}h ${mins}m`;
+            };
+            return {
+                effectiveText: formatTime(lastSession.effectiveHours), // Current segment at clock-out
+                text: formatTime(lastSession.grossHours || lastSession.totalHours) // Total work time
+            };
+        }
+        return { effectiveText: '0h 0m', text: '0h 0m' };
+    }, [isClockedIn, activeLog, attendanceLogs, calculateElapsedTime]);
+
+    const formatTimeWithPeriod = (date) => {
+        if (!date) return 'MISSING';
+        const d = new Date(date);
+        let hours = d.getHours();
+        const minutes = d.getMinutes().toString().padStart(2, '0');
+        const seconds = d.getSeconds().toString().padStart(2, '0');
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        hours = hours % 12;
+        hours = hours ? hours : 12; // the hour '0' should be '12'
+        return `${hours}:${minutes}:${seconds} ${ampm}`;
+    };
+
+    const renderSessionLogModal = () => {
+        if (!showSessionDetailModal || !selectedLogForDetail) return null;
+        const log = selectedLogForDetail;
+        const segments = [];
+        const breaks = log.breaks || [];
+
+        // First segment starts at clockInTime
+        if (log.clockInTime) {
+            segments.push({
+                start: log.clockInTime,
+                end: breaks.length > 0 ? breaks[0].startTime : (log.clockOutTime || null)
+            });
+        }
+
+        // Intermediate segments
+        if (breaks.length > 0) {
+            for (let i = 0; i < breaks.length; i++) {
+                const nextStart = breaks[i].endTime;
+                const nextEnd = breaks[i + 1] ? breaks[i + 1].startTime : (log.clockOutTime || null);
+                if (nextStart) {
+                    segments.push({ start: nextStart, end: nextEnd });
+                }
+            }
+        }
+
+        const isRegularized = !!(log.originalClockInTime || log.originalClockOutTime);
+
+        return (
+            <div style={{
+                position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                zIndex: 10000, padding: '1.5rem', animation: 'fadeIn 0.2s ease-out'
+            }} onClick={() => setShowSessionDetailModal(false)}>
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                    onClick={e => e.stopPropagation()}
+                    style={{
+                        background: isLightMode ? '#ffffff' : 'var(--bg-panel)',
+                        width: '100%', maxWidth: '500px', borderRadius: '32px',
+                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+                        border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.1)'}`,
+                        overflow: 'hidden'
+                    }}
+                >
+                    <div style={{ padding: '2rem', borderBottom: `1px solid ${isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.05)'}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                            <h3 style={{ fontSize: '1.25rem', fontWeight: '900', color: 'var(--text-main)', margin: 0 }}>Attendance Log</h3>
+                            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: '4px 0 0 0', fontWeight: '600' }}>
+                                {new Date(log.date).toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long' })}
+                            </p>
+                        </div>
+                        <button
+                            onClick={() => setShowSessionDetailModal(false)}
+                            style={{ width: '40px', height: '40px', borderRadius: '50%', background: isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.05)', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                        >
+                            <X size={20} />
+                        </button>
+                    </div>
+
+                    <div style={{ padding: '2rem', maxHeight: '60vh', overflowY: 'auto' }}>
+                        {isRegularized && (
+                            <div style={{ marginBottom: '2rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1.25rem' }}>
+                                    <Edit3 size={18} color="var(--primary)" />
+                                    <span style={{ fontSize: '0.9rem', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Manual Adjustments</span>
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                    <div style={{ padding: '1rem', background: 'rgba(0,0,0,0.02)', borderRadius: '20px', border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.05)'}` }}>
+                                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: '700', marginBottom: '8px', textTransform: 'uppercase' }}>Original Captured Times</div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '1rem', fontWeight: '700', color: 'var(--text-muted)', opacity: 0.7 }}>
+                                            {log.originalClockInTime ? new Date(log.originalClockInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
+                                            <ArrowRight size={14} />
+                                            {log.originalClockOutTime ? new Date(log.originalClockOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
+                                        </div>
+                                    </div>
+                                    <div style={{ padding: '1rem', background: 'rgba(16, 185, 129, 0.05)', borderRadius: '20px', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+                                        <div style={{ fontSize: '0.7rem', color: '#10b981', fontWeight: '700', marginBottom: '8px', textTransform: 'uppercase' }}>Regularized Times</div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '1.1rem', fontWeight: '900', color: '#10b981' }}>
+                                            {log.clockInTime ? new Date(log.clockInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
+                                            <ArrowRight size={16} />
+                                            {log.clockOutTime ? new Date(log.clockOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1.25rem' }}>
+                            <Zap size={18} color="var(--primary)" />
+                            <span style={{ fontSize: '0.9rem', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Raw Session Breakdown</span>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                            {segments.length > 0 ? segments.map((seg, idx) => (
+                                <div key={idx} style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '1rem',
+                                    padding: '1.25rem',
+                                    background: isLightMode ? '#f8fafc' : 'rgba(255,255,255,0.02)',
+                                    borderRadius: '20px',
+                                    border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.05)'}`
+                                }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                                <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'rgba(16, 185, 129, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                    <ArrowDownLeft size={16} color="#10b981" />
+                                                </div>
+                                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                    <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase' }}>Clock In</span>
+                                                    <span style={{ fontWeight: '800', color: 'var(--text-main)', fontSize: '0.9rem' }}>{formatTimeWithPeriod(seg.start)}</span>
+                                                </div>
+                                            </div>
+                                            {/* Optional Comment Icon */}
+                                            <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'rgba(0,0,0,0.03)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                <MessageSquare size={14} color="var(--text-muted)" />
+                                            </div>
+                                        </div>
+
+                                        <div style={{ height: '1px', background: isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.05)', marginLeft: '40px' }}></div>
+
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                                <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: seg.end ? 'rgba(244, 63, 94, 0.1)' : 'rgba(0,0,0,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                    <ArrowUpRight size={16} color={seg.end ? "#f43f5e" : "var(--text-muted)"} />
+                                                </div>
+                                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                    <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase' }}>Clock Out</span>
+                                                    <span style={{ fontWeight: '800', color: seg.end ? 'var(--text-main)' : 'var(--text-muted)', fontSize: '0.9rem' }}>
+                                                        {seg.end ? formatTimeWithPeriod(seg.end) : 'MISSING'}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'rgba(0,0,0,0.03)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                <MessageSquare size={14} color="var(--text-muted)" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )) : (
+                                <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)', fontWeight: '600', fontSize: '0.9rem' }}>
+                                    No raw sessions recorded for this day.
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    <div style={{ padding: '1.5rem 2rem', background: isLightMode ? '#f8fafc' : 'rgba(0,0,0,0.2)', display: 'flex', justifyContent: 'flex-end' }}>
+                        <button
+                            onClick={() => setShowSessionDetailModal(false)}
+                            style={{
+                                padding: '0.75rem 2rem', background: 'var(--primary)', color: '#fff',
+                                border: 'none', borderRadius: '14px', fontWeight: '800', cursor: 'pointer',
+                                boxShadow: '0 8px 20px -5px rgba(var(--primary-rgb), 0.4)'
+                            }}
+                        >
+                            Close Log
+                        </button>
+                    </div>
+                </motion.div>
+            </div>
+        );
+    };
 
     const submitRegularization = async () => {
         if (!regularizeReason.trim()) {
@@ -93,7 +298,7 @@ const AttendanceTab = ({
 
     const getAttendanceProgress = () => {
         if (!isClockedIn || !activeLog?.clockInTime) return 0;
-        const elapsed = calculateElapsedTime(activeLog.clockInTime);
+        const elapsed = calculateElapsedTime(activeLog.clockInTime, activeLog.breaks);
         const shiftMins = (systemSettings?.workingHoursPerDay || 8) * 60;
         return Math.min(elapsed.totalMins / shiftMins, 1);
     };
@@ -180,11 +385,17 @@ const AttendanceTab = ({
                 const current = dateObj.setHours(0, 0, 0, 0);
                 return current >= start && current <= end && l.status === 'Approved';
             });
+            let associatedLeave = null;
             if (leave) {
                 const isCancelled = leave.cancelledDates?.some(d => new Date(d).toLocaleDateString('en-CA') === dateStr);
                 if (!isCancelled) {
                     status = 'leave';
-                    label = leave.type ? `LEAVE: ${leave.type.toUpperCase()}` : 'LEAVE';
+                    associatedLeave = leave;
+                    if (leave.isHalfDay || leave.type === 'Half Day') {
+                        label = 'HALF DAY';
+                    } else {
+                        label = leave.type ? `LEAVE: ${leave.type.toUpperCase()}` : 'LEAVE';
+                    }
                     color = '#00f2fe';
                     bgColor = 'rgba(0, 242, 254, 0.15)';
                 }
@@ -198,7 +409,7 @@ const AttendanceTab = ({
                 bgColor = 'rgba(248, 113, 113, 0.15)';
             }
 
-            currentMonthData.push({ day: d, status, label, date: dateStr, color, bgColor, type, isToday: dateStr === todayStr });
+            currentMonthData.push({ day: d, status, label, date: dateStr, color, bgColor, type, isToday: dateStr === todayStr, leave: associatedLeave });
         }
 
         const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -287,7 +498,25 @@ const AttendanceTab = ({
                         <div key={h} style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '0.5rem' }}>{h}</div>
                     ))}
                     {currentMonthData.map((item, i) => (
-                        <div key={i} className="calendar-cell" style={{
+                        <div 
+                            key={i} 
+                            className="calendar-cell" 
+                            onClick={() => {
+                                if (item.status === 'leave' && item.leave) {
+                                    const leaveDate = new Date(item.date).setHours(0, 0, 0, 0);
+                                    const todayDate = new Date().setHours(0, 0, 0, 0);
+                                    if (leaveDate >= todayDate) {
+                                        if (window.confirm(`Are you sure you want to cancel your leave for ${new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}?`)) {
+                                            handleQuickCancelLeave(item.leave, item.date)
+                                                .then(() => showAlert('Leave cancellation requested successfully.', 'info'))
+                                                .catch(() => showAlert('Failed to cancel leave.', 'error'));
+                                        }
+                                    } else {
+                                        showAlert('Cannot cancel past leaves from the calendar.', 'info');
+                                    }
+                                }
+                            }}
+                            style={{
                             minHeight: '70px',
                             background: item.type === 'empty' ? 'transparent' : (item.isToday ? 'rgba(var(--primary-rgb, 155, 89, 182), 0.1)' : 'var(--bg-main)'),
                             borderRadius: '16px',
@@ -297,7 +526,7 @@ const AttendanceTab = ({
                             flexDirection: 'column',
                             justifyContent: 'space-between',
                             transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                            cursor: item.type === 'empty' ? 'default' : 'pointer',
+                            cursor: item.type === 'empty' ? 'default' : (item.status === 'leave' ? 'pointer' : 'default'),
                             overflow: 'hidden',
                             boxShadow: item.isToday ? '0 0 20px rgba(var(--primary-rgb, 155, 89, 182), 0.15)' : 'none'
                         }}>
@@ -387,9 +616,9 @@ const AttendanceTab = ({
                                 <div style={{ fontSize: '1.6rem', fontWeight: '800', color: 'var(--text-main)', display: 'flex', alignItems: 'baseline', gap: '0.1rem' }}>
                                     {(() => {
                                         let totalHours = 0;
-                                        for(let i = 0; i < 7; i++){
-                                            const d = new Date(); d.setDate(d.getDate() - i); d.setHours(0,0,0,0);
-                                            const l = attendanceLogs?.find(lg => new Date(lg.date).setHours(0,0,0,0) === d.getTime());
+                                        for (let i = 0; i < 7; i++) {
+                                            const d = new Date(); d.setDate(d.getDate() - i); d.setHours(0, 0, 0, 0);
+                                            const l = attendanceLogs?.find(lg => new Date(lg.date).setHours(0, 0, 0, 0) === d.getTime());
                                             totalHours += (l?.totalHours || 0);
                                         }
                                         const avg = totalHours / 7;
@@ -411,14 +640,14 @@ const AttendanceTab = ({
                                         let logsCount = 0;
                                         const [sh, sm] = (user?.workingSchedule?.shiftStart || '11:00').split(':').map(Number);
                                         const shiftStartMins = sh * 60 + sm;
-                                        for(let i = 0; i < 7; i++){
-                                            const d = new Date(); d.setDate(d.getDate() - i); d.setHours(0,0,0,0);
-                                            const l = attendanceLogs?.find(lg => new Date(lg.date).setHours(0,0,0,0) === d.getTime());
+                                        for (let i = 0; i < 7; i++) {
+                                            const d = new Date(); d.setDate(d.getDate() - i); d.setHours(0, 0, 0, 0);
+                                            const l = attendanceLogs?.find(lg => new Date(lg.date).setHours(0, 0, 0, 0) === d.getTime());
                                             if (l?.clockInTime) {
                                                 logsCount++;
                                                 const cin = new Date(l.clockInTime);
                                                 const mins = cin.getHours() * 60 + cin.getMinutes();
-                                                if(mins <= shiftStartMins + 60) onTimeCount++;
+                                                if (mins <= shiftStartMins + 60) onTimeCount++;
                                             }
                                         }
                                         return logsCount > 0 ? Math.round((onTimeCount / logsCount) * 100) + '%' : '0%';
@@ -431,15 +660,15 @@ const AttendanceTab = ({
                         <div style={{ flex: 1, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '6px', position: 'relative', marginTop: 'auto', paddingTop: '1.5rem', minHeight: '120px' }}>
                             <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '1px', borderTop: `1px dashed ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.08)'}`, zIndex: 0 }}></div>
                             <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: '1px', borderTop: `1px dashed ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.08)'}`, zIndex: 0 }}></div>
-                            
+
                             {(() => {
                                 const targetHours = user?.workingSchedule?.minHours || 7.0;
                                 const chartData = [];
                                 for (let i = 6; i >= 0; i--) {
                                     const d = new Date();
                                     d.setDate(d.getDate() - i);
-                                    d.setHours(0,0,0,0);
-                                    const log = attendanceLogs?.find(lg => new Date(lg.date).setHours(0,0,0,0) === d.getTime());
+                                    d.setHours(0, 0, 0, 0);
+                                    const log = attendanceLogs?.find(lg => new Date(lg.date).setHours(0, 0, 0, 0) === d.getTime());
                                     const worked = log?.totalHours || 0;
                                     chartData.push({
                                         day: d.toLocaleDateString('en-US', { weekday: 'short' }),
@@ -448,7 +677,7 @@ const AttendanceTab = ({
                                         isToday: i === 0
                                     });
                                 }
-                                
+
                                 const maxH = Math.max(10, ...chartData.map(d => d.hours));
 
                                 return chartData.map((d, i) => {
@@ -457,25 +686,76 @@ const AttendanceTab = ({
                                     const isZero = d.hours === 0;
 
                                     return (
-                                        <div key={i} title={`${d.dateLabel}: ${Math.floor(d.hours)}h ${Math.round((d.hours%1)*60)}m`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, zIndex: 1, cursor: 'pointer' }}>
-                                            <div style={{ 
-                                                height: '100px', 
-                                                width: '100%', 
-                                                position: 'relative', 
-                                                display: 'flex', 
-                                                alignItems: 'flex-end', 
+                                        <div
+                                            key={i}
+                                            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, zIndex: 1, cursor: 'pointer', position: 'relative' }}
+                                            onMouseEnter={() => setActiveTooltip(`chart-${i}`)}
+                                            onMouseLeave={() => setActiveTooltip(null)}
+                                        >
+                                            <AnimatePresence>
+                                                {activeTooltip === `chart-${i}` && (
+                                                    <motion.div
+                                                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                                        style={{
+                                                            position: 'absolute',
+                                                            bottom: '100%',
+                                                            marginBottom: '10px',
+                                                            background: isLightMode ? '#1e293b' : 'rgba(15, 23, 42, 0.95)',
+                                                            color: '#fff',
+                                                            padding: '0.75rem 1rem',
+                                                            borderRadius: '12px',
+                                                            fontSize: '0.75rem',
+                                                            whiteSpace: 'nowrap',
+                                                            zIndex: 100,
+                                                            boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
+                                                            border: '1px solid rgba(255,255,255,0.1)',
+                                                            pointerEvents: 'none'
+                                                        }}
+                                                    >
+                                                        <div style={{ fontWeight: '800', marginBottom: '4px', borderBottom: '1px solid rgba(255,255,255,0.1)', pb: '4px' }}>{d.dateLabel}</div>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: d.hours >= targetHours ? '#10b981' : '#f59e0b' }}></div>
+                                                            <span>Worked: <b>{Math.floor(d.hours)}h {Math.round((d.hours % 1) * 60)}m</b></span>
+                                                        </div>
+                                                        <div style={{ fontSize: '0.65rem', color: '#94a3b8', marginTop: '4px' }}>
+                                                            Target: {targetHours}h {d.hours >= targetHours ? '✅' : `(${(targetHours - d.hours).toFixed(1)}h short)`}
+                                                        </div>
+                                                        {/* Arrow */}
+                                                        <div style={{
+                                                            position: 'absolute',
+                                                            top: '100%',
+                                                            left: '50%',
+                                                            transform: 'translateX(-50%) translateY(-50%) rotate(45deg)',
+                                                            width: '8px',
+                                                            height: '8px',
+                                                            background: isLightMode ? '#1e293b' : 'rgba(15, 23, 42, 0.95)',
+                                                            borderRight: '1px solid rgba(255,255,255,0.1)',
+                                                            borderBottom: '1px solid rgba(255,255,255,0.1)',
+                                                        }}></div>
+                                                    </motion.div>
+                                                )}
+                                            </AnimatePresence>
+
+                                            <div style={{
+                                                height: '100px',
+                                                width: '100%',
+                                                position: 'relative',
+                                                display: 'flex',
+                                                alignItems: 'flex-end',
                                                 justifyContent: 'center',
                                                 background: isZero ? 'transparent' : (isLightMode ? 'rgba(0,0,0,0.02)' : 'rgba(255,255,255,0.02)'),
                                                 borderRadius: '6px',
                                                 padding: '2px',
                                             }}>
-                                                <div 
+                                                <div
                                                     style={{
                                                         width: '100%',
                                                         maxWidth: '24px',
                                                         height: isZero ? '4px' : `${heightPct}%`,
-                                                        background: isZero 
-                                                            ? (isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.1)') 
+                                                        background: isZero
+                                                            ? (isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.1)')
                                                             : (d.isToday ? 'linear-gradient(to top, var(--primary), #60a5fa)' : (isShort ? 'linear-gradient(to top, #f59e0b, #fbbf24)' : 'linear-gradient(to top, #10b981, #34d399)')),
                                                         borderRadius: isZero ? '4px' : '6px 6px 4px 4px',
                                                         boxShadow: d.isToday ? '0 4px 12px rgba(var(--primary-rgb), 0.3)' : (isZero ? 'none' : '0 2px 8px rgba(0,0,0,0.05)'),
@@ -552,10 +832,35 @@ const AttendanceTab = ({
                                 </div>
                                 <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.5rem', fontWeight: '600' }}>{new Date().toDateString()}</div>
 
-                                <div style={{ marginTop: '1.5rem', background: isLightMode ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: '16px', border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.05)'}` }}>
-                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.25rem', fontWeight: '700' }}>Total Hours <HelpCircle size={12} /></div>
-                                    <div style={{ fontSize: '1.25rem', color: 'var(--text-main)' }}>
-                                        Gross: <span style={{ fontWeight: '800' }}>{isClockedIn ? calculateElapsedTime(activeLog?.clockInTime).text : '0h 0m'}</span>
+                                <div style={{
+                                    marginTop: '1.5rem',
+                                    background: isLightMode ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.2)',
+                                    padding: '1.25rem',
+                                    borderRadius: '20px',
+                                    border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.05)'}`,
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '0.75rem'
+                                }}>
+                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px', display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: '800' }}>
+                                        <Clock size={12} /> Today's Session
+                                    </div>
+                                    {isClockedIn && (
+                                        <>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '600' }}>Effective Hours</span>
+                                                <span style={{ fontSize: '1.2rem', color: 'var(--primary)', fontWeight: '900' }}>
+                                                    {displayStats.effectiveText}
+                                                </span>
+                                            </div>
+                                            <div style={{ height: '1px', background: isLightMode ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)' }}></div>
+                                        </>
+                                    )}
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '600' }}>Gross Session</span>
+                                        <span style={{ fontSize: '1.2rem', color: 'var(--text-main)', fontWeight: '900' }}>
+                                            {displayStats.text}
+                                        </span>
                                     </div>
                                 </div>
                             </div>
@@ -787,7 +1092,7 @@ const AttendanceTab = ({
                                                                             {log.leaveType || 'Leave (Override)'}
                                                                         </span>
                                                                         {isRegularized && (
-                                                                            <div 
+                                                                            <div
                                                                                 style={{ position: 'relative', display: 'flex', alignItems: 'center' }}
                                                                                 onMouseEnter={() => setActiveTooltip(log._id)}
                                                                                 onMouseLeave={() => setActiveTooltip(null)}
@@ -834,8 +1139,8 @@ const AttendanceTab = ({
                                                                                                         <span style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Original State</span>
                                                                                                     </div>
                                                                                                     <div style={{ fontSize: '0.9rem', fontWeight: '700', color: '#cbd5e1', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                                                                        {log.originalClockInTime ? new Date(log.originalClockInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'} 
-                                                                                                        <ArrowRight size={12} color="#475569" /> 
+                                                                                                        {log.originalClockInTime ? new Date(log.originalClockInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
+                                                                                                        <ArrowRight size={12} color="#475569" />
                                                                                                         {log.originalClockOutTime ? new Date(log.originalClockOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
                                                                                                     </div>
                                                                                                 </div>
@@ -893,7 +1198,7 @@ const AttendanceTab = ({
                                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                                                     {arrivalLabel}
                                                                     {isRegularized && (
-                                                                        <div 
+                                                                        <div
                                                                             style={{ position: 'relative', display: 'flex', alignItems: 'center' }}
                                                                             onMouseEnter={() => setActiveTooltip(log._id)}
                                                                             onMouseLeave={() => setActiveTooltip(null)}
@@ -943,8 +1248,8 @@ const AttendanceTab = ({
                                                                                                     <span style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Original State</span>
                                                                                                 </div>
                                                                                                 <div style={{ fontSize: '0.9rem', fontWeight: '700', color: '#cbd5e1', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                                                                    {log.originalClockInTime ? new Date(log.originalClockInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'} 
-                                                                                                    <ArrowRight size={12} color="#475569" /> 
+                                                                                                    {log.originalClockInTime ? new Date(log.originalClockInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
+                                                                                                    <ArrowRight size={12} color="#475569" />
                                                                                                     {log.originalClockOutTime ? new Date(log.originalClockOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
                                                                                                 </div>
                                                                                             </div>
@@ -956,8 +1261,8 @@ const AttendanceTab = ({
                                                                                                     <span style={{ fontSize: '0.65rem', color: '#34d399', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Revised Logic</span>
                                                                                                 </div>
                                                                                                 <div style={{ fontSize: '0.95rem', fontWeight: '900', color: '#fff', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                                                                    {log.clockInTime ? new Date(log.clockInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'} 
-                                                                                                    <ArrowRight size={14} color="#10b981" /> 
+                                                                                                    {log.clockInTime ? new Date(log.clockInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
+                                                                                                    <ArrowRight size={14} color="#10b981" />
                                                                                                     {log.clockOutTime ? new Date(log.clockOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
                                                                                                 </div>
                                                                                             </div>
@@ -990,39 +1295,39 @@ const AttendanceTab = ({
                                                     <td style={{ padding: '0.75rem 1rem' }}>
                                                         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                                                             {log.clockInLocation?.lat ? (
-                                                                <a 
-                                                                    href={`https://www.google.com/maps?q=${log.clockInLocation.lat},${log.clockInLocation.lng}`} 
-                                                                    target="_blank" 
+                                                                <a
+                                                                    href={`https://www.google.com/maps?q=${log.clockInLocation.lat},${log.clockInLocation.lng}`}
+                                                                    target="_blank"
                                                                     rel="noopener noreferrer"
                                                                     title={`Clock-in Location: ${log.clockInLocation.lat.toFixed(4)}, ${log.clockInLocation.lng.toFixed(4)}`}
-                                                                    style={{ 
-                                                                        display: 'flex', 
-                                                                        alignItems: 'center', 
+                                                                    style={{
+                                                                        display: 'flex',
+                                                                        alignItems: 'center',
                                                                         justifyContent: 'center',
-                                                                        width: '28px', 
-                                                                        height: '28px', 
-                                                                        borderRadius: '50%', 
-                                                                        background: 'rgba(52, 211, 153, 0.15)', 
+                                                                        width: '28px',
+                                                                        height: '28px',
+                                                                        borderRadius: '50%',
+                                                                        background: 'rgba(52, 211, 153, 0.15)',
                                                                         color: '#059669',
                                                                         border: '1px solid rgba(52, 211, 153, 0.3)',
                                                                         transition: 'all 0.2s'
                                                                     }}
-                                                                    onMouseOver={e => {e.currentTarget.style.transform = 'scale(1.1)'; e.currentTarget.style.backgroundColor = 'rgba(52, 211, 153, 0.25)';}}
-                                                                    onMouseOut={e => {e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.backgroundColor = 'rgba(52, 211, 153, 0.15)';}}
+                                                                    onMouseOver={e => { e.currentTarget.style.transform = 'scale(1.1)'; e.currentTarget.style.backgroundColor = 'rgba(52, 211, 153, 0.25)'; }}
+                                                                    onMouseOut={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.backgroundColor = 'rgba(52, 211, 153, 0.15)'; }}
                                                                 >
                                                                     <MapPin size={14} fill="currentColor" fillOpacity={0.2} />
                                                                 </a>
                                                             ) : (
-                                                                <div 
-                                                                    title="Location not captured for this session" 
-                                                                    style={{ 
-                                                                        display: 'flex', 
-                                                                        alignItems: 'center', 
+                                                                <div
+                                                                    title="Location not captured for this session"
+                                                                    style={{
+                                                                        display: 'flex',
+                                                                        alignItems: 'center',
                                                                         justifyContent: 'center',
-                                                                        width: '28px', 
-                                                                        height: '28px', 
-                                                                        borderRadius: '50%', 
-                                                                        background: 'rgba(226, 232, 240, 0.1)', 
+                                                                        width: '28px',
+                                                                        height: '28px',
+                                                                        borderRadius: '50%',
+                                                                        background: 'rgba(226, 232, 240, 0.1)',
                                                                         color: 'var(--text-muted)',
                                                                         border: '1px dashed var(--border-dark)',
                                                                         opacity: 0.5
@@ -1033,25 +1338,25 @@ const AttendanceTab = ({
                                                             )}
 
                                                             {log.clockOutLocation?.lat && (
-                                                                <a 
-                                                                    href={`https://www.google.com/maps?q=${log.clockOutLocation.lat},${log.clockOutLocation.lng}`} 
-                                                                    target="_blank" 
+                                                                <a
+                                                                    href={`https://www.google.com/maps?q=${log.clockOutLocation.lat},${log.clockOutLocation.lng}`}
+                                                                    target="_blank"
                                                                     rel="noopener noreferrer"
                                                                     title={`Clock-out Location: ${log.clockOutLocation.lat.toFixed(4)}, ${log.clockOutLocation.lng.toFixed(4)}`}
-                                                                    style={{ 
-                                                                        display: 'flex', 
-                                                                        alignItems: 'center', 
+                                                                    style={{
+                                                                        display: 'flex',
+                                                                        alignItems: 'center',
                                                                         justifyContent: 'center',
-                                                                        width: '28px', 
-                                                                        height: '28px', 
-                                                                        borderRadius: '50%', 
-                                                                        background: 'rgba(148, 163, 184, 0.1)', 
+                                                                        width: '28px',
+                                                                        height: '28px',
+                                                                        borderRadius: '50%',
+                                                                        background: 'rgba(148, 163, 184, 0.1)',
                                                                         color: 'var(--text-muted)',
                                                                         border: '1px solid var(--border-dark)',
                                                                         transition: 'all 0.2s'
                                                                     }}
-                                                                    onMouseOver={e => {e.currentTarget.style.transform = 'scale(1.1)'; e.currentTarget.style.backgroundColor = 'rgba(148, 163, 184, 0.2)';}}
-                                                                    onMouseOut={e => {e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.backgroundColor = 'rgba(148, 163, 184, 0.1)';}}
+                                                                    onMouseOver={e => { e.currentTarget.style.transform = 'scale(1.1)'; e.currentTarget.style.backgroundColor = 'rgba(148, 163, 184, 0.2)'; }}
+                                                                    onMouseOut={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.backgroundColor = 'rgba(148, 163, 184, 0.1)'; }}
                                                                 >
                                                                     <MapPin size={14} />
                                                                 </a>
@@ -1120,66 +1425,85 @@ const AttendanceTab = ({
                                                                     <MoreVertical size={18} />
                                                                 </div>
 
-                                                            {activeMenu === log._id && (
-                                                                <div style={{
-                                                                    position: 'absolute',
-                                                                    right: '100%',
-                                                                    top: '50%',
-                                                                    transform: 'translateY(-50%)',
-                                                                    marginRight: '12px',
-                                                                    width: '180px',
-                                                                    background: isLightMode ? '#ffffff' : 'rgba(30, 41, 59, 0.95)',
-                                                                    backdropFilter: 'blur(12px)',
-                                                                    border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.1)'}`,
-                                                                    borderRadius: '16px',
-                                                                    boxShadow: isLightMode ? '0 10px 40px rgba(0,0,0,0.1)' : '0 10px 40px rgba(0,0,0,0.5)',
-                                                                    zIndex: 100,
-                                                                    padding: '0.5rem',
-                                                                    animation: 'fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                                                                    display: 'flex', flexDirection: 'column', gap: '4px'
-                                                                }}>
-                                                                    <button
-                                                                        onClick={(e) => {
-                                                                            e.stopPropagation();
-                                                                            setShowLogInfo(log);
-                                                                            setActiveMenu(null);
-                                                                        }}
-                                                                        style={{
-                                                                            width: '100%', padding: '0.65rem 1rem', background: 'transparent',
-                                                                            border: 'none', borderRadius: '12px', cursor: 'pointer', display: 'flex',
-                                                                            alignItems: 'center', gap: '0.75rem', fontSize: '0.85rem', fontWeight: '600',
-                                                                            color: 'var(--text-main)', transition: 'background 0.2s'
-                                                                        }}
-                                                                        onMouseOver={e => e.currentTarget.style.backgroundColor = isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.05)'}
-                                                                        onMouseOut={e => e.currentTarget.style.backgroundColor = 'transparent'}
-                                                                    >
-                                                                        <Info size={16} color="var(--primary)" /> View Info
-                                                                    </button>
+                                                                {activeMenu === log._id && (
+                                                                    <div style={{
+                                                                        position: 'absolute',
+                                                                        right: '100%',
+                                                                        top: '50%',
+                                                                        transform: 'translateY(-50%)',
+                                                                        marginRight: '12px',
+                                                                        width: '180px',
+                                                                        background: isLightMode ? '#ffffff' : 'rgba(30, 41, 59, 0.95)',
+                                                                        backdropFilter: 'blur(12px)',
+                                                                        border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.1)'}`,
+                                                                        borderRadius: '16px',
+                                                                        boxShadow: isLightMode ? '0 10px 40px rgba(0,0,0,0.1)' : '0 10px 40px rgba(0,0,0,0.5)',
+                                                                        zIndex: 100,
+                                                                        padding: '0.5rem',
+                                                                        animation: 'fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                                                                        display: 'flex', flexDirection: 'column', gap: '4px'
+                                                                    }}>
+                                                                        <button
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                setShowLogInfo(log);
+                                                                                setActiveMenu(null);
+                                                                            }}
+                                                                            style={{
+                                                                                width: '100%', padding: '0.65rem 1rem', background: 'transparent',
+                                                                                border: 'none', borderRadius: '12px', cursor: 'pointer', display: 'flex',
+                                                                                alignItems: 'center', gap: '0.75rem', fontSize: '0.85rem', fontWeight: '600',
+                                                                                color: 'var(--text-main)', transition: 'background 0.2s'
+                                                                            }}
+                                                                            onMouseOver={e => e.currentTarget.style.backgroundColor = isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.05)'}
+                                                                            onMouseOut={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                                                                        >
+                                                                            <Info size={16} color="var(--primary)" /> View Info
+                                                                        </button>
 
-                                                                    <button
-                                                                        onClick={(e) => {
-                                                                            e.stopPropagation();
-                                                                            setRegularizeLog(log);
-                                                                            setRegularizeExpectedClockIn(log.clockInTime ? new Date(log.clockInTime).toISOString().slice(0, 16) : '');
-                                                                            setRegularizeExpectedClockOut(log.clockOutTime ? new Date(log.clockOutTime).toISOString().slice(0, 16) : '');
-                                                                            setShowRegularizeModal(true);
-                                                                            setActiveMenu(null);
-                                                                        }}
-                                                                        style={{
-                                                                            width: '100%', padding: '0.65rem 1rem', background: 'transparent',
-                                                                            border: 'none', borderRadius: '12px', cursor: 'pointer', display: 'flex',
-                                                                            alignItems: 'center', gap: '0.75rem', fontSize: '0.85rem', fontWeight: '600',
-                                                                            color: 'var(--text-main)', transition: 'background 0.2s'
-                                                                        }}
-                                                                        onMouseOver={e => e.currentTarget.style.backgroundColor = isLightMode ? '#fccfce' : 'rgba(239, 68, 68, 0.15)'}
-                                                                        onMouseOut={e => e.currentTarget.style.backgroundColor = 'transparent'}
-                                                                    >
-                                                                        <Edit3 size={16} color="var(--danger)" /> Regularize
-                                                                    </button>
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    )}
+                                                                        <button
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                setSelectedLogForDetail(log);
+                                                                                setShowSessionDetailModal(true);
+                                                                                setActiveMenu(null);
+                                                                            }}
+                                                                            style={{
+                                                                                width: '100%', padding: '0.65rem 1rem', background: 'transparent',
+                                                                                border: 'none', borderRadius: '12px', cursor: 'pointer', display: 'flex',
+                                                                                alignItems: 'center', gap: '0.75rem', fontSize: '0.85rem', fontWeight: '600',
+                                                                                color: 'var(--text-main)', transition: 'background 0.2s'
+                                                                            }}
+                                                                            onMouseOver={e => e.currentTarget.style.backgroundColor = isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.05)'}
+                                                                            onMouseOut={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                                                                        >
+                                                                            <Clock size={16} color="var(--primary)" /> Sessions Log
+                                                                        </button>
+
+                                                                        <button
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                setRegularizeLog(log);
+                                                                                setRegularizeExpectedClockIn(log.clockInTime ? new Date(log.clockInTime).toISOString().slice(0, 16) : '');
+                                                                                setRegularizeExpectedClockOut(log.clockOutTime ? new Date(log.clockOutTime).toISOString().slice(0, 16) : '');
+                                                                                setShowRegularizeModal(true);
+                                                                                setActiveMenu(null);
+                                                                            }}
+                                                                            style={{
+                                                                                width: '100%', padding: '0.65rem 1rem', background: 'transparent',
+                                                                                border: 'none', borderRadius: '12px', cursor: 'pointer', display: 'flex',
+                                                                                alignItems: 'center', gap: '0.75rem', fontSize: '0.85rem', fontWeight: '600',
+                                                                                color: 'var(--text-main)', transition: 'background 0.2s'
+                                                                            }}
+                                                                            onMouseOver={e => e.currentTarget.style.backgroundColor = isLightMode ? '#fccfce' : 'rgba(239, 68, 68, 0.15)'}
+                                                                            onMouseOut={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                                                                        >
+                                                                            <Edit3 size={16} color="var(--danger)" /> Regularize
+                                                                        </button>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        )}
                                                     </td>
                                                 </tr>
                                             );
@@ -1379,6 +1703,7 @@ const AttendanceTab = ({
                     </div>
                 </div>
             )}
+            {renderSessionLogModal()}
             <style>{`
                 @keyframes fadeIn {
                     from { opacity: 0; transform: translateY(10px); }

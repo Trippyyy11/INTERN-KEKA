@@ -124,21 +124,22 @@ export const getLeaveStats = async (req, res) => {
 
                 let leaveDays = 0;
                 let currentDate = new Date(start);
+                const dayIncrement = leave.isHalfDay ? 0.5 : 1;
 
                 while (currentDate <= end) {
                     const dateStr = currentDate.toISOString().split('T')[0];
                     const isCancelled = leave.cancelledDates && leave.cancelledDates.some(d => new Date(d).toISOString().split('T')[0] === dateStr);
 
                     if (!isCancelled) {
-                        leaveDays++;
+                        leaveDays += dayIncrement;
 
                         // Monthly distribution
-                        monthlyStats[currentDate.getMonth()] += 1;
+                        monthlyStats[currentDate.getMonth()] += dayIncrement;
 
                         // Weekly distribution
                         let day = currentDate.getDay(); // 0 is Sun
                         let kekaDayIndex = day === 0 ? 6 : day - 1; // Mon=0, Sun=6
-                        weeklyPattern[kekaDayIndex] += 1;
+                        weeklyPattern[kekaDayIndex] += dayIncrement;
                     }
                     currentDate.setDate(currentDate.getDate() + 1);
                 }

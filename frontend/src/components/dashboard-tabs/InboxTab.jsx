@@ -137,11 +137,11 @@ const InboxTab = ({
                                         {new Date(r.startDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
                                         {r.startDate !== r.endDate && ` - ${new Date(r.endDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}`}
                                         <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '4px', fontWeight: '500' }}>
-                                            {Math.ceil((new Date(r.endDate) - new Date(r.startDate)) / (1000 * 60 * 60 * 24)) + 1} day(s)
+                                            {r.type === 'Half Day' ? '0.5' : (Math.ceil((new Date(r.endDate) - new Date(r.startDate)) / (1000 * 60 * 60 * 24)) + 1)} day(s)
                                         </div>
                                     </td>
                                     <td style={{ padding: '1.25rem', fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-main)' }}>
-                                        {r.type}
+                                        {r.type}{r.type === 'Half Day' && r.leaveType ? ` (${r.leaveType})` : ''}
                                         <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '4px', fontWeight: '500' }}>
                                             Requested on {new Date(r.createdAt).toLocaleDateString()}
                                         </div>

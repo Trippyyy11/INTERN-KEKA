@@ -17,12 +17,12 @@ export const createRequest = async (req, res) => {
         const end = new Date(endDate);
         let requestedDuration = 0;
 
-        if (type === 'Leave Application' || type === 'Comp Off') {
-            requestedDuration = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+        if (type === 'Leave Application' || type === 'Comp Off' || type === 'Half Day') {
+            requestedDuration = type === 'Half Day' ? 0.5 : (Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1);
         }
 
         // Quota Validation
-        if (['Leave Application', 'Comp Off'].includes(type)) {
+        if (['Leave Application', 'Comp Off', 'Half Day'].includes(type)) {
             const targetLeaveType = type === 'Comp Off' ? 'Comp Off' : (leaveType || 'Casual');
             
             // Skip validation for Unpaid or if leaveType is missing for Half Day (though we should enforce it)
@@ -42,7 +42,7 @@ export const createRequest = async (req, res) => {
                         const dateStr = currentDate.toISOString().split('T')[0];
                         const isCancelled = leave.cancelledDates?.some(d => new Date(d).toISOString().split('T')[0] === dateStr);
                         if (!isCancelled) {
-                            totalConsumed += (leave.type === 'Half Day' ? 0.5 : 1);
+                            totalConsumed += (leave.isHalfDay ? 0.5 : 1);
                         }
                         currentDate.setDate(currentDate.getDate() + 1);
                     }
@@ -214,12 +214,13 @@ export const updateRequestStatus = async (req, res) => {
         if (status === 'Approved' && (updated.type === 'Leave Application' || updated.type === 'Comp Off' || updated.type === 'Half Day')) {
             await Leave.create({
                 user: updated.user,
-                type: updated.type === 'Comp Off' ? 'Comp Off' : (updated.type === 'Half Day' ? 'Half Day' : (updated.leaveType || 'Casual')),
+                type: updated.type === 'Comp Off' ? 'Comp Off' : (updated.leaveType || 'Paid'),
                 startDate: updated.startDate,
                 endDate: updated.endDate,
                 reason: updated.message || '',
                 status: 'Approved',
-                approvedBy: req.user._id
+                approvedBy: req.user._id,
+                isHalfDay: updated.type === 'Half Day'
             });
         }
 

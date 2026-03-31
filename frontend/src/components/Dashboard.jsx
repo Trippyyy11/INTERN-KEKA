@@ -481,7 +481,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
             return;
         }
 
-        if (isLeaveApp && !requestLeaveType) {
+        if (['Leave Application', 'Half Day'].includes(requestType) && !requestLeaveType) {
             setCustomAlert({ message: 'Please select a leave type.', type: 'info' });
             return;
         }
@@ -529,7 +529,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
 
             await api.post('/requests', {
                 type: requestType,
-                leaveType: requestType === 'Leave Application' ? requestLeaveType : undefined,
+                leaveType: ['Leave Application', 'Half Day'].includes(requestType) ? requestLeaveType : undefined,
                 startDate: requestType === 'Leave Cancellation' && selectedLeaveForCancel ? selectedLeaveForCancel.startDate : requestStartDate,
                 endDate: requestType === 'Leave Cancellation' && selectedLeaveForCancel ? selectedLeaveForCancel.endDate : requestEndDate,
                 associatedLeave: requestType === 'Leave Cancellation' ? selectedLeaveForCancel?._id : undefined,
@@ -555,6 +555,26 @@ export default function Dashboard({ user, onLogout, setUser }) {
             setCustomAlert({ message: err.response?.data?.message || 'Failed to submit request.', type: 'info' });
         } finally {
             setRequestSubmitting(false);
+        }
+    };
+
+    const handleQuickCancelLeave = async (leave, dateStr) => {
+        try {
+            const recipientsPayload = (user.reportingManager ? [user.reportingManager._id] : []);
+            await api.post('/requests', {
+                type: 'Leave Cancellation',
+                startDate: leave.startDate,
+                endDate: leave.endDate,
+                associatedLeave: leave._id,
+                cancelDates: [dateStr],
+                message: `Cancellation requested via calendar for ${dateStr}`,
+                recipients: recipientsPayload
+            });
+            fetchMyRequests();
+            return true;
+        } catch (err) {
+            console.error('Quick cancel failed:', err);
+            throw err;
         }
     };
 
@@ -630,7 +650,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
 
     const getAttendanceProgress = () => {
         if (!isClockedIn || !activeLog?.clockInTime) return 0;
-        const elapsed = calculateElapsedTime(activeLog.clockInTime);
+        const elapsed = calculateElapsedTime(activeLog.clockInTime, activeLog.breaks);
         const shiftMins = (systemSettings?.workingHoursPerDay || 8) * 60;
         return Math.min(elapsed.totalMins / shiftMins, 1);
     };
@@ -972,13 +992,16 @@ export default function Dashboard({ user, onLogout, setUser }) {
             // More robust check: find any log that has a clock-in but no clock-out
             const activeSession = logsRes.data.find(log => log.clockInTime && !log.clockOutTime);
 
-            // Check if user has already clocked out today
-            const todayStr = new Date().toDateString();
-            const finishedToday = logsRes.data.some(log => {
-                if (!log.clockOutTime) return false;
-                const clockOutDateStr = new Date(log.clockOutTime).toDateString();
-                return clockOutDateStr === todayStr;
-            });
+            // Only mark as finished if the 16-hour window from the MOST RECENT session has expired
+            const mostRecentSession = logsRes.data[0]; 
+            let finishedToday = false;
+            if (mostRecentSession && mostRecentSession.clockOutTime && !mostRecentSession.autoClockOut) {
+                const clockInTime = new Date(mostRecentSession.clockInTime);
+                const sixteenHoursLater = new Date(clockInTime.getTime() + 16 * 60 * 60 * 1000);
+                if (new Date() > sixteenHoursLater) {
+                    finishedToday = true;
+                }
+            }
             setIsAttendanceFinished(finishedToday);
 
             if (activeSession) {
@@ -1015,14 +1038,44 @@ export default function Dashboard({ user, onLogout, setUser }) {
         setShowProfileMenu(false);
     };
 
-    const calculateElapsedTime = (startTime) => {
-        if (!startTime) return { hrs: 0, mins: 0, text: '0h 0m' };
+    const calculateElapsedTime = (startTime, breaks = [], lastClockInTime) => {
+        if (!startTime) return { hrs: 0, mins: 0, text: '0h 0m', effectiveText: '0h 0m' };
+        
         const start = new Date(startTime);
+        const lastIn = lastClockInTime ? new Date(lastClockInTime) : start;
         const now = new Date();
-        const diffMs = now - start;
-        const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
-        const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-        return { hrs: diffHrs, mins: diffMins, text: `${diffHrs}h ${diffMins}m`, totalMins: diffHrs * 60 + diffMins };
+        
+        // Total Active Time = (Total Span) - (Total Break Time)
+        const totalMs = now - start;
+        let totalBreakMs = 0;
+        if (breaks && breaks.length > 0) {
+            breaks.forEach(b => {
+                if (b.startTime && b.endTime) {
+                    totalBreakMs += (new Date(b.endTime).getTime() - new Date(b.startTime).getTime());
+                }
+            });
+        }
+        
+        const totalWorkMs = Math.max(0, totalMs - totalBreakMs);
+        const currentSegmentMs = Math.max(0, now - lastIn);
+        
+        const getParts = (ms) => {
+            const h = Math.floor(ms / (1000 * 60 * 60));
+            const m = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
+            return { h, m, text: `${h}h ${m}m`, totalMins: h * 60 + m };
+        };
+
+        const totalWork = getParts(totalWorkMs);
+        const currentSegment = getParts(currentSegmentMs);
+
+        return { 
+            hrs: currentSegment.h, 
+            mins: currentSegment.m, 
+            text: totalWork.text, // Gross = Total work time
+            effectiveText: currentSegment.text, // Effective = Current segment
+            totalMins: currentSegment.totalMins,
+            grossMins: totalWork.totalMins
+        };
     };
 
     const showAlert = (message, type = 'info', onConfirm = null) => {
@@ -1055,7 +1108,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
     const handleClockToggle = async () => {
         try {
             if (isClockedIn) {
-                const timeWorked = calculateElapsedTime(activeLog?.clockInTime);
+                const timeWorked = calculateElapsedTime(activeLog?.clockInTime, activeLog?.breaks);
                 const targetMins = (systemSettings.workingHoursPerDay || 8) * 60;
                 const completed = timeWorked.totalMins >= targetMins;
 

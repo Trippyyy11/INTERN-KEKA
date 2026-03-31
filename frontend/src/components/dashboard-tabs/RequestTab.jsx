@@ -147,13 +147,16 @@ const RequestTab = ({
     };
 
     useEffect(() => {
-        const duration = calculateRequestedDuration();
-        if (duration > 0 && requestType !== 'Half Day') {
+        const calculatedDuration = calculateRequestedDuration();
+        const isHalfDay = requestType === 'Half Day';
+        const duration = isHalfDay ? 0.5 : calculatedDuration;
+
+        if (duration > 0) {
             setDurationText(`Requested: ${duration} Day${duration > 1 ? 's' : ''}`);
 
             // Validate balance
-            if (['Leave Application', 'Comp Off'].includes(requestType)) {
-                const targetType = requestType === 'Comp Off' ? 'Comp Off' : (requestLeaveType || 'Casual');
+            if (['Leave Application', 'Comp Off', 'Half Day'].includes(requestType)) {
+                const targetType = requestType === 'Comp Off' ? 'Comp Off' : (requestLeaveType || 'Paid');
                 if (targetType !== 'Unpaid') {
                     const balance = leaveStats?.balances?.[targetType]?.total - leaveStats?.balances?.[targetType]?.consumed || 0;
                     if (duration > balance) {
@@ -225,7 +228,6 @@ const RequestTab = ({
     ];
 
     const leaveTypeOptions = [
-        { label: 'Annual Leave', value: 'Annual', icon: '📅', balance: leaveStats?.balances?.['Annual']?.total - leaveStats?.balances?.['Annual']?.consumed },
         { label: 'Paid Leave', value: 'Paid', icon: '💰', balance: leaveStats?.balances?.['Paid']?.total - leaveStats?.balances?.['Paid']?.consumed },
         { label: 'Sick Leave', value: 'Sick', icon: '🤒', balance: leaveStats?.balances?.['Sick']?.total - leaveStats?.balances?.['Sick']?.consumed },
         { label: 'Casual Leave', value: 'Casual', icon: '✨', balance: leaveStats?.balances?.['Casual']?.total - leaveStats?.balances?.['Casual']?.consumed },
@@ -261,7 +263,7 @@ const RequestTab = ({
                     isLightMode={isLightMode}
                 />
 
-                {requestType === 'Leave Application' && (
+                {['Leave Application', 'Half Day'].includes(requestType) && (
                     <CustomDropdown
                         label="Leave Type *"
                         value={requestLeaveType}
