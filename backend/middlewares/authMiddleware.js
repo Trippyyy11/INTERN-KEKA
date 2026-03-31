@@ -26,7 +26,7 @@ export const protect = async (req, res, next) => {
 
         next();
     } catch (error) {
-        console.error('Auth Middleware Error:', error.message);
+        console.error('Auth Middleware Error Trace:', error);
         if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
             return res.status(401).json({ message: 'Session expired. Please login again.' });
         }

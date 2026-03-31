@@ -16,12 +16,19 @@ connectDB();
 // Initialize Express
 const app = express();
 
-// 1. SECURITY MIDDLEWARE
+// 1. CORS & COOKIE PARSING (MUST BE TOP FOR PREFLIGHT)
+app.use(cors({
+    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    credentials: true
+}));
+app.use(cookieParser());
+
+// 2. SECURITY MIDDLEWARE
 app.use(helmet()); // Set secure HTTP headers
 app.use(mongoSanitize()); // Data sanitization against NoSQL query injection
 app.use(xss()); // Data sanitization against XSS
 
-// 2. RATE LIMITING
+// 3. RATE LIMITING
 const limiter = rateLimit({
     max: 100, // limit each IP to 100 requests per windowMs
     windowMs: 15 * 60 * 1000, // 15 minutes
@@ -29,14 +36,8 @@ const limiter = rateLimit({
 });
 app.use('/api', limiter);
 
-// 3. CORS & COOKIE PARSING
-app.use(cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-    credentials: true
-}));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-app.use(cookieParser());
 
 import authRoutes from './routes/authRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
