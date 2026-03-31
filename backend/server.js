@@ -57,6 +57,12 @@ app.get('/api/health', (req, res) => {
     res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
+// Debug Logger
+app.use((req, res, next) => {
+    console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+    next();
+});
+
 // Testing Route
 app.get('/', (req, res) => {
     res.send('API is running...');
@@ -79,6 +85,11 @@ app.use('/api/availability', availabilityRoutes);
 // Default Error handling middleware
 app.use((err, req, res, next) => {
     const statusCode = res.statusCode === 200 ? 500 : res.statusCode;
+    
+    // Safety: ensure CORS header even on crash
+    res.header('Access-Control-Allow-Origin', process.env.FRONTEND_URL || 'http://localhost:5173');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    
     res.status(statusCode).json({
         message: err.message,
         stack: process.env.NODE_ENV === 'production' ? null : err.stack,
