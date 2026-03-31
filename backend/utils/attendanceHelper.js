@@ -33,10 +33,14 @@ export const autoCloseStaleSessions = async (userId = null) => {
                     }
                 });
             }
-            const diffMs = clockOutDate.getTime() - record.clockInTime.getTime() - breakMs;
+            const totalMs = clockOutDate.getTime() - record.clockInTime.getTime();
+            const diffMs = totalMs - breakMs;
             const diffHrs = Math.max(0, diffMs / (1000 * 60 * 60));
+            const grossHrs = Math.max(0, totalMs / (1000 * 60 * 60));
 
             record.totalHours = diffHrs.toFixed(2);
+            record.effectiveHours = diffHrs.toFixed(2);
+            record.grossHours = grossHrs.toFixed(2);
             record.autoClockOut = true;
             await record.save();
             console.log(`[LAZY SYNC] Auto-closed stale session for user: ${record.user} at ${clockOutDate.toISOString()}`);

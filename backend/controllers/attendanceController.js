@@ -41,13 +41,14 @@ export const clockIn = async (req, res) => {
             }
         }
 
-        if (record) {
+        if (record && !record.autoClockOut) {
             if (!record.clockOutTime) {
                 return res.status(400).json({ message: 'Already clocked in. You are currently in an active shift.' });
             } else {
                 // User is resuming the shift from a break
                 record.breaks.push({ startTime: record.clockOutTime, endTime: now });
                 record.clockOutTime = undefined; // Clear it to make it active again
+                record.lastClockInTime = now;
                 record.workingMode = workingMode || 'On-site';
                 record.status = workingMode === 'Remote' ? 'WFH' : 'Present';
                 record.autoClockOut = false;
@@ -55,13 +56,14 @@ export const clockIn = async (req, res) => {
                 await record.save();
             }
         } else {
-            // Start a brand new shift
+            // Start a brand new shift (either because no record found OR it was auto-closed)
             const today = new Date();
             today.setHours(0, 0, 0, 0);
             record = await Attendance.create({
                 user: req.user._id,
                 date: today,
                 clockInTime: now,
+                lastClockInTime: now,
                 clockInMessage: message || '',
                 clockInLocation: location || undefined,
                 status: workingMode === 'Remote' ? 'WFH' : 'Present',
@@ -117,10 +119,16 @@ export const clockOut = async (req, res) => {
             });
         }
 
-        const diffMs = clockOutTime.getTime() - record.clockInTime.getTime() - breakMs;
-        const diffHrs = Math.max(0, diffMs / (1000 * 60 * 60));
+        const totalMs = clockOutTime.getTime() - record.clockInTime.getTime();
+        const diffMs = totalMs - breakMs;
+        const currentMs = clockOutTime.getTime() - (record.lastClockInTime ? record.lastClockInTime.getTime() : record.clockInTime.getTime());
+
+        const diffHrs = Math.max(0, diffMs / (1000 * 60 * 60)); // Total active sum
+        const currentHrs = Math.max(0, currentMs / (1000 * 60 * 60)); // Current active session
 
         record.totalHours = diffHrs.toFixed(2);
+        record.effectiveHours = currentHrs.toFixed(2); // Terminology swap based on user request
+        record.grossHours = diffHrs.toFixed(2); // Gross = Total work time
         await record.save();
 
         res.status(200).json(record);
@@ -351,9 +359,16 @@ export const updateAttendance = async (req, res) => {
                 });
             }
 
-            const diffMs = new Date(log.clockOutTime).getTime() - new Date(log.clockInTime).getTime() - breakMs;
+            const totalMs = new Date(log.clockOutTime).getTime() - new Date(log.clockInTime).getTime();
+            const diffMs = totalMs - (breakMs || 0);
+            const currentMs = new Date(log.clockOutTime).getTime() - (log.lastClockInTime ? new Date(log.lastClockInTime).getTime() : new Date(log.clockInTime).getTime());
+
             const diffHrs = diffMs > 0 ? (diffMs / (1000 * 60 * 60)) : 0;
+            const currentHrs = currentMs > 0 ? (currentMs / (1000 * 60 * 60)) : 0;
+            
             log.totalHours = diffHrs.toFixed(2);
+            log.effectiveHours = currentHrs.toFixed(2);
+            log.grossHours = diffHrs.toFixed(2);
         } else if (log.clockOutTime === null || log.clockOutTime === undefined) {
             log.totalHours = 0;
         }

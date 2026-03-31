@@ -21,6 +21,8 @@ const attendanceSchema = new mongoose.Schema(
         status: { type: String, enum: ['Present', 'Absent', 'WFH', 'Leave', 'On Leave', 'Holiday'], default: 'Present' },
         workingMode: { type: String, enum: ['On-site', 'Remote'], default: 'On-site' },
         totalHours: { type: Number, default: 0 },
+        effectiveHours: { type: Number, default: 0 },
+        grossHours: { type: Number, default: 0 },
         isLate: { type: Boolean, default: false },
         breaks: [
             {
@@ -29,6 +31,7 @@ const attendanceSchema = new mongoose.Schema(
             }
         ],
         autoClockOut: { type: Boolean, default: false },
+        lastClockInTime: { type: Date },
         originalClockInTime: { type: Date },
         originalClockOutTime: { type: Date }
     },
