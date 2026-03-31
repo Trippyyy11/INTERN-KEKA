@@ -194,11 +194,11 @@ export default function EngageTab({
                                             if (postText) {
                                                 try {
                                                     await api.post('/social', { type: 'Post', content: postText });
-                                                    showAlert('Posted successfully!', 'info');
+                                                    showAlert('Your post has been shared with the organization.', 'success', 'Posted Successfully');
                                                     setPostText('');
                                                     fetchPublicData();
                                                 } catch (err) {
-                                                    showAlert('Failed to post', 'error');
+                                                    showAlert('We could not share your post at this time. Please try again.', 'error', 'Posting Failed');
                                                 }
                                             }
                                         }}
@@ -254,14 +254,14 @@ export default function EngageTab({
                                                         type: 'Poll',
                                                         pollData: { question: poll.question, options: [{ text: poll.option1 }, { text: poll.option2 }] }
                                                     });
-                                                    showAlert('Poll Created!', 'info');
+                                                    showAlert('Your organizational poll is now live and ready for votes.', 'success', 'Poll Created');
                                                     setPoll({ question: '', option1: '', option2: '' });
                                                     fetchPublicData();
                                                 } catch (err) {
-                                                    showAlert('Failed to create poll', 'error');
+                                                    showAlert('An error occurred while creating the poll.', 'error', 'Creation Failed');
                                                 }
                                             } else {
-                                                showAlert('Please fill all poll fields', 'info');
+                                                showAlert('A poll requires a question and at least two distinct options.', 'info', 'Incomplete Form');
                                             }
                                         }}
                                         disabled={!(poll.question && poll.option1 && poll.option2)}
@@ -319,11 +319,11 @@ export default function EngageTab({
                                                     await api.post('/social', {
                                                         type: 'Praise', content: praise.message, praiseData: { recipient: praise.user }
                                                     });
-                                                    showAlert(`Praise sent successfully!`, 'info');
+                                                    showAlert('Your recognition has been sent and will be visible on the social feed.', 'success', 'Praise Shared');
                                                     setPraise({ user: '', message: '' });
                                                     fetchPublicData();
                                                 } catch (err) {
-                                                    showAlert('Failed to send praise', 'error');
+                                                    showAlert('The system failed to broadcast your praise.', 'error', 'Action Failed');
                                                 }
                                             }
                                         }}
@@ -476,9 +476,15 @@ export default function EngageTab({
                                         {canDelete && (
                                             <button
                                                 onClick={() => {
-                                                    showAlert('Are you sure you want to delete this activity?', 'confirm', async () => {
-                                                        try { await api.delete(`/social/${activity._id}`); showAlert('Activity deleted successfully.', 'info'); fetchPublicData(); } 
-                                                        catch (err) { showAlert('Failed to delete activity.', 'error'); }
+                                                    showAlert('Are you sure you want to permanently delete this activity from the feed?', 'confirm', 'Confirm Deletion', async () => {
+                                                        try { 
+                                                            await api.delete(`/social/${activity._id}`); 
+                                                            showAlert('The activity has been removed successfully.', 'success', 'Activity Deleted'); 
+                                                            fetchPublicData(); 
+                                                        } 
+                                                        catch (err) { 
+                                                            showAlert('Failed to delete activity.', 'error', 'Error'); 
+                                                        }
                                                     });
                                                 }}
                                                 style={{
@@ -576,8 +582,13 @@ export default function EngageTab({
                                                                         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
                                                                     }}
                                                                     onClick={async () => {
-                                                                        try { await api.post(`/social/${activity._id}/vote`, { optionId: opt._id }); fetchPublicData(); } 
-                                                                        catch (err) { showAlert('Failed to vote', 'error'); }
+                                                                        try { 
+                                                                            await api.post(`/social/${activity._id}/vote`, { optionId: opt._id }); 
+                                                                            fetchPublicData(); 
+                                                                        } 
+                                                                        catch (err) { 
+                                                                            showAlert('The system was unable to record your vote. Please try again.', 'error', 'Vote Failed'); 
+                                                                        }
                                                                     }}
                                                                     onMouseOver={e => !hasVoted && (e.currentTarget.style.borderColor = '#06b6d4')}
                                                                     onMouseOut={e => !hasVoted && (e.currentTarget.style.borderColor = isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.08)')}

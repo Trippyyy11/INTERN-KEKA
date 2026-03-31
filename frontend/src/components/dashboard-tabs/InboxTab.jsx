@@ -1,4 +1,5 @@
 import React from 'react';
+import { toast } from 'sonner';
 import { Info, Inbox, Check, X, Edit3, Save, ChevronLeft, ChevronRight, Calendar, Clock, Home } from 'lucide-react';
 import api from '../../api/axios.js';
 
@@ -47,7 +48,7 @@ const InboxTab = ({
 
     const handleOpenEdit = (request) => {
         if (!request.associatedAttendance) {
-            alert("No associated attendance log found for this request.");
+            toast.error("No associated attendance log found for this request.");
             return;
         }
         setEditLogData(request);
@@ -72,7 +73,7 @@ const InboxTab = ({
             setShowEditModal(false);
         } catch (err) {
             console.error(err);
-            showAlert("Failed to update and approve attendance.", "error");
+            showAlert("The system encountered an error while trying to update and approve the attendance record.", "error", "Update Failed");
         } finally {
             setIsSavingEdit(false);
         }

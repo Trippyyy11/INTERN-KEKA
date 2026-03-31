@@ -1,5 +1,5 @@
 @import "tailwindcss";
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700&family=Satisfy&display=swap');
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/geist";
@@ -334,6 +334,14 @@ ul {
   display: inline;
 }
 */
+
+.zora-logo {
+  font-family: 'Satisfy', cursive;
+}
+
+.bg-sage-green {
+  background-color: #a3c1ad;
+}
 
 .sidebar-brand {
   height: 80px;

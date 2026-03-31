@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import AuthPage from './components/AuthPage';
 import Dashboard from './components/Dashboard';
 import api from './api/axios';
+import { Toaster } from 'sonner';
 
 import './App.css';
 
@@ -52,6 +53,7 @@ function App() {
 
   return (
     <div className="app-container">
+      <Toaster richColors position="top-center" closeButton />
       {!user ? (
         <AuthPage onLogin={handleLogin} />
       ) : (

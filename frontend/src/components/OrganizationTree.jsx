@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { toast } from 'sonner';
 import {
     ReactFlow,
     Background,
@@ -233,7 +234,7 @@ export default function OrganizationTree({ user: currentUser, isLightMode }) {
         if (!canEdit) return;
 
         if (params.source === params.target) {
-            alert("User cannot report to themselves.");
+            toast.error("User cannot report to themselves.");
             return;
         }
 
@@ -245,12 +246,12 @@ export default function OrganizationTree({ user: currentUser, isLightMode }) {
         const targetWeight = roleWeights[targetUser?.role] || 0;
 
         if (targetWeight > sourceWeight) {
-            alert(`A ${targetUser.role} cannot report to a ${sourceUser.role}.`);
+            toast.error(`A ${targetUser.role} cannot report to a ${sourceUser.role}.`);
             return;
         }
 
         if (createsLoop(params.source, params.target, edges)) {
-            alert("This connection would create a reporting loop.");
+            toast.error("This connection would create a reporting loop.");
             return;
         }
 
@@ -260,7 +261,7 @@ export default function OrganizationTree({ user: currentUser, isLightMode }) {
             });
             setTimeout(fetchUsers, 500);
         } catch (error) {
-            alert("Failed to assign manager: " + error.response?.data?.message);
+            toast.error("Failed to assign manager: " + (error.response?.data?.message || error.message));
         }
     }, [edges, users, canEdit]);
 
@@ -281,7 +282,7 @@ export default function OrganizationTree({ user: currentUser, isLightMode }) {
                 const targetWeight = roleWeights[targetUser?.role] || 0;
 
                 if (targetWeight > sourceWeight) {
-                    alert(`A ${targetUser.role} cannot report to a ${sourceUser.role}.`);
+                    toast.error(`A ${targetUser.role} cannot report to a ${sourceUser.role}.`);
                     return;
                 }
 
@@ -291,7 +292,7 @@ export default function OrganizationTree({ user: currentUser, isLightMode }) {
             }
             setMenu(null);
             fetchUsers();
-        } catch (error) { alert("Action failed: " + error.response?.data?.message); }
+        } catch (error) { toast.error("Action failed: " + (error.response?.data?.message || error.message)); }
     };
 
     const onLayout = useCallback(() => {

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import AuditTab from './AuditTab';
 import api from '../../api/axios';
 import moment from 'moment';
@@ -293,7 +294,7 @@ const AdminTab = ({
             setPayrollStep(2);
         } catch (err) {
             console.error('Failed to fetch payroll preview', err);
-            alert('Failed to load payroll data. Please try again.');
+            toast.error('Failed to load payroll data. Please try again.');
         } finally {
             setPreviewLoading(false);
         }
@@ -332,7 +333,7 @@ const AdminTab = ({
             window.location.reload();
         } catch (err) {
             console.error('Failed to generate payroll', err);
-            alert('Failed to generate payroll. Please check logs.');
+            toast.error('Failed to generate payroll. Please check logs.');
         } finally {
             setGeneratingPayslip(false);
         }
@@ -411,7 +412,7 @@ const AdminTab = ({
             window.location.reload(); // Refresh to show the new payslip
         } catch (err) {
             console.error('Failed to generate payslip', err);
-            alert('Failed to generate payslip. Please try again.');
+            toast.error('Failed to generate payslip. Please try again.');
         } finally {
             setGeneratingPayslip(false);
         }

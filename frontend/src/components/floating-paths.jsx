@@ -19,7 +19,7 @@ export function FloatingPaths({
 
 	return (
         <div className="pointer-events-none absolute inset-0">
-            <svg className="h-full w-full text-blue-700" fill="none" viewBox="0 0 696 316">
+            <svg className="h-full w-full text-current" fill="none" viewBox="0 0 696 316">
 				<title>Background Paths</title>
 				{paths.map((path) => (
 					<motion.path

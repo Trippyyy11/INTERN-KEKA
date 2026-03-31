@@ -591,7 +591,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
             setUser(updatedUser);
             localStorage.setItem('user', JSON.stringify(updatedUser));
             setIsProfileEditing(false);
-            showAlert('Profile updated successfully!', 'info');
+            showAlert('Your profile information has been saved successfully.', 'info', 'Profile Updated');
         } catch (err) {
             if (err.response?.status === 401) {
                 showAlert('Your session has expired. Please log out and log back in to save your changes.', 'info');
@@ -619,7 +619,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
                 const updatedUser = { ...user, profilePicture: res.data.profilePicture };
                 setUser(updatedUser);
                 localStorage.setItem('user', JSON.stringify(updatedUser));
-                showAlert('Profile picture updated successfully!', 'info');
+                showAlert('Your profile picture has been updated successfully.', 'info', 'Avatar Updated');
             } catch (err) {
                 showAlert(err.response?.data?.message || 'Failed to update profile picture', 'error');
             } finally {
@@ -636,7 +636,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
             const updatedUser = { ...user, profilePicture: res.data.profilePicture };
             setUser(updatedUser);
             localStorage.setItem('user', JSON.stringify(updatedUser));
-            showAlert('Profile picture removed!', 'info');
+            showAlert('Your profile picture has been removed.', 'info', 'Avatar Removed');
         } catch (err) {
             showAlert(err.response?.data?.message || 'Failed to remove profile picture', 'error');
         } finally {
@@ -904,7 +904,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
             setAllAttendanceLogs(prev => prev.map(l => l._id === logId ? res.data : l));
             setEditLogId(null);
             fetchStats();
-            showAlert('Attendance record updated successfully', 'success');
+            showAlert('The attendance record has been successfully modified.', 'success', 'Entry Updated');
         } catch (err) {
             showAlert(err.response?.data?.message || 'Failed to update attendance', 'error');
         }
@@ -917,7 +917,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
             });
             // Update local state is already done via onChange
             setEditingResponse(null);
-            showAlert('Response saved successfully!', 'info');
+            showAlert('Your bio response has been saved.', 'info', 'Response Saved');
         } catch (err) {
             console.error('Failed to save response:', err);
             showAlert('Failed to save response. Please try again.', 'info');
@@ -928,7 +928,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
         try {
             await api.put(`/admin/users/${id}/approve`);
             fetchAdminData();
-            showAlert('User approved!', 'info');
+            showAlert('The user account has been approved and activated.', 'info', 'User Approved');
         } catch (err) { showAlert('Approval failed', 'info'); }
     };
 
@@ -948,7 +948,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
             await api.put(`/admin/users/${selectedUser._id}/details`, selectedUser);
             fetchAdminData();
             setShowEditModal(false);
-            showAlert('User updated!', 'info');
+            showAlert('Employee details have been updated successfully.', 'info', 'User Updated');
         } catch (err) { showAlert('Update failed', 'info'); }
     };
 
@@ -958,7 +958,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
             await api.post('/admin/configs', newConfig);
             fetchOrgConfigs();
             setNewConfig({ name: '', type: 'Department', date: '', description: '' });
-            showAlert('Configuration added successfully!', 'info');
+            showAlert('The new organization configuration has been added.', 'info', 'Config Added');
         } catch (err) { showAlert('Failed to add config', 'info'); }
     };
 
@@ -1078,8 +1078,10 @@ export default function Dashboard({ user, onLogout, setUser }) {
         };
     };
 
-    const showAlert = (message, type = 'info', onConfirm = null) => {
-        setCustomAlert({ message, type, onConfirm });
+    const showAlert = (message, type = 'info', titleOrConfirm = null, onConfirm = null) => {
+        const title = typeof titleOrConfirm === 'string' ? titleOrConfirm : null;
+        const finalOnConfirm = typeof titleOrConfirm === 'function' ? titleOrConfirm : onConfirm;
+        setCustomAlert({ message, type, title, onConfirm: finalOnConfirm });
     };
 
     const getLocation = () => {
@@ -1149,7 +1151,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
             setActiveLog(res.data);
 
             fetchStats();
-            showAlert(`Successfully clocked in as ${selectedWorkingMode}! Have a productive day! 🚀`, 'info');
+            showAlert(`Clock-in successful. Mode: ${selectedWorkingMode}. Have a productive day! 🚀`, 'info', 'Clocked In');
         } catch (error) {
             showAlert(error.response?.data?.message || 'Error occurred while clocking in.', 'info');
         } finally {
@@ -1168,7 +1170,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
             setShowClockOutModal(false);
             setClockMessage('');
             fetchStats();
-            showAlert('Successfully clocked out! 🎉', 'info');
+            showAlert('You have successfully clocked out for the day. 🎉', 'info', 'Clocked Out');
         } catch (error) {
             showAlert(error.response?.data?.message || 'Error occurred while clocking out.', 'info');
         } finally {
@@ -1183,7 +1185,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
             setShowAnnouncementModal(false);
             setNewAnnouncement({ title: '', content: '', priority: 'Low' });
             fetchStats();
-            showAlert('Announcement created successfully!', 'info');
+            showAlert('The new announcement has been published to the feed.', 'info', 'Announcement Posted');
         } catch (error) {
             console.error('Failed to create announcement:', error);
             showAlert(error.response?.data?.message || 'Failed to create announcement', 'info');
@@ -1194,7 +1196,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
     const handleSaveSettings = async () => {
         try {
             await api.put('/admin/settings', systemSettings);
-            showAlert('Settings updated successfully!', 'info');
+            showAlert('Global system settings have been saved successfully.', 'info', 'Settings Saved');
         } catch (err) {
             showAlert('Error updating settings.', 'info');
         }
@@ -1204,7 +1206,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
         try {
             await api.put(`/payslips/${payslipId}`, { status });
             fetchGlobalFinances();
-            showAlert(`Payslip marked as ${status}`, 'success');
+            showAlert(`The payslip status has been marked as ${status}.`, 'success', 'Status Updated');
         } catch (err) {
             showAlert(err.response?.data?.message || 'Failed to update payslip status', 'error');
         }
@@ -1616,7 +1618,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
             <div style={alertOverlay}>
                 <div style={{ ...modalContent, maxWidth: '450px', textAlign: 'center' }}>
                     <div style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '1rem', color: 'var(--text-main)' }}>
-                        {customAlert.type === 'confirm' ? 'Confirmation' : 'Update'}
+                        {customAlert.title || (customAlert.type === 'confirm' ? 'Confirmation' : 'Notification')}
                     </div>
                     <div style={{ fontSize: '1rem', color: 'var(--text-muted)', marginBottom: '2rem', whiteSpace: 'pre-line' }}>
                         {customAlert.message}

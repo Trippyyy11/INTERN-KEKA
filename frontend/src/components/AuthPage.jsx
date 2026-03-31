@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
-import { Logo } from "./logo";
+import { toast } from 'sonner';
 import { Button } from "./ui/button";
 import {
     InputGroup,
@@ -32,6 +32,15 @@ export default function AuthPage({ onLogin }) {
     const [formData, setFormData] = useState({
         email: '', password: ''
     });
+    const colors = ['#b0d4ff', '#a3c1ad', '#e2d1f9', '#ffd8be', '#d1f2eb'];
+    const [colorIndex, setColorIndex] = useState(0);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setColorIndex(prev => (prev + 1) % colors.length);
+        }, 15000);
+        return () => clearInterval(interval);
+    }, []);
     const [forgotStep, setForgotStep] = useState(null); // 'email', 'otp', 'reset'
     const [resetData, setResetData] = useState({
         email: '',
@@ -47,8 +56,11 @@ export default function AuthPage({ onLogin }) {
         try {
             const res = await api.post('/auth/login', { email: formData.email, password: formData.password });
             completeLogin(res.data);
+            toast.success('Welcome back!');
         } catch (err) {
-            setError(err.response?.data?.message || 'Login failed');
+            const msg = err.response?.data?.message || 'Login failed';
+            setError(msg);
+            toast.error(msg);
         } finally { setIsLoading(false); }
     };
 
@@ -59,8 +71,11 @@ export default function AuthPage({ onLogin }) {
         try {
             await api.post('/auth/forgot-password', { email: resetData.email });
             setForgotStep('otp');
+            toast.success('OTP sent to your email');
         } catch (err) {
-            setError(err.response?.data?.message || 'Failed to send OTP');
+            const msg = err.response?.data?.message || 'Failed to send OTP';
+            setError(msg);
+            toast.error(msg);
         } finally { setIsLoading(false); }
     };
 
@@ -93,9 +108,8 @@ export default function AuthPage({ onLogin }) {
             setForgotStep(null);
             setResetData({ email: '', otp: '', password: '', confirmPassword: '' });
             setError('');
-            // Optional: Auto-fill login email?
             setFormData(prev => ({ ...prev, email: resetData.email }));
-            alert('Password reset successful! Please login with your new password.');
+            toast.success('Password reset successful! Please login.');
         } catch (err) {
             setError(err.response?.data?.message || 'Reset failed');
         } finally { setIsLoading(false); }
@@ -143,15 +157,15 @@ export default function AuthPage({ onLogin }) {
                 <button 
                     type="button"
                     onClick={() => { setForgotStep('email'); setError(''); }}
-                    className="text-base font-extrabold !text-blue-700 hover:!text-blue-800 underline underline-offset-4"
-                    style={{ color: '#1d4ed8', opacity: 1, visibility: 'visible' }}
+                    className="text-sm font-bold !text-blue-600 hover:!text-blue-800 underline underline-offset-4 transition-colors"
+                    style={{ color: '#2563eb', opacity: 1, visibility: 'visible', display: 'inline-block' }}
                 >
                     Forgot password?
                 </button>
             </div>
             <Button 
                 type="submit" 
-                className="w-full h-12 !bg-blue-600 !text-white hover:!bg-blue-700 rounded-xl text-base font-bold shadow-lg shadow-blue-600/30 active:scale-[0.98] transition-all" 
+                className="w-full h-12 !bg-slate-900 !text-white hover:!bg-slate-800 rounded-xl text-base font-semibold shadow-lg shadow-slate-200 active:scale-[0.98] transition-all" 
                 disabled={isLoading}
             >
                 {isLoading ? <Loader2 className="animate-spin" /> : 'Sign In'}
@@ -181,7 +195,7 @@ export default function AuthPage({ onLogin }) {
             <div className="flex flex-col gap-3">
                 <Button 
                     type="submit" 
-                    className="w-full h-12 !bg-blue-600 !text-white hover:!bg-blue-700 rounded-xl text-base font-bold" 
+                    className="w-full h-12 !bg-slate-900 !text-white hover:!bg-slate-800 rounded-xl text-base font-semibold" 
                     disabled={isLoading}
                 >
                     {isLoading ? <Loader2 className="animate-spin" /> : 'Send OTP'}
@@ -221,7 +235,7 @@ export default function AuthPage({ onLogin }) {
             <div className="flex flex-col gap-3">
                 <Button 
                     type="submit" 
-                    className="w-full h-12 !bg-blue-600 !text-white hover:!bg-blue-700 rounded-xl text-base font-bold" 
+                    className="w-full h-12 !bg-slate-900 !text-white hover:!bg-slate-800 rounded-xl text-base font-semibold" 
                     disabled={isLoading}
                 >
                     {isLoading ? <Loader2 className="animate-spin" /> : 'Verify OTP'}
@@ -230,7 +244,8 @@ export default function AuthPage({ onLogin }) {
                     type="button"
                     onClick={handleForgotPassword}
                     disabled={isLoading}
-                    className="text-sm font-semibold text-blue-600 hover:underline mt-2"
+                    className="text-sm font-bold !text-blue-600 hover:!text-blue-800 underline underline-offset-4 mt-2 transition-colors"
+                    style={{ color: '#2563eb', opacity: 1, visibility: 'visible', display: 'inline-block' }}
                 >
                     Resend OTP
                 </button>
@@ -273,7 +288,7 @@ export default function AuthPage({ onLogin }) {
             </div>
             <Button 
                 type="submit" 
-                className="w-full h-12 !bg-blue-600 !text-white hover:!bg-blue-700 rounded-xl text-base font-bold shadow-lg" 
+                className="w-full h-12 !bg-slate-900 !text-white hover:!bg-slate-800 rounded-xl text-base font-semibold shadow-lg shadow-slate-200" 
                 disabled={isLoading}
             >
                 {isLoading ? <Loader2 className="animate-spin" /> : 'Reset Password'}
@@ -282,7 +297,7 @@ export default function AuthPage({ onLogin }) {
     );
 
     return (
-        <main className="relative md:h-screen md:overflow-hidden lg:grid lg:grid-cols-2 bg-background">
+        <main className="relative md:h-screen md:overflow-hidden lg:grid lg:grid-cols-[58%_42%] bg-background">
             <style dangerouslySetInnerHTML={{ __html: `
                 input:-webkit-autofill,
                 input:-webkit-autofill:hover, 
@@ -307,15 +322,40 @@ export default function AuthPage({ onLogin }) {
                     opacity: 1 !important;
                 }
             ` }} />
-            {/* Left Side - Visual Column */}
-            <div className="relative hidden h-full flex-col border-r bg-slate-50 p-10 lg:flex">
-                <div className="absolute inset-0 bg-linear-to-b from-transparent via-transparent to-background" />
-                <div className="z-10 mt-auto">
-                    {/* Quote removed as requested */}
+            <div 
+                className="relative hidden h-full flex-col justify-end border-r lg:flex px-12 py-24 transition-colors duration-[3000ms] ease-in-out"
+                style={{ backgroundColor: colors[colorIndex] }}
+            >
+                {/* Visual Depth Gradients */}
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.25),transparent)] opacity-60" />
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_80%,rgba(0,0,0,0.1),transparent)]" />
+                <div className="absolute inset-0 bg-linear-to-b from-black/5 via-transparent to-black/10" />
+                
+                <div className="z-10 relative">
+                    <div className="flex flex-col gap-3">
+                        <div className="flex items-end gap-2">
+                            <span className="text-white text-4xl font-light tracking-tight mb-1 drop-shadow-sm">Welcome to</span>
+                            <span className="zora-logo text-6xl text-white drop-shadow-md pb-1">Zora</span>
+                        </div>
+                        <p className="text-white/90 text-xl max-w-sm leading-relaxed font-medium drop-shadow-sm italic">
+                            Effortless workforce management and seamless productivity for the modern era.
+                        </p>
+                    </div>
+                    
+                    {/* Pagination Dots */}
+                    <div className="flex gap-3 mt-12">
+                        <div className="w-12 h-1.5 rounded-full bg-white shadow-sm" />
+                        <div className="w-1.5 h-1.5 rounded-full bg-white/40" />
+                        <div className="w-1.5 h-1.5 rounded-full bg-white/40" />
+                        <div className="w-1.5 h-1.5 rounded-full bg-white/40" />
+                    </div>
                 </div>
-                <div className="absolute inset-0 opacity-100 text-primary">
-                    <FloatingPaths position={1} />
-                    <FloatingPaths position={-1} />
+                
+                <div className="absolute inset-0 overflow-hidden mix-blend-overlay opacity-80">
+                    <div className="absolute inset-0 text-white">
+                        <FloatingPaths position={1} />
+                        <FloatingPaths position={-1} />
+                    </div>
                 </div>
             </div>
 
@@ -326,28 +366,28 @@ export default function AuthPage({ onLogin }) {
                     <div className="absolute top-0 right-0 h-320 w-140 -translate-y-87.5 rounded-full bg-[radial-gradient(68.54%_68.72%_at_55.02%_31.46%,#3b82f615_0,transparent_80%)]" />
                 </div>
 
-                <div className="absolute top-7 left-5">
-                    <Button
-                        variant="ghost"
-                        onClick={() => window.location.href = '/'}
-                        className="flex items-center gap-2 text-muted-foreground hover:text-primary hover:bg-slate-50"
-                    >
-                        <ChevronLeftIcon size={16} data-icon="inline-start" />
-                        Home
-                    </Button>
+                <div className="absolute top-7 left-8">
+                    <span className="zora-logo text-4xl text-slate-800 drop-shadow-sm cursor-pointer" onClick={() => window.location.href = '/'}>
+                        Zora
+                    </span>
                 </div>
 
                 <div className="w-full max-w-md mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700">
-                    <div className="flex flex-col items-start mb-6">
-                        <h1 className="font-bold text-3xl tracking-wide text-slate-900 dark:text-white mb-1">
-                            {forgotStep ? 'Reset Password' : 'Welcome Back!'}
-                        </h1>
-                        <p className="text-base text-slate-500 dark:text-slate-400">
-                            {forgotStep === 'email' && 'Step 1: Enter your registered email'}
-                            {forgotStep === 'otp' && 'Step 2: Verify your OTP'}
-                            {forgotStep === 'reset' && 'Step 3: Set your new password'}
-                            {!forgotStep && 'Sign in to your Zora account.'}
-                        </p>
+                    <div className="flex flex-col items-center mb-12">
+                        <div className="flex flex-col items-center text-center">
+                            <h1 className={`font-bold text-2xl tracking-tight mb-2 ${forgotStep ? 'text-blue-600' : 'text-slate-800 dark:text-white'}`}>
+                                {forgotStep === 'email' && 'Forgot Password?'}
+                                {forgotStep === 'otp' && 'Verify OTP'}
+                                {forgotStep === 'reset' && 'Reset Password'}
+                                {!forgotStep && 'Welcome to Zora'}
+                            </h1>
+                            <p className="text-sm text-slate-500 dark:text-slate-400 max-w-[280px]">
+                                {forgotStep === 'email' && 'Step 1: Enter your registered email'}
+                                {forgotStep === 'otp' && 'Step 2: Verify your OTP'}
+                                {forgotStep === 'reset' && 'Step 3: Set your new password'}
+                                {!forgotStep && 'Enter your credentials to access your account.'}
+                            </p>
+                        </div>
                     </div>
 
                     {error && (
