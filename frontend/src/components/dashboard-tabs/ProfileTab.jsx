@@ -186,10 +186,9 @@ const ProfileTab = ({
                         {isProfileEditing ? (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                                 <input type="text" value={tempProfile.name} onChange={e => setTempProfile({ ...tempProfile, name: e.target.value })} style={{ ...fieldInputStyle, fontSize: '1.4rem', fontWeight: '800', width: '300px', letterSpacing: '-0.5px' }} />
-                                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                    <input type="text" value={tempProfile.designation} placeholder="Designation" onChange={e => setTempProfile({ ...tempProfile, designation: e.target.value })} style={{ ...fieldInputStyle, width: '150px' }} />
-                                    <input type="text" value={tempProfile.department} placeholder="Department" onChange={e => setTempProfile({ ...tempProfile, department: e.target.value })} style={{ ...fieldInputStyle, width: '150px' }} />
-                                </div>
+                                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: '500', margin: 0 }}>
+                                    {user.designation} <span style={{ opacity: 0.4 }}>|</span> {user.department}
+                                </p>
                             </div>
                         ) : (
                             <>

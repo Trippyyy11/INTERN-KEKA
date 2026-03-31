@@ -2608,10 +2608,12 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                                 <input type="text" value={u.bloodGroup || ''} onChange={e => setSelectedUser({ ...u, bloodGroup: e.target.value })} style={modalInputStyle} placeholder="e.g., O+" />
                                             ) : <div style={{ fontSize: '1.05rem', fontWeight: '700', color: 'var(--text-main)' }}>{u.bloodGroup || 'N/A'}</div>}
                                         </FormField>
-                                        <FormField isLightMode={isLightMode} label="Intern ID">
-                                            <div style={{ fontSize: '1.05rem', fontWeight: '900', color: 'var(--primary)' }}>{u.internId || 'TPINTXXX'}</div>
-                                            <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>System Generated ID</div>
-                                        </FormField>
+                                        {u.role === 'Intern' && (
+                                            <FormField isLightMode={isLightMode} label="Intern ID">
+                                                <div style={{ fontSize: '1.05rem', fontWeight: '900', color: 'var(--primary)' }}>{u.internId || 'TPINTXXX'}</div>
+                                                <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>System Generated ID</div>
+                                            </FormField>
+                                        )}
                                     </div>
                                 </>
                             )}
@@ -2644,10 +2646,9 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                                 >
                                                     <option value="Intern">Intern</option>
                                                     <option value="Reporting Manager">Reporting Manager</option>
-                                                    <option value="Employee">Employee</option>
-                                                    <option value="Admin">Admin</option>
+                                                    <option value="Super Admin">Super Admin</option>
                                                 </select>
-                                            ) : <div style={{ fontSize: '1.05rem', fontWeight: '700', color: 'var(--text-main)' }}>{u.role || 'Intern'}</div>}
+                                            ) : <div style={{ fontSize: '1.05rem', fontWeight: '700', color: 'var(--text-main)' }}>{u.role}</div>}
                                         </FormField>
                                         <FormField isLightMode={isLightMode} label="Joining Date">
                                             {editMode ? (

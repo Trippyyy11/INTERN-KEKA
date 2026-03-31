@@ -406,7 +406,9 @@ const AdminTab = ({
                 month: pendingPayrollData.month,
                 year: pendingPayrollData.year.toString(),
                 netPay: pendingPayrollData.netPay,
-                status: 'Unpaid'
+                paymentMethod: 'Bank Transfer', // Default for single generation
+                status: 'Paid', // Mark as paid by default like global wizard
+                paidAt: new Date()
             });
             setShowGenerateModal(false);
             window.location.reload(); // Refresh to show the new payslip
@@ -519,7 +521,7 @@ const AdminTab = ({
 
             {/* ===== USERS ===== */}
             {activeSubTab === 'Leave' && (
-                <div style={{ ...glass, padding: '2rem', overflow: activeActionMenu ? 'visible' : 'hidden' }}>
+                <div style={{ ...glass, padding: '2rem', overflow: 'visible' }}>
                     <SectionHeader icon={<Users size={24} />} title="Active Interns" subtitle={`${pagedUsers.length} team members in your organization`}
                         extra={canCreateUsersPermission && (
                             <button onClick={() => setShowCreateUserModal(true)} style={{
@@ -1194,8 +1196,19 @@ const AdminTab = ({
                                                 ) : <span style={{ opacity: 0.3, fontSize: '0.65rem' }}>DRAFT ONLY</span>}
                                             </td>
                                             <td style={tdStyle}>
-                                                <div style={{ fontSize: '0.8rem', fontWeight: '600' }}>{u.bankDetails?.bankName || <span style={{ opacity: 0.3 }}>N/A</span>}</div>
-                                                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontFamily: 'monospace' }}>{u.bankDetails?.accountNumber || u.bankDetails?.upiId || ''}</div>
+                                                {payslip ? (
+                                                    <div>
+                                                        <div style={{ fontSize: '0.8rem', fontWeight: '800', color: 'var(--primary)', marginBottom: '2px' }}>{payslip.paymentMethod}</div>
+                                                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontFamily: 'monospace' }}>
+                                                            {payslip.paymentMethod === 'UPI' ? (u.bankDetails?.upiId || 'N/A') : (u.bankDetails?.accountNumber || 'N/A')}
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <div>
+                                                        <div style={{ fontSize: '0.8rem', fontWeight: '600' }}>{u.bankDetails?.bankName || <span style={{ opacity: 0.3 }}>N/A</span>}</div>
+                                                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontFamily: 'monospace' }}>{u.bankDetails?.accountNumber || u.bankDetails?.upiId || ''}</div>
+                                                    </div>
+                                                )}
                                             </td>
                                             <td style={{ ...tdStyle, textAlign: 'center', paddingRight: '2rem' }}>
                                                 {payslip ? (

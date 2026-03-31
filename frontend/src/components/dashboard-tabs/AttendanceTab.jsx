@@ -1147,11 +1147,21 @@ const AttendanceTab = ({
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {filteredAttendanceLogs.length > 0 ? filteredAttendanceLogs.map((log, index) => {
+                                        {filteredAttendanceLogs.length > 0 ? filteredAttendanceLogs.filter(log => {
+                                            const logDate = new Date(log.date).setHours(0,0,0,0);
+                                            const joinDate = user.joiningDate ? new Date(user.joiningDate).setHours(0,0,0,0) : 0;
+                                            return logDate >= joinDate;
+                                        }).map((log, index) => {
                                             const isOnLeave = log.status === 'On Leave' || log.status === 'Leave' || log.isLeave;
                                             const isRegularized = !!(log.originalClockInTime || log.originalClockOutTime);
-                                            const dayName = new Date(log.date).toLocaleDateString('en-US', { weekday: 'long' });
+                                            const logDateObj = new Date(log.date);
+                                            const dayName = logDateObj.toLocaleDateString('en-US', { weekday: 'long' });
                                             const isWeekOff = (user?.workingSchedule?.weekOffs || []).includes(dayName);
+                                            
+                                            // Check for Holiday
+                                            const logDateStr = logDateObj.toLocaleDateString('en-CA');
+                                            const holiday = dashData.holidays?.find(h => new Date(h.date).toLocaleDateString('en-CA') === logDateStr);
+                                            const isHoliday = !!holiday;
 
                                             return (
                                                 <tr key={log._id} style={{
@@ -1164,7 +1174,14 @@ const AttendanceTab = ({
                                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                                             {new Date(log.date).toLocaleDateString('en-US', { weekday: 'short', day: '2-digit', month: 'short' })}
                                                             {isWeekOff && !isOnLeave && (
-                                                                <span style={{ fontSize: '0.6rem', color: '#8b5cf6', background: 'rgba(139, 92, 246, 0.1)', padding: '2px 6px', borderRadius: '4px', border: '1px solid rgba(139, 92, 246, 0.2)', width: 'fit-content', fontWeight: '800' }}>{log.isNoRecord ? 'Scheduled Off' : 'Worked on Week Off'}</span>
+                                                                <span style={{ fontSize: '0.6rem', color: log.isNoRecord ? '#94a3b8' : '#8b5cf6', background: log.isNoRecord ? 'rgba(148,163,184,0.1)' : 'rgba(139, 92, 246, 0.1)', padding: '2px 6px', borderRadius: '4px', border: `1px solid ${log.isNoRecord ? 'rgba(148,163,184,0.2)' : 'rgba(139, 92, 246, 0.2)'}`, width: 'fit-content', fontWeight: '800' }}>
+                                                                    {log.isNoRecord ? 'Week Off' : 'Worked on Week Off'}
+                                                                </span>
+                                                            )}
+                                                            {isHoliday && !isOnLeave && (
+                                                                <span style={{ fontSize: '0.6rem', color: '#f87171', background: 'rgba(248, 113, 113, 0.1)', padding: '2px 6px', borderRadius: '4px', border: '1px solid rgba(248, 113, 113, 0.2)', width: 'fit-content', fontWeight: '800' }}>
+                                                                    {log.isNoRecord ? `${holiday.name}` : `Worked on ${holiday.name}`}
+                                                                </span>
                                                             )}
                                                         </div>
                                                     </td>
@@ -1173,7 +1190,9 @@ const AttendanceTab = ({
                                                             {isOnLeave ? (
                                                                 <span style={{ fontWeight: '700', color: '#8b5cf6' }}>On Leave</span>
                                                             ) : log.isNoRecord ? (
-                                                                <span>{isWeekOff ? 'Week Off' : '-'}</span>
+                                                                <span style={{ color: 'var(--text-muted)', fontWeight: '600' }}>
+                                                                    {isWeekOff ? 'Week Off' : isHoliday ? 'General Holiday' : '-'}
+                                                                </span>
                                                             ) : (
                                                                 <>
                                                                     <span>{log.totalHours && Number(log.totalHours) > 0 ? `${Math.floor(log.totalHours)}h ${Math.round((log.totalHours % 1) * 60)}m` : (log.clockInTime ? 'Ongoing' : (isWeekOff ? '-' : '0h 0m'))}</span>

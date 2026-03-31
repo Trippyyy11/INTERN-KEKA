@@ -15,7 +15,8 @@ const auditLogSchema = new mongoose.Schema(
                 'SETTINGS_UPDATED',
                 'ANNOUNCEMENT_POSTED',
                 'AVAILABILITY_UPDATED',
-                'PERMISSIONS_UPDATED'
+                'PERMISSIONS_UPDATED',
+                'LOGIN', 'LOGOUT', 'PASSWORD_RESET'
             ],
             required: true
         },

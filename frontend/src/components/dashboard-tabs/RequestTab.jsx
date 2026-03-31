@@ -219,19 +219,19 @@ const RequestTab = ({
     };
 
     const requestTypeOptions = [
-        { label: 'Leave Application', value: 'Leave Application', icon: '🏖️' },
-        { label: 'Work From Home', value: 'Work From Home', icon: '🏠' },
-        { label: 'Half Day', value: 'Half Day', icon: '⏰' },
-        { label: 'Comp Off', value: 'Comp Off', icon: '🔄', balance: leaveStats?.balances?.['Comp Off']?.total - leaveStats?.balances?.['Comp Off']?.consumed },
-        { label: 'Leave Cancellation', value: 'Leave Cancellation', icon: '🚫' },
-        { label: 'Attendance Regularization', value: 'Attendance Regularization', icon: '📝' }
+        { label: 'Leave Application', value: 'Leave Application' },
+        { label: 'Work From Home', value: 'Work From Home' },
+        { label: 'Half Day', value: 'Half Day' },
+        { label: 'Comp Off', value: 'Comp Off', balance: leaveStats?.balances?.['Comp Off']?.total - leaveStats?.balances?.['Comp Off']?.consumed },
+        { label: 'Leave Cancellation', value: 'Leave Cancellation' },
+        { label: 'Attendance Regularization', value: 'Attendance Regularization' }
     ];
 
     const leaveTypeOptions = [
-        { label: 'Paid Leave', value: 'Paid', icon: '💰', balance: leaveStats?.balances?.['Paid']?.total - leaveStats?.balances?.['Paid']?.consumed },
-        { label: 'Sick Leave', value: 'Sick', icon: '🤒', balance: leaveStats?.balances?.['Sick']?.total - leaveStats?.balances?.['Sick']?.consumed },
-        { label: 'Casual Leave', value: 'Casual', icon: '✨', balance: leaveStats?.balances?.['Casual']?.total - leaveStats?.balances?.['Casual']?.consumed },
-        { label: 'Unpaid Leave', value: 'Unpaid', icon: '🏳️' }
+        { label: 'Paid Leave', value: 'Paid', balance: leaveStats?.balances?.['Paid']?.total - leaveStats?.balances?.['Paid']?.consumed },
+        { label: 'Sick Leave', value: 'Sick', balance: leaveStats?.balances?.['Sick']?.total - leaveStats?.balances?.['Sick']?.consumed },
+        { label: 'Casual Leave', value: 'Casual', balance: leaveStats?.balances?.['Casual']?.total - leaveStats?.balances?.['Casual']?.consumed },
+        { label: 'Unpaid Leave', value: 'Unpaid' }
     ];
 
     return (

@@ -124,7 +124,8 @@ export const resendOTP = async (req, res) => {
 // @route   POST /api/auth/complete-registration
 export const completeRegistration = async (req, res) => {
     try {
-        const { email, password, designation, department, joiningDate, dob, place, phoneNumber, bloodGroup, gender } = req.body;
+        const email = req.body.email?.toLowerCase();
+        const { password, designation, department, joiningDate, dob, place, phoneNumber, bloodGroup, gender } = req.body;
         const user = await User.findOne({ email });
 
         if (!user || !user.isVerified) return res.status(400).json({ message: 'Please verify email first.' });
@@ -138,7 +139,7 @@ export const completeRegistration = async (req, res) => {
         user.phoneNumber = phoneNumber;
         user.bloodGroup = bloodGroup;
         user.gender = gender;
-        user.isApproved = false; // Always require admin approval for production safety
+        user.isApproved = true; // Use system default (True)
         user.role = 'Intern';
 
         // Fetch system settings for default leave quotas
@@ -215,7 +216,20 @@ export const loginUser = async (req, res) => {
                 return res.status(401).json({ message: 'Account incomplete: No password set. Please contact admin.' });
             }
             if (await user.matchPassword(password)) {
-                if (!user.isApproved) return res.status(401).json({ message: 'Account pending approval from Admin.' });
+
+                // Audit log: user login
+                let systemName = 'Unknown Device';
+                const ua = req.headers['user-agent'] || '';
+                if (ua.includes('Windows')) systemName = 'Windows';
+                else if (ua.includes('Macintosh') || ua.includes('Mac OS')) systemName = 'Mac OS';
+                else if (ua.includes('Linux')) systemName = 'Linux';
+                else if (ua.includes('Android')) systemName = 'Android';
+                else if (ua.includes('iPhone') || ua.includes('iPad')) systemName = 'iOS';
+                
+                await createAuditLog(user._id, 'LOGIN', `Logged in via ${systemName}`, { 
+                    ipAddress: req.ip,
+                    userName: user.name
+                });
 
                 return sendToken(user, 200, res);
             }
@@ -312,8 +326,8 @@ export const updateProfilePicture = async (req, res) => {
 // @route   POST /api/auth/forgot-password
 export const forgotPassword = async (req, res) => {
     try {
-        const { email } = req.body;
-        const user = await User.findOne({ email: email.toLowerCase(), isDeleted: { $ne: true } });
+        const email = req.body.email?.toLowerCase();
+        const user = await User.findOne({ email, isDeleted: { $ne: true } });
 
         if (!user) {
             return res.status(404).json({ message: 'User with this email does not exist.' });
@@ -358,8 +372,9 @@ export const forgotPassword = async (req, res) => {
 // @route   POST /api/auth/verify-reset-otp
 export const verifyResetOTP = async (req, res) => {
     try {
-        const { email, otp } = req.body;
-        const user = await User.findOne({ email: email.toLowerCase(), isDeleted: { $ne: true } });
+        const email = req.body.email?.toLowerCase();
+        const { otp } = req.body;
+        const user = await User.findOne({ email, isDeleted: { $ne: true } });
 
         if (!user) return res.status(404).json({ message: 'User not found.' });
         
@@ -377,8 +392,9 @@ export const verifyResetOTP = async (req, res) => {
 // @route   POST /api/auth/reset-password
 export const resetPassword = async (req, res) => {
     try {
-        const { email, otp, password } = req.body;
-        const user = await User.findOne({ email: email.toLowerCase(), isDeleted: { $ne: true } });
+        const email = req.body.email?.toLowerCase();
+        const { otp, password } = req.body;
+        const user = await User.findOne({ email, isDeleted: { $ne: true } });
 
         if (!user) return res.status(404).json({ message: 'User not found.' });
 

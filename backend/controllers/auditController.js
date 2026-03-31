@@ -12,6 +12,11 @@ export const createAuditLog = async (userId, action, details, options = {}) => {
             nameToLog = user ? user.name : 'System';
         }
 
+        let sanitizedIp = options.ipAddress || '';
+        if (sanitizedIp.startsWith('::ffff:')) {
+            sanitizedIp = sanitizedIp.substring(7);
+        }
+
         await AuditLog.create({
             user: userId,
             action,
@@ -19,7 +24,7 @@ export const createAuditLog = async (userId, action, details, options = {}) => {
             userName: nameToLog,
             targetModel: options.targetModel || null,
             targetId: options.targetId || null,
-            ipAddress: options.ipAddress || '',
+            ipAddress: sanitizedIp,
             previousValues: options.previousValues || null,
             newValues: options.newValues || null
         });

@@ -4,9 +4,9 @@ import bcrypt from 'bcryptjs';
 const userSchema = new mongoose.Schema(
     {
         name: { type: String, required: true },
-        email: { type: String, required: true, unique: true },
+        email: { type: String, required: true, unique: true, lowercase: true, trim: true },
         password: { type: String, required: false }, // Made optional for initial OTP stage
-        role: { type: String, enum: ['Super Admin', 'Reporting Manager', 'Intern', 'Employee', 'Admin'], default: 'Intern' },
+        role: { type: String, enum: ['Super Admin', 'Reporting Manager', 'Intern'], default: 'Intern' },
         reportingManager: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
         department: { type: String },
         designation: { type: String },
@@ -17,7 +17,7 @@ const userSchema = new mongoose.Schema(
         bloodGroup: { type: String },
         gender: { type: String },
         isVerified: { type: Boolean, default: false },
-        isApproved: { type: Boolean, default: false },
+        isApproved: { type: Boolean, default: true },
         otp: { type: String },
         otpExpiry: { type: Date },
         salary: {

@@ -15,6 +15,7 @@ connectDB();
 
 // Initialize Express
 const app = express();
+app.set('trust proxy', true);
 
 // Express 5 Compatibility: Ensure req.query is writable for older middlewares (mongo-sanitize/xss-clean)
 app.use((req, res, next) => {
@@ -40,7 +41,7 @@ app.use(cors({
         }
     },
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 app.use(cookieParser());

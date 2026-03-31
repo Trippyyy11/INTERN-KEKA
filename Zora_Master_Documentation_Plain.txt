@@ -1,0 +1,178 @@
+ZORA HRMS MASTER TECHNICAL DOCUMENTATION
+A COMPREHENSIVE PROJECT REFERENCE FOR DEVELOPERS AND ARCHITECTS
+
+1. PROJECT OVERVIEW AND PURPOSE
+
+Project Name: Zora (Intern-Keka Clone)
+Version: 1.1.0 (Stable)
+
+Zora is a high-performance Human Resource Management System (HRMS) built specifically to handle the unique workflows of an intern-heavy organization. It mimics the behavior of industry leaders like Keka while focusing on simplicity, security, and automated tracking.
+
+The system solves three primary problems:
+- Problem 1: Manual attendance tracking is prone to error. Zora automates this with one-click clock-in/out and automated hours calculation.
+- Problem 2: Leave management often lacks transparency. Zora provides a real-time quota system and a multi-level approval workflow.
+- Problem 3: Payroll for interns can be vary. Zora generates automated payslips based on attendance logs and role-based salary structures.
+
+
+2. TECHNICAL STACK DEEP-DIVE
+
+A. FRONTEND (USER INTERFACE)
+- React.js: Used for building a highly responsive and interactive user interface.
+- Vite: The build engine that ensures fast development and high-performance production bundles.
+- Tailwind CSS: Implementation of a modern, utility-first design system.
+- Radix UI: Accessible primitive components for high-quality dropdowns, modals, and tabs.
+- Axios: A robust HTTP client used to communicate with the Backend API.
+- Framer Motion: Adds micro-animations to enhance the premium feel of the application.
+
+B. BACKEND (SERVER LOGIC)
+- Node.js: The runtime environment for executing JavaScript on the server.
+- Express Framework: The backbone of our RESTful API architecture.
+- Mongoose: An Object Data Modeling (ODM) library for MongoDB that enforces data structure.
+- JWT (JSON Web Token): Handles secure, stateless session management.
+- Bcryptjs: Advanced hashing algorithm for protecting user passwords.
+- Node-Cron: Schedules background tasks like automated midnight clock-outs.
+
+C. DATABASE (DATA PERSISTENCE)
+- MongoDB: A NoSQL database that allows for a flexible, document-oriented data structure.
+- Persistence Layer: Data is hosted on a cloud cluster (e.g., MongoDB Atlas) to ensure 99.9% availability.
+
+
+3. SYSTEM ARCHITECTURE AND FOLDER STRUCTURE
+
+BACKEND DIRECTORY
+- config: Contains database connection logic (db.js).
+- controllers: The core business logic. Every feature (Attendance, Leave, Auth) has a dedicated controller.
+- cron: Background worker scripts that run at specific intervals.
+- middlewares: Interceptors that verify user identities and roles before allowing access.
+- models: The blueprints for our data (Schemas).
+- routes: Map of URL endpoints to their specific controller logic.
+- scripts: Helper scripts for database seeding and initial admin setup.
+- utils: Global helper functions (Email, OTP, Date formatters).
+- server.js: The main starting point of the backend application.
+
+FRONTEND DIRECTORY
+- src/api: Global Axios instance and API service definitions.
+- src/components: Reusable UI elements (Buttons, Inputs, Modals).
+- src/components/dashboard-tabs: The primary logic for each major page (Admin, Payslips, HRMS).
+- src/layout: Global UI elements like the Navigation Sidebar and Top Header.
+- src/lib: Utility libraries for standard logic (Class merging).
+- App.jsx: The root component that determines which page to show based on login status.
+
+
+4. MASTER DATABASE SCHEMA (DATA MODELS)
+
+A. USER MODEL (User.js)
+The central document for every employee.
+- name (String): Full name of the user.
+- email (String): Unique email used for login and notifications.
+- password (String): Hashed security credential.
+- role (Enum): Super Admin, Admin, Reporting Manager, Employee, or Intern.
+- reportingManager (ObjectId): Reference to the manager who approves their requests.
+- department (String): The team they belong to (e.g., Tech, HR).
+- designation (String): Professional title.
+- joiningDate (Date): Start date of employment.
+- internId (String): Unique serial ID starting with TPINT (e.g., TPINT105).
+- permissions (Object): Boolean flags for fine-grained access (canViewAuditTab, etc.).
+- salary (Object): Breakdown of Basic, HRA, and Allowance.
+- bankDetails (Object): Account number, IFSC, and Bank name.
+
+B. ATTENDANCE MODEL (Attendance.js)
+Tracks every working session.
+- user (ObjectId): link to the User model.
+- date (Date): The calendar day of the entry.
+- clockInTime (Date): Exact timestamp of starting work.
+- clockOutTime (Date): Exact timestamp of finishing work.
+- status (Enum): Present, Absent, WFH, Holiday, or Leave.
+- effectiveHours (Number): Total active work time in decimal format.
+- grossHours (Number): Total time between clock-in and clock-out.
+- breaks (Array): List of break start and end times.
+- isLate (Boolean): Automatically set if clocked in after the grace period.
+
+C. LEAVE MODEL (Leave.js)
+Tracks time-off requests.
+- user (ObjectId): Reference to the requested user.
+- type (Enum): Paid, Sick, Casual, or Unpaid.
+- startDate (Date): First day of the leave.
+- endDate (Date): Last day of the leave.
+- status (Enum): Pending, Approved, or Rejected.
+- reason (String): User's explanation for the leave.
+
+D. PAYSLIP MODEL (Payslip.js)
+Monthly financial records.
+- user (ObjectId): Link to user.
+- month/year (String/Number): The period of the payslip.
+- earnings (Object): Basic Salary, HRA, and Bonus total.
+- deductions (Object): Tax and PF totals.
+- netPay (Number): The final amount to be paid.
+- pdfUrl (String): Link to the downloadable document.
+
+
+5. MASTER API REFERENCE (ENDPOINTS)
+
+AUTHENTICATION MODULE
+- POST /api/auth/register: Initiates new account creation.
+- POST /api/auth/login: Validates credentials and returns a secure session cookie.
+- POST /api/auth/verify-otp: Authenticates the 6-digit email code.
+- POST /api/auth/forgot-password: Sends a password reset link to user email.
+- GET /api/auth/me: Returns current user profile data (Requires Login).
+
+ADMINISTRATION MODULE
+- GET /api/admin/users: Lists all employees with pagination (Admin Only).
+- POST /api/admin/users: Manually creates a new user account.
+- PUT /api/admin/settings: Configures org-wide rules (Grace period, Work hours).
+- GET /api/admin/audit: Retrieves a full log of system activities.
+
+ATTENDANCE MODULE
+- POST /api/attendance/clock-in: Starts an active session. Requires WFH approval for remote work.
+- POST /api/attendance/clock-out: Ends the current session and calculates work hours.
+- GET /api/attendance/logs: Returns the personal history of the user.
+- GET /api/attendance/status/today: Returns live status of all organization members.
+
+REQUESTS AND LEAVES
+- POST /api/requests: Submits a new Request (Leave, WFH, Regularization).
+- GET /api/leaves: Returns current year stats and used quotas.
+- PUT /api/requests/:id/status: Approve or Deny a request (Manager Only).
+
+
+6. MODULE LOGIC DEEP-DIVE
+
+A. ATTENDANCE CALCULATION LOGIC
+The system calculates Effective Hours by taking the Total Time (Clock-Out minus Clock-In) and subtracting the sum of all recorded Break segments. 
+- Grace Period: If a user clocks in more than 60 minutes after their shift start (e.g., after 12:00 PM for an 11:00 AM shift), the system automatically flags them as Late.
+- Auto Clock-Out: A daily cron job at midnight checks for any session without a clock-out time and closes it automatically to prevent data corruption.
+
+B. LEAVE QUOTA LOGIC
+When a Leave request is approved:
+- The system checks the User model for the specific quota (e.g., Sick).
+- It calculates the number of days between Start and End dates.
+- It deducts that count from the User's quota.
+- User is notified via the internal notification system and Slack (if integrated).
+
+
+7. SECURITY AND DATA PROTECTION
+
+A. SESSION MANAGEMENT
+We do not use LocalStorage for tokens. Instead, JWTs are stored in HTTP-Only Cookies. This prevents malicious scripts from stealing the user's identity (XSS protection).
+
+B. ROLE-BASED ACCESS CONTROL (RBAC)
+Every restricted API endpoint is wrapped in the authorize middleware.
+Example: router.get('/admin', protect, authorize(['Super Admin']), getAdminData);
+This ensures that an Intern cannot access administrative data even if they know the URL.
+
+C. DATA SANITIZATION
+We use express-mongo-sanitize and xss-clean. These tools automatically check every incoming request for malicious database commands or script tags, ensuring the database remains clean.
+
+
+8. DEPLOYMENT AND ENVIRONMENT CONFIGURATION
+
+The application is deployed on Railway, a modern cloud platform.
+Required Environment Variables:
+- MONGO_URI: The connection string for the database.
+- JWT_SECRET: A long, random string used to sign security tokens.
+- EMAIL_USER/EMAIL_PASS: Credentials for the automated mail server.
+- FRONTEND_URL: The URL of the React application to handle security headers.
+
+
+END OF DOCUMENTation
+PREPARED FOR: TEACHING PARIKSHA ORGANIZATIONAL INTERNAL USE
+REVISION: MARCH 2026
