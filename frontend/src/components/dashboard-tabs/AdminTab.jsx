@@ -1662,49 +1662,38 @@ const AdminTab = ({
 
                                                 {expandedCalculations[p.user._id] && (
                                                     <div style={{ marginTop: '1.5rem', padding: '1.5rem', borderRadius: '20px', background: isLightMode ? '#f8fafc' : 'rgba(255,255,255,0.03)', border: `1px dashed ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.1)'}`, animation: 'slideDown 0.3s ease-out' }}>
-                                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.5rem', marginBottom: '1.5rem' }}>
-                                                            <div>
-                                                                <div style={{ fontSize: '0.65rem', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '0.4rem' }}>CYCLE START</div>
-                                                                <div style={{ fontWeight: '700', fontSize: '0.85rem' }}>{new Date(p.startDate).toLocaleDateString([], { day: '2-digit', month: 'short' })}</div>
-                                                            </div>
-                                                            <div>
-                                                                <div style={{ fontSize: '0.65rem', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '0.4rem' }}>CYCLE END</div>
-                                                                <div style={{ fontWeight: '700', fontSize: '0.85rem' }}>{new Date(p.endDate).toLocaleDateString([], { day: '2-digit', month: 'short' })}</div>
-                                                            </div>
-                                                            <div>
-                                                                <div style={{ fontSize: '0.65rem', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '0.4rem' }}>PRESENT DAYS</div>
-                                                                <div style={{ fontWeight: '900', fontSize: '0.85rem', color: '#10b981' }}>{p.presentDays}</div>
-                                                            </div>
-                                                            <div>
-                                                                <div style={{ fontSize: '0.65rem', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '0.4rem' }}>STIPEND BASE</div>
-                                                                <div style={{ fontWeight: '900', fontSize: '0.85rem' }}>₹{p.stipend.toLocaleString()}</div>
-                                                            </div>
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                                                            <div style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-main)' }}>Final Payout Calculation</div>
+                                                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Period: {new Date(p.startDate).toLocaleDateString()} - {new Date(p.endDate).toLocaleDateString()}</div>
                                                         </div>
-                                                        <div style={{ height: '1px', background: isLightMode ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)', margin: '1rem 0' }}></div>
-                                                        <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
-                                                            {Object.entries(p.leaveCounts).map(([type, count]) => (
-                                                                <div key={type} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: type === 'unpaid' || type === 'halfDay' ? '#ef4444' : '#6366f1' }}></div>
-                                                                    <span style={{ fontSize: '0.75rem', fontWeight: '700', textTransform: 'capitalize' }}>{type}: {count}</span>
+                                                        
+                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                                                                <span style={{ color: 'var(--text-muted)' }}>Base Stipend</span>
+                                                                <span style={{ fontWeight: '700' }}>₹{p.stipend.toLocaleString()}</span>
+                                                            </div>
+                                                            
+                                                            {(p.unpaidDeduction > 0 || p.proRataAdjustment > 0) && (
+                                                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: '#ef4444' }}>
+                                                                    <span>Standard Deductions</span>
+                                                                    <span style={{ fontWeight: '700' }}>- ₹{(p.unpaidDeduction + p.proRataAdjustment).toLocaleString()}</span>
                                                                 </div>
-                                                            ))}
-                                                        </div>
-                                                        <div style={{ marginTop: '1.25rem', padding: '1rem', borderRadius: '12px', background: 'rgba(239, 68, 68, 0.05)', color: '#ef4444', fontSize: '0.8rem', fontWeight: '800', display: 'flex', justifyContent: 'space-between' }}>
-                                                            <span>Leave Deductions (Unpaid + HalfDays)</span>
-                                                            <span>- ₹{p.unpaidDeduction.toLocaleString()}</span>
-                                                        </div>
-                                                        {p.proRataAdjustment > 0 && (
-                                                            <div style={{ marginTop: '0.5rem', padding: '1rem', borderRadius: '12px', background: 'rgba(245, 158, 11, 0.05)', color: '#f59e0b', fontSize: '0.8rem', fontWeight: '800', display: 'flex', justifyContent: 'space-between' }}>
-                                                                <span>Joining Date Pro-rata Adjustment</span>
-                                                                <span>- ₹{p.proRataAdjustment.toLocaleString()}</span>
+                                                            )}
+
+                                                            {bonusAmounts[p.user._id] > 0 && (
+                                                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: '#10b981' }}>
+                                                                    <span>Performance Bonus</span>
+                                                                    <span style={{ fontWeight: '700' }}>+ ₹{bonusAmounts[p.user._id].toLocaleString()}</span>
+                                                                </div>
+                                                            )}
+
+                                                            <div style={{ height: '1px', background: isLightMode ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)', margin: '0.5rem 0' }}></div>
+                                                            
+                                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1rem', fontWeight: '900', color: 'var(--primary)' }}>
+                                                                <span>Net Payable Amount</span>
+                                                                <span>₹{(p.netPay + (bonusAmounts[p.user._id] || 0)).toLocaleString()}</span>
                                                             </div>
-                                                        )}
-                                                        {bonusAmounts[p.user._id] > 0 && (
-                                                            <div style={{ marginTop: '0.5rem', padding: '1rem', borderRadius: '12px', background: 'rgba(16, 185, 129, 0.05)', color: '#10b981', fontSize: '0.8rem', fontWeight: '800', display: 'flex', justifyContent: 'space-between' }}>
-                                                                <span>Performance Bonus</span>
-                                                                <span>+ ₹{bonusAmounts[p.user._id].toLocaleString()}</span>
-                                                            </div>
-                                                        )}
+                                                        </div>
                                                     </div>
                                                 )}
                                             </div>
@@ -1787,49 +1776,26 @@ const AdminTab = ({
                         </div>
 
                         <div style={{ display: 'grid', gap: '2rem' }}>
-                            {/* Summary Cards */}
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
-                                <div style={{ padding: '1rem', borderRadius: '18px', background: isLightMode ? '#f8fafc' : 'rgba(255,255,255,0.03)', border: rowBorder }}>
-                                    <div style={{ fontSize: '0.65rem', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '0.4rem', textTransform: 'uppercase' }}>Cycle Days</div>
-                                    <div style={{ fontWeight: '800', fontSize: '1rem' }}>{selectedPayslipForCalc.calculationDetails?.totalDaysInCycle || 30}</div>
-                                </div>
-                                <div style={{ padding: '1rem', borderRadius: '18px', background: isLightMode ? '#f8fafc' : 'rgba(255,255,255,0.03)', border: rowBorder }}>
-                                    <div style={{ fontSize: '0.65rem', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '0.4rem', textTransform: 'uppercase' }}>Present</div>
-                                    <div style={{ fontWeight: '800', fontSize: '1rem', color: '#10b981' }}>{selectedPayslipForCalc.calculationDetails?.presentDays || 0}</div>
-                                </div>
-                                <div style={{ padding: '1rem', borderRadius: '18px', background: isLightMode ? '#f8fafc' : 'rgba(255,255,255,0.03)', border: rowBorder }}>
-                                    <div style={{ fontSize: '0.65rem', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '0.4rem', textTransform: 'uppercase' }}>Unpaid Lvs</div>
-                                    <div style={{ fontWeight: '800', fontSize: '1rem', color: '#ef4444' }}>{selectedPayslipForCalc.calculationDetails?.unpaidLeaveDays || 0}</div>
-                                </div>
-                            </div>
-
-                            {/* Details List */}
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', borderRadius: '16px', background: isLightMode ? '#fff' : 'rgba(0,0,0,0.2)', border: rowBorder }}>
-                                    <span style={{ fontWeight: '700', color: 'var(--text-muted)' }}>Basic Stipend</span>
-                                    <span style={{ fontWeight: '800' }}>₹{selectedPayslipForCalc.earnings?.basicSalary?.toLocaleString()}</span>
-                                </div>
-                                {selectedPayslipForCalc.earnings?.bonus > 0 && (
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', borderRadius: '16px', background: 'rgba(16, 185, 129, 0.05)', border: '1px solid rgba(16, 185, 129, 0.1)', color: '#10b981' }}>
-                                        <span style={{ fontWeight: '700' }}>Performance Bonus</span>
-                                        <span style={{ fontWeight: '900' }}>+ ₹{selectedPayslipForCalc.earnings.bonus.toLocaleString()}</span>
-                                    </div>
-                                )}
-                                {selectedPayslipForCalc.calculationDetails?.proRataAdjustment > 0 && (
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', borderRadius: '16px', background: 'rgba(245, 158, 11, 0.05)', border: '1px solid rgba(245, 158, 11, 0.1)', color: '#f59e0b' }}>
-                                        <span style={{ fontWeight: '700' }}>Pro-rata Adjust (Joining Date)</span>
-                                        <span style={{ fontWeight: '900' }}>- ₹{selectedPayslipForCalc.calculationDetails.proRataAdjustment.toLocaleString()}</span>
-                                    </div>
-                                )}
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', borderRadius: '16px', background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.1)', color: '#ef4444' }}>
-                                    <span style={{ fontWeight: '700' }}>Leave Deductions</span>
-                                    <span style={{ fontWeight: '900' }}>- ₹{(selectedPayslipForCalc.calculationDetails?.unpaidDeduction || 0).toLocaleString()}</span>
+                            {/* Simplified Display as requested */}
+                            <div style={{ 
+                                padding: '2rem', borderRadius: '24px', 
+                                background: isLightMode ? '#f8fafc' : 'rgba(255,255,255,0.03)', 
+                                border: rowBorder, textAlign: 'center'
+                            }}>
+                                <div style={{ fontSize: '0.75rem', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Payment Status</div>
+                                <div style={{ 
+                                    display: 'inline-block', padding: '0.4rem 1rem', borderRadius: '12px', 
+                                    background: selectedPayslipForCalc.status === 'Paid' ? 'rgba(16,185,129,0.1)' : 'rgba(245,158,11,0.1)',
+                                    color: selectedPayslipForCalc.status === 'Paid' ? '#10b981' : '#f59e0b',
+                                    fontWeight: '800', fontSize: '0.9rem'
+                                }}>
+                                    {selectedPayslipForCalc.status}
                                 </div>
                             </div>
 
                             {/* Net Total */}
                             <div style={{ 
-                                marginTop: '1rem', padding: '1.5rem', borderRadius: '24px', 
+                                padding: '2rem', borderRadius: '24px', 
                                 background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', 
                                 color: '#fff', textAlign: 'center', boxShadow: '0 8px 30px rgba(99,102,241,0.3)' 
                             }}>

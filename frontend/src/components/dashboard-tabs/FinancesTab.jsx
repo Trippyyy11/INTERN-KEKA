@@ -193,7 +193,7 @@ const FinancesTab = ({
                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                         {/* Status Bar */}
                         <div style={{
-                            marginBottom: '2.5rem', display: 'flex', flexWrap: 'wrap', gap: '2.5rem', padding: '1.5rem 2rem',
+                            marginBottom: '1.5rem', display: 'flex', flexWrap: 'wrap', gap: '2.5rem', padding: '1.5rem 2rem',
                             background: isLightMode ? '#f8fafc' : 'rgba(0,0,0,0.15)', borderRadius: '20px',
                             border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.04)'}`
                         }}>
@@ -249,114 +249,9 @@ const FinancesTab = ({
                                 </>
                             )}
                         </div>
-
-                        {/* Breakdown Grid */}
-                        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '2rem', marginBottom: '3rem', flex: 1 }}>
-                            {/* Earnings Card */}
-                            <div style={{ background: isLightMode ? '#ffffff' : 'rgba(0,0,0,0.2)', padding: '2rem', borderRadius: '24px', border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.06)'}`, boxShadow: isLightMode ? '0 4px 12px rgba(0,0,0,0.02)' : 'none' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '2rem' }}>
-                                    <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'rgba(var(--primary-rgb), 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                        <Award size={18} color="var(--primary)" />
-                                    </div>
-                                    <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '800', color: 'var(--primary)', letterSpacing: '0.5px' }}>EARNINGS</h3>
-                                </div>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <span style={{ fontSize: '0.95rem', fontWeight: '600', color: 'var(--text-muted)' }}>Basic Salary</span>
-                                        <span style={{ fontSize: '1.1rem', fontWeight: '700', color: 'var(--text-main)' }}>₹{filteredPayslip.earnings.basicSalary.toLocaleString()}</span>
-                                    </div>
-                                    <div style={{ height: '1px', background: isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.04)' }}></div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <span style={{ fontSize: '0.95rem', fontWeight: '600', color: 'var(--text-muted)' }}>HRA</span>
-                                        <span style={{ fontSize: '1.1rem', fontWeight: '700', color: 'var(--text-main)' }}>₹{filteredPayslip.earnings.hra.toLocaleString()}</span>
-                                    </div>
-                                    {filteredPayslip.earnings.bonus > 0 && (
-                                        <>
-                                            <div style={{ height: '1px', background: isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.04)' }}></div>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                <span style={{ fontSize: '0.95rem', fontWeight: '600', color: 'var(--text-muted)' }}>Bonus</span>
-                                                <span style={{ fontSize: '1.1rem', fontWeight: '800', color: 'var(--primary)' }}>₹{filteredPayslip.earnings.bonus.toLocaleString()}</span>
-                                            </div>
-                                        </>
-                                    )}
-                                    {filteredPayslip.earnings.specialAllowance > 0 && (
-                                        <>
-                                            <div style={{ height: '1px', background: isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.04)' }}></div>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                <span style={{ fontSize: '0.95rem', fontWeight: '600', color: 'var(--text-muted)' }}>Special Allowance</span>
-                                                <span style={{ fontSize: '1.1rem', fontWeight: '700', color: 'var(--text-main)' }}>₹{filteredPayslip.earnings.specialAllowance.toLocaleString()}</span>
-                                            </div>
-                                        </>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Deductions Card */}
-                            <div style={{ background: isLightMode ? '#ffffff' : 'rgba(0,0,0,0.2)', padding: '2rem', borderRadius: '24px', border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.06)'}`, boxShadow: isLightMode ? '0 4px 12px rgba(0,0,0,0.02)' : 'none' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '2rem' }}>
-                                    <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'rgba(244, 63, 94, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                        <Info size={18} color="#f43f5e" />
-                                    </div>
-                                    <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '800', color: '#f43f5e', letterSpacing: '0.5px' }}>DEDUCTIONS</h3>
-                                </div>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <span style={{ fontSize: '0.95rem', fontWeight: '600', color: 'var(--text-muted)' }}>PF (Provident Fund)</span>
-                                        <span style={{ fontSize: '1.1rem', fontWeight: '700', color: '#f43f5e' }}>₹{filteredPayslip.deductions.pf.toLocaleString()}</span>
-                                    </div>
-                                    <div style={{ height: '1px', background: isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.04)' }}></div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <span style={{ fontSize: '0.95rem', fontWeight: '600', color: 'var(--text-muted)' }}>Tax (TDS)</span>
-                                        <span style={{ fontSize: '1.1rem', fontWeight: '700', color: '#f43f5e' }}>₹{filteredPayslip.deductions.tax.toLocaleString()}</span>
-                                    </div>
-                                    {filteredPayslip.deductions.professionalTax > 0 && (
-                                        <>
-                                            <div style={{ height: '1px', background: isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.04)' }}></div>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                <span style={{ fontSize: '0.95rem', fontWeight: '600', color: 'var(--text-muted)' }}>Professional Tax</span>
-                                                <span style={{ fontSize: '1.1rem', fontWeight: '700', color: '#f43f5e' }}>₹{filteredPayslip.deductions.professionalTax.toLocaleString()}</span>
-                                            </div>
-                                        </>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Calculation Details */}
-                        {filteredPayslip.calculationDetails && (
-                            <div style={{ 
-                                marginBottom: '3rem', padding: '2rem', borderRadius: '24px', 
-                                background: isLightMode ? '#f8fafc' : 'rgba(0,0,0,0.1)', 
-                                border: `1px dashed ${isLightMode ? '#cbd5e1' : 'rgba(255,255,255,0.1)'}` 
-                            }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1.5rem' }}>
-                                    <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'rgba(99,102,241,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                        <Clock size={18} color="#6366f1" />
-                                    </div>
-                                    <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: '800', color: 'var(--text-main)', letterSpacing: '0.5px' }}>ATTENDANCE & CALCULATION SUMMARY</h3>
-                                </div>
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '2rem' }}>
-                                    <div>
-                                        <div style={{ fontSize: '0.7rem', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Present Days</div>
-                                        <div style={{ fontSize: '1.2rem', fontWeight: '900', color: '#10b981' }}>{filteredPayslip.calculationDetails.presentDays} / {filteredPayslip.calculationDetails.totalDaysInCycle}</div>
-                                    </div>
-                                    <div>
-                                        <div style={{ fontSize: '0.7rem', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Unpaid Leaves</div>
-                                        <div style={{ fontSize: '1.2rem', fontWeight: '900', color: '#ef4444' }}>{filteredPayslip.calculationDetails.unpaidLeaveDays || 0} Full | {filteredPayslip.calculationDetails.halfDayUnpaidDays || 0} Half</div>
-                                    </div>
-                                    {filteredPayslip.calculationDetails.proRataAdjustment > 0 && (
-                                        <div>
-                                            <div style={{ fontSize: '0.7rem', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Pro-rata Adjust</div>
-                                            <div style={{ fontSize: '1.2rem', fontWeight: '900', color: '#f59e0b' }}>- ₹{filteredPayslip.calculationDetails.proRataAdjustment.toLocaleString()}</div>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Net Pay Bottom Bar */}
+                        {/* Net Pay Card */}
                         <div style={{
-                            marginTop: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                             background: isLightMode ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.02))' : 'linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(16, 185, 129, 0.05))',
                             border: `1px solid rgba(16, 185, 129, 0.2)`, padding: '2.5rem', borderRadius: '24px',
                             boxShadow: '0 8px 32px rgba(16, 185, 129, 0.1)', position: 'relative', overflow: 'hidden'
