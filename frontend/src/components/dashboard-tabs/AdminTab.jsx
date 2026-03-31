@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import AuditTab from './AuditTab';
 import api from '../../api/axios';
+import moment from 'moment';
 import {
     MoreVertical,
     Users,
@@ -255,6 +256,167 @@ const AdminTab = ({
         }
     };
     
+    /* ======= GLOBAL PAYROLL WIZARD STATE ======= */
+    const [showGlobalPayrollModal, setShowGlobalPayrollModal] = useState(false);
+    const [payrollStep, setPayrollStep] = useState(1);
+    const [previewLoading, setPreviewLoading] = useState(false);
+    const [payrollPreviews, setPayrollPreviews] = useState([]);
+    const [selectedPayrollUsers, setSelectedPayrollUsers] = useState([]);
+    const [globalPaymentMethod, setGlobalPaymentMethod] = useState('Bank Transfer');
+    const [expandedCalculations, setExpandedCalculations] = useState({});
+    const [bonusAmounts, setBonusAmounts] = useState({});
+    const [payrollStartDate, setPayrollStartDate] = useState('');
+    const [payrollEndDate, setPayrollEndDate] = useState('');
+    const [showSingleCalcModal, setShowSingleCalcModal] = useState(false);
+    const [selectedPayslipForCalc, setSelectedPayslipForCalc] = useState(null);
+
+    // Auto-update dates when month/year changes
+    useEffect(() => {
+        const cycle = calculatePayrollCycle(payrollMonth, payrollYear, systemSettings.paymentDate || 1);
+        setPayrollStartDate(moment(cycle.startDate).format('YYYY-MM-DD'));
+        setPayrollEndDate(moment(cycle.endDate).format('YYYY-MM-DD'));
+    }, [payrollMonth, payrollYear, systemSettings.paymentDate]);
+
+    const fetchPayrollPreview = async () => {
+        setPreviewLoading(true);
+        try {
+            const res = await api.post('/payslips/preview', {
+                month: payrollMonth,
+                year: payrollYear,
+                paymentDay: systemSettings.paymentDate || 1,
+                customStartDate: payrollStartDate,
+                customEndDate: payrollEndDate
+            });
+            setPayrollPreviews(res.data);
+            // Default select those who don't have payslips yet
+            setSelectedPayrollUsers(res.data.filter(p => !p.hasPayslip).map(p => p.user._id));
+            setPayrollStep(2);
+        } catch (err) {
+            console.error('Failed to fetch payroll preview', err);
+            alert('Failed to load payroll data. Please try again.');
+        } finally {
+            setPreviewLoading(false);
+        }
+    };
+
+    const handleBulkGenerate = async () => {
+        setGeneratingPayslip(true);
+        try {
+            const selectedData = payrollPreviews.filter(p => selectedPayrollUsers.includes(p.user._id));
+            const payslipsToCreate = selectedData.map(p => ({
+                user: p.user._id,
+                month: payrollMonth,
+                year: payrollYear,
+                startDate: p.startDate,
+                endDate: p.endDate,
+                netPay: p.netPay + (bonusAmounts[p.user._id] || 0),
+                earnings: {
+                    basicSalary: p.stipend,
+                    bonus: bonusAmounts[p.user._id] || 0
+                },
+                paymentMethod: globalPaymentMethod,
+                status: 'Paid',
+                paidAt: new Date(),
+                calculationDetails: {
+                    totalDaysInCycle: p.totalDaysInCycle,
+                    presentDays: p.presentDays,
+                    unpaidLeaveDays: p.leaveCounts.unpaid,
+                    halfDayUnpaidDays: p.leaveCounts.halfDay,
+                    proRataAdjustment: p.proRataAdjustment,
+                    leaveBreakdown: p.leaveCounts
+                }
+            }));
+
+            await api.post('/payslips/bulk', { payslips: payslipsToCreate });
+            setShowGlobalPayrollModal(false);
+            window.location.reload();
+        } catch (err) {
+            console.error('Failed to generate payroll', err);
+            alert('Failed to generate payroll. Please check logs.');
+        } finally {
+            setGeneratingPayslip(false);
+        }
+    };
+    
+    /* ======= PAYROLL CALCULATION HELPERS ======= */
+    const calculatePayrollCycle = (monthName, year, paymentDay = 1) => {
+        const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+        const monthIndex = months.indexOf(monthName);
+        
+        // End Date: paymentDay - 1 of the selected month
+        // Start Date: paymentDay of the previous month
+        let endDate = new Date(year, monthIndex, paymentDay - 1, 23, 59, 59);
+        let startDate = new Date(year, monthIndex - 1, paymentDay, 0, 0, 0);
+
+        // If paymentDay is 1, cycle is just the full month
+        if (paymentDay === 1) {
+            startDate = new Date(year, monthIndex, 1, 0, 0, 0);
+            endDate = new Date(year, monthIndex + 1, 0, 23, 59, 59);
+        }
+
+        const totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+        return { startDate, endDate, totalDays };
+    };
+
+    const calculateProRataPay = (u, cycle) => {
+        const monthlyAmount = u.salaryDetails?.monthlyAmount || 0;
+        if (!u.joiningDate) return monthlyAmount;
+
+        const joinDate = new Date(u.joiningDate);
+        
+        // Joined after this cycle
+        if (joinDate > cycle.endDate) return 0;
+        
+        // Joined before or at the start of this cycle
+        if (joinDate <= cycle.startDate) return monthlyAmount;
+
+        // Joined during this cycle - Pro-rata
+        const daysInCycle = cycle.totalDays;
+        const workedMs = cycle.endDate - joinDate;
+        const workedDays = Math.max(0, Math.ceil(workedMs / (1000 * 60 * 60 * 24)));
+        
+        return Math.round((monthlyAmount / daysInCycle) * workedDays);
+    };
+
+    const [generatingPayslip, setGeneratingPayslip] = useState(false);
+    const [showGenerateModal, setShowGenerateModal] = useState(false);
+    const [selectedUserForPayroll, setSelectedUserForPayroll] = useState(null);
+    const [pendingPayrollData, setPendingPayrollData] = useState(null);
+
+    const handleOpenGenerateModal = (u) => {
+        const cycle = calculatePayrollCycle(payrollMonth, payrollYear, systemSettings.paymentDate || 1);
+        const netPay = calculateProRataPay(u, cycle);
+        
+        setSelectedUserForPayroll(u);
+        setPendingPayrollData({
+            netPay,
+            cycle,
+            month: payrollMonth,
+            year: payrollYear
+        });
+        setShowGenerateModal(true);
+    };
+
+    const handleConfirmGenerate = async () => {
+        setGeneratingPayslip(true);
+        try {
+            await api.post('/payslips', {
+                user: selectedUserForPayroll._id,
+                month: pendingPayrollData.month,
+                year: pendingPayrollData.year.toString(),
+                netPay: pendingPayrollData.netPay,
+                status: 'Unpaid'
+            });
+            setShowGenerateModal(false);
+            window.location.reload(); // Refresh to show the new payslip
+        } catch (err) {
+            console.error('Failed to generate payslip', err);
+            alert('Failed to generate payslip. Please try again.');
+        } finally {
+            setGeneratingPayslip(false);
+        }
+    };
+
     /* ======= CLICK OUTSIDE HANDLER ======= */
     useEffect(() => {
         const handleClickAway = (e) => {
@@ -775,12 +937,15 @@ const AdminTab = ({
                             <h3 style={{ fontSize: '1rem', fontWeight: '800', color: 'var(--text-main)', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
                                 <Building2 size={18} color="var(--primary)" /> Organization Info
                             </h3>
-                            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1.5rem' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem' }}>
                                 <InputField label="Company Name" isLightMode={isLightMode}>
                                     <FormInput isLightMode={isLightMode} type="text" value={systemSettings.companyName || ''} onChange={e => setSystemSettings({ ...systemSettings, companyName: e.target.value })} />
                                 </InputField>
                                 <InputField label="Working Hours / Day" isLightMode={isLightMode}>
                                     <FormInput isLightMode={isLightMode} type="number" value={systemSettings.workingHoursPerDay || ''} onChange={e => setSystemSettings({ ...systemSettings, workingHoursPerDay: e.target.value })} />
+                                </InputField>
+                                <InputField label="Payment Date (1-31)" isLightMode={isLightMode}>
+                                    <FormInput isLightMode={isLightMode} type="number" min="1" max="31" value={systemSettings.paymentDate || 1} onChange={e => setSystemSettings({ ...systemSettings, paymentDate: e.target.value })} />
                                 </InputField>
                             </div>
                         </div>
@@ -794,11 +959,10 @@ const AdminTab = ({
 
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.25rem' }}>
                                 {[
-                                    { label: 'Annual Leave', key: 'annual', icon: Calendar, color: '#6366f1', grad: 'linear-gradient(135deg,#6366f1,#8b5cf6)' },
                                     { label: 'Paid Leave', key: 'paid', icon: ShieldCheck, color: '#f59e0b', grad: 'linear-gradient(135deg,#f59e0b,#fbbf24)' },
                                     { label: 'Sick Leave', key: 'sick', icon: Heart, color: '#ef4444', grad: 'linear-gradient(135deg,#ef4444,#f87171)' },
                                     { label: 'Casual Leave', key: 'casual', icon: Users, color: '#10b981', grad: 'linear-gradient(135deg,#10b981,#34d399)' },
-                                    { label: 'Comp Off', key: 'compOff', icon: Clock, color: '#3b82f6', grad: 'linear-gradient(135deg,#3b82f6,#60a5fa)' }
+                                    { label: 'Comp Off', key: 'compOff', icon: Clock, color: '#6366f1', grad: 'linear-gradient(135deg,#6366f1,#8b5cf6)' }
                                 ].map(q => (
                                     <div key={q.key} style={{
                                         background: isLightMode ? '#fff' : 'rgba(0,0,0,0.15)',
@@ -899,6 +1063,22 @@ const AdminTab = ({
                         subtitle="Review and update payout status for all interns" 
                         extra={
                             <div style={{ display: 'flex', gap: '1rem' }}>
+                                <button
+                                    onClick={() => {
+                                        setPayrollStep(1);
+                                        setShowGlobalPayrollModal(true);
+                                    }}
+                                    style={{
+                                        padding: '0.6rem 1.25rem', borderRadius: '12px',
+                                        background: 'linear-gradient(135deg,#6366f1,#8b5cf6)',
+                                        color: '#fff', fontWeight: '800', fontSize: '0.75rem',
+                                        border: 'none', cursor: 'pointer',
+                                        boxShadow: '0 4px 12px rgba(99,102,241,0.25)',
+                                        display: 'flex', alignItems: 'center', gap: '0.5rem'
+                                    }}
+                                >
+                                    <Sparkles size={14} /> Global Generate
+                                </button>
                                 <select 
                                     value={payrollMonth} 
                                     onChange={(e) => setPayrollMonth(e.target.value)}
@@ -939,6 +1119,7 @@ const AdminTab = ({
                                     <th style={thStyle}>NET PAY</th>
                                     <th style={thStyle}>STATUS</th>
                                     <th style={thStyle}>PAID ON</th>
+                                    <th style={thStyle}>CALCULATION</th>
                                     <th style={thStyle}>BANK / UPI</th>
                                     <th style={{ ...thStyle, textAlign: 'center', paddingRight: '2rem' }}>ACTION</th>
                                 </tr>
@@ -946,6 +1127,11 @@ const AdminTab = ({
                             <tbody>
                                 {allUsers.map((u, idx) => {
                                     const payslip = globalPayslips.find(p => p.user?._id === u._id && p.month === payrollMonth && parseInt(p.year) === payrollYear);
+                                    
+                                    // Calculate Draft Data if no payslip
+                                    const cycle = calculatePayrollCycle(payrollMonth, payrollYear, systemSettings.paymentDate || 1);
+                                    const projectedPay = calculateProRataPay(u, cycle);
+
                                     return (
                                         <tr key={u._id} style={{ borderTop: rowBorder, transition: 'background 0.2s' }}
                                             onMouseOver={e => e.currentTarget.style.background = isLightMode ? 'rgba(99,102,241,0.03)' : 'rgba(255,255,255,0.02)'}
@@ -960,7 +1146,17 @@ const AdminTab = ({
                                                 </div>
                                             </td>
                                             <td style={{ ...tdStyle, fontWeight: '800', color: 'var(--primary)' }}>
-                                                {payslip ? `₹${payslip.netPay.toLocaleString()}` : <span style={{ opacity: 0.3 }}>Not Generated</span>}
+                                                {payslip ? (
+                                                    `₹${payslip.netPay.toLocaleString()}`
+                                                ) : (
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                        ₹{projectedPay.toLocaleString()}
+                                                        <span style={{ 
+                                                            fontSize: '0.6rem', color: '#f59e0b', background: 'rgba(245, 158, 11, 0.1)', 
+                                                            padding: '2px 6px', borderRadius: '6px', fontWeight: '900' 
+                                                        }}>DRAFT</span>
+                                                    </div>
+                                                )}
                                             </td>
                                             <td style={tdStyle}>
                                                 {payslip ? (
@@ -973,13 +1169,31 @@ const AdminTab = ({
                                                     }}>
                                                         {payslip.status}
                                                     </span>
-                                                ) : <span style={{ opacity: 0.3 }}>—</span>}
+                                                ) : <span style={{ opacity: 0.3 }}>N/A</span>}
                                             </td>
                                             <td style={tdStyle}>
                                                 {payslip?.paidAt ? new Date(payslip.paidAt).toLocaleDateString() : <span style={{ opacity: 0.3 }}>—</span>}
                                             </td>
                                             <td style={tdStyle}>
-                                                <div style={{ fontSize: '0.8rem', fontWeight: '600' }}>{u.bankDetails?.bankName || 'N/A'}</div>
+                                                {payslip ? (
+                                                    <button 
+                                                        onClick={() => {
+                                                            setSelectedPayslipForCalc(payslip);
+                                                            setShowSingleCalcModal(true);
+                                                        }}
+                                                        style={{
+                                                            padding: '0.45rem 0.8rem', borderRadius: '10px', border: rowBorder, cursor: 'pointer',
+                                                            background: isLightMode ? '#fff' : 'rgba(255,255,255,0.05)',
+                                                            color: 'var(--primary)', fontSize: '0.65rem', fontWeight: '800', transition: 'all 0.2s',
+                                                            display: 'flex', alignItems: 'center', gap: '0.4rem'
+                                                        }}
+                                                    >
+                                                        <Eye size={12} /> View Details
+                                                    </button>
+                                                ) : <span style={{ opacity: 0.3, fontSize: '0.65rem' }}>DRAFT ONLY</span>}
+                                            </td>
+                                            <td style={tdStyle}>
+                                                <div style={{ fontSize: '0.8rem', fontWeight: '600' }}>{u.bankDetails?.bankName || <span style={{ opacity: 0.3 }}>N/A</span>}</div>
                                                 <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontFamily: 'monospace' }}>{u.bankDetails?.accountNumber || u.bankDetails?.upiId || ''}</div>
                                             </td>
                                             <td style={{ ...tdStyle, textAlign: 'center', paddingRight: '2rem' }}>
@@ -987,10 +1201,10 @@ const AdminTab = ({
                                                     <button 
                                                         onClick={() => handleUpdatePayslipStatus(payslip._id, payslip.status === 'Paid' ? 'Unpaid' : 'Paid')}
                                                         style={{
-                                                            padding: '0.5rem 1rem', borderRadius: '10px', border: 'none', cursor: 'pointer',
+                                                            padding: '0.5rem 0.8rem', borderRadius: '10px', border: 'none', cursor: 'pointer',
                                                             background: payslip.status === 'Paid' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)',
                                                             color: payslip.status === 'Paid' ? '#ef4444' : '#10b981',
-                                                            fontSize: '0.75rem', fontWeight: '800', transition: 'all 0.2s'
+                                                            fontSize: '0.7rem', fontWeight: '800', transition: 'all 0.2s'
                                                         }}
                                                         onMouseOver={e => { e.currentTarget.style.background = payslip.status === 'Paid' ? '#ef4444' : '#10b981'; e.currentTarget.style.color = '#fff'; }}
                                                         onMouseOut={e => { e.currentTarget.style.background = payslip.status === 'Paid' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)'; e.currentTarget.style.color = payslip.status === 'Paid' ? '#ef4444' : '#10b981'; }}
@@ -998,7 +1212,20 @@ const AdminTab = ({
                                                         {payslip.status === 'Paid' ? 'Mark Unpaid' : 'Mark Paid'}
                                                     </button>
                                                 ) : (
-                                                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Action N/A</span>
+                                                    <button 
+                                                        onClick={() => handleOpenGenerateModal(u)}
+                                                        disabled={projectedPay <= 0}
+                                                        style={{
+                                                            padding: '0.5rem 1.2rem', borderRadius: '10px', border: 'none', cursor: projectedPay <= 0 ? 'not-allowed' : 'pointer',
+                                                            background: 'linear-gradient(135deg,#6366f1,#8b5cf6)',
+                                                            color: '#fff',
+                                                            fontSize: '0.75rem', fontWeight: '800', transition: 'all 0.2s',
+                                                            boxShadow: '0 4px 12px rgba(99,102,241,0.2)',
+                                                            opacity: projectedPay <= 0 ? 0.5 : 1
+                                                        }}
+                                                    >
+                                                        Generate
+                                                    </button>
                                                 )}
                                             </td>
                                         </tr>
@@ -1006,6 +1233,59 @@ const AdminTab = ({
                                 })}
                             </tbody>
                         </table>
+                    </div>
+                </div>
+            )}
+
+            {/* ===== GENERATE PAYSLIP MODAL ===== */}
+            {showGenerateModal && selectedUserForPayroll && (
+                <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.7)', zIndex: 9999, display: 'flex', justifyContent: 'center', alignItems: 'center', backdropFilter: 'blur(4px)' }}
+                    onClick={(e) => { if (e.target === e.currentTarget) setShowGenerateModal(false); }}>
+                    <div style={{
+                        background: isLightMode ? '#ffffff' : '#0f172a', borderRadius: '28px', padding: '2rem',
+                        width: '90%', maxWidth: '450px',
+                        border: `1px solid ${isLightMode ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.08)'}`,
+                        boxShadow: '0 25px 60px rgba(0,0,0,0.4)',
+                        animation: 'fadeIn 0.3s ease-out'
+                    }}>
+                        <h2 style={{ fontSize: '1.25rem', fontWeight: '900', marginBottom: '1.5rem', color: 'var(--text-main)' }}>Generate Payslip</h2>
+                        
+                        <div style={{ marginBottom: '1.5rem', padding: '1.25rem', background: isLightMode ? '#f8fafc' : 'rgba(255,255,255,0.03)', borderRadius: '20px', border: rowBorder }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                                <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Intern</span>
+                                <span style={{ fontWeight: '700' }}>{selectedUserForPayroll.name}</span>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                                <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Monthly Base</span>
+                                <span style={{ fontWeight: '600' }}>₹{selectedUserForPayroll.salaryDetails?.monthlyAmount?.toLocaleString()}</span>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                                <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Cycle Period</span>
+                                <span style={{ fontWeight: '600', fontSize: '0.8rem' }}>
+                                    {pendingPayrollData.cycle.startDate.toLocaleDateString([], { day: '2-digit', month: 'short' })} - {pendingPayrollData.cycle.endDate.toLocaleDateString([], { day: '2-digit', month: 'short' })}
+                                </span>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '1rem', paddingTop: '1rem', borderTop: `1px dashed ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.1)'}` }}>
+                                <span style={{ fontWeight: '800', color: 'var(--text-main)' }}>Net Pay</span>
+                                <span style={{ fontWeight: '900', color: 'var(--primary)', fontSize: '1.1rem' }}>₹{pendingPayrollData.netPay.toLocaleString()}</span>
+                            </div>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '1rem' }}>
+                            <button onClick={() => setShowGenerateModal(false)} style={{
+                                flex: 1, padding: '0.8rem', borderRadius: '14px', border: rowBorder, background: 'transparent',
+                                color: 'var(--text-muted)', fontWeight: '700', cursor: 'pointer'
+                            }}>Cancel</button>
+                            <button onClick={handleConfirmGenerate} disabled={generatingPayslip} style={{
+                                flex: 1, padding: '0.8rem', borderRadius: '14px', border: 'none', 
+                                background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', color: '#fff', 
+                                fontWeight: '800', cursor: generatingPayslip ? 'wait' : 'pointer',
+                                boxShadow: '0 4px 12px rgba(99,102,241,0.3)',
+                                opacity: generatingPayslip ? 0.7 : 1
+                            }}>
+                                {generatingPayslip ? 'Generating...' : 'Confirm'}
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
@@ -1215,6 +1495,351 @@ const AdminTab = ({
                     to { transform: translateX(0); opacity: 1; }
                 }
             `}</style>
+            {/* ===== GLOBAL PAYROLL WIZARD MODAL ===== */}
+            {showGlobalPayrollModal && (
+                <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.7)', zIndex: 9999, display: 'flex', justifyContent: 'center', alignItems: 'center', backdropFilter: 'blur(10px)' }}
+                    onClick={(e) => { if (e.target === e.currentTarget) setShowGlobalPayrollModal(false); }}>
+                    <div style={{
+                        background: isLightMode ? '#ffffff' : '#0f172a', borderRadius: '32px',
+                        width: '95%', maxWidth: '900px', maxHeight: '90vh', overflow: 'hidden',
+                        display: 'flex', flexDirection: 'column',
+                        border: `1px solid ${isLightMode ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.08)'}`,
+                        boxShadow: '0 25px 80px rgba(0,0,0,0.5)',
+                        animation: 'fadeInUp 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
+                    }}>
+                        {/* Header */}
+                        <div style={{ padding: '2rem 2.5rem', borderBottom: rowBorder, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div>
+                                <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: '900', color: 'var(--text-main)' }}>Global Payroll Generation</h2>
+                                <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>Step {payrollStep} of 4: {['Select Period', 'Select Interns', 'Review Calculations', 'Finalize'][payrollStep-1]}</p>
+                            </div>
+                            <button onClick={() => setShowGlobalPayrollModal(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><X size={24} /></button>
+                        </div>
+
+                        {/* Content */}
+                        <div style={{ flex: 1, overflowY: 'auto', padding: '2.5rem' }}>
+                            {/* Step 1: Period Selection */}
+                            {payrollStep === 1 && (
+                                <div style={{ textAlign: 'center', maxWidth: '400px', margin: '0 auto' }}>
+                                    <div style={{ width: '80px', height: '80px', borderRadius: '24px', background: 'rgba(99,102,241,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)', margin: '0 auto 2rem' }}>
+                                        <Calendar size={40} />
+                                    </div>
+                                    <h3 style={{ fontSize: '1.25rem', fontWeight: '800', marginBottom: '1rem' }}>Select Payout Period</h3>
+                                    <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '2.5rem' }}>The pay cycle dates will be automatically calculated based on your global settings.</p>
+                                    
+                                    <div style={{ display: 'grid', gap: '1.25rem', marginBottom: '2rem' }}>
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                            <InputField label="Month" isLightMode={isLightMode}>
+                                                <select value={payrollMonth} onChange={e => setPayrollMonth(e.target.value)} style={{ width: '100%', padding: '0.8rem', borderRadius: '14px', background: isLightMode ? '#f8fafc' : 'rgba(0,0,0,0.2)', border: rowBorder, color: 'var(--text-main)', fontSize: '0.9rem', fontWeight: '700' }}>
+                                                    {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map(m => (
+                                                        <option key={m} value={m}>{m}</option>
+                                                    ))}
+                                                </select>
+                                            </InputField>
+                                            <InputField label="Year" isLightMode={isLightMode}>
+                                                <select value={payrollYear} onChange={e => setPayrollYear(parseInt(e.target.value))} style={{ width: '100%', padding: '0.8rem', borderRadius: '14px', background: isLightMode ? '#f8fafc' : 'rgba(0,0,0,0.2)', border: rowBorder, color: 'var(--text-main)', fontSize: '0.9rem', fontWeight: '700' }}>
+                                                    {[2024, 2025, 2026].map(y => <option key={y} value={y}>{y}</option>)}
+                                                </select>
+                                            </InputField>
+                                        </div>
+
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                            <InputField label="Cycle Start" isLightMode={isLightMode}>
+                                                <input type="date" value={payrollStartDate} onChange={e => setPayrollStartDate(e.target.value)} style={{ width: '100%', padding: '0.8rem', borderRadius: '14px', background: isLightMode ? '#f8fafc' : 'rgba(0,0,0,0.2)', border: rowBorder, color: 'var(--text-main)', fontSize: '0.9rem', fontWeight: '600' }} />
+                                            </InputField>
+                                            <InputField label="Cycle End" isLightMode={isLightMode}>
+                                                <input type="date" value={payrollEndDate} onChange={e => setPayrollEndDate(e.target.value)} style={{ width: '100%', padding: '0.8rem', borderRadius: '14px', background: isLightMode ? '#f8fafc' : 'rgba(0,0,0,0.2)', border: rowBorder, color: 'var(--text-main)', fontSize: '0.9rem', fontWeight: '600' }} />
+                                            </InputField>
+                                        </div>
+                                    </div>
+
+                                    {globalPayslips.some(ps => ps.month === payrollMonth && ps.year === payrollYear) && (
+                                        <div style={{ 
+                                            padding: '1.5rem', borderRadius: '24px', background: 'rgba(239, 68, 68, 0.05)', 
+                                            border: '1.5px solid rgba(239, 68, 68, 0.12)', color: '#ef4444',
+                                            fontSize: '0.9rem', fontWeight: '700', marginBottom: '2.5rem', display: 'flex', alignItems: 'center', gap: '1rem',
+                                            animation: 'shake 0.5s ease-in-out'
+                                        }}>
+                                            <Lock size={20} />
+                                            <div>
+                                                <div style={{ fontWeight: '900', marginBottom: '2px' }}>PAYSIPS ALREADY EXIST</div>
+                                                <div style={{ fontSize: '0.75rem', opacity: 0.8 }}>Generating new payslips for {payrollMonth} {payrollYear} will create duplicate records for interns already marked as paid.</div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <button onClick={fetchPayrollPreview} disabled={previewLoading} style={{
+                                        width: '100%', padding: '1.1rem', borderRadius: '18px', border: 'none',
+                                        background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', color: '#fff',
+                                        fontSize: '1rem', fontWeight: '800', cursor: previewLoading ? 'wait' : 'pointer',
+                                        boxShadow: '0 8px 30px rgba(99,102,241,0.3)', transition: 'all 0.3s'
+                                    }}>
+                                        {previewLoading ? 'Crunching Numbers...' : 'Continue to Interm Selection'}
+                                    </button>
+                                </div>
+                            )}
+
+                            {/* Step 2: User Selection */}
+                            {payrollStep === 2 && (
+                                <div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                                        <h3 style={{ fontSize: '1.2rem', fontWeight: '800', margin: 0 }}>Select Interns to Pay</h3>
+                                        <button onClick={() => setSelectedPayrollUsers(selectedPayrollUsers.length === payrollPreviews.length ? [] : payrollPreviews.map(p => p.user._id))} style={{ background: 'none', border: 'none', color: 'var(--primary)', fontWeight: '800', fontSize: '0.85rem', cursor: 'pointer' }}>
+                                            {selectedPayrollUsers.length === payrollPreviews.length ? 'Deselect All' : 'Select All'}
+                                        </button>
+                                    </div>
+                                    
+                                    <div style={{ display: 'grid', gap: '1rem' }}>
+                                        {payrollPreviews.map(p => (
+                                            <div key={p.user._id} onClick={() => {
+                                                if (selectedPayrollUsers.includes(p.user._id)) {
+                                                    setSelectedPayrollUsers(selectedPayrollUsers.filter(id => id !== p.user._id));
+                                                } else {
+                                                    setSelectedPayrollUsers([...selectedPayrollUsers, p.user._id]);
+                                                }
+                                            }} style={{
+                                                padding: '1.25rem', borderRadius: '22px', border: `2px solid ${selectedPayrollUsers.includes(p.user._id) ? 'var(--primary)' : (isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.04)')}`,
+                                                background: selectedPayrollUsers.includes(p.user._id) ? (isLightMode ? 'rgba(99,102,241,0.05)' : 'rgba(99,102,241,0.1)') : 'transparent',
+                                                display: 'flex', alignItems: 'center', gap: '1.25rem', cursor: 'pointer', transition: 'all 0.2s'
+                                            }}>
+                                                <div style={{ width: '24px', height: '24px', borderRadius: '8px', border: `2px solid ${selectedPayrollUsers.includes(p.user._id) ? 'var(--primary)' : 'var(--text-muted)'}`, background: selectedPayrollUsers.includes(p.user._id) ? 'var(--primary)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
+                                                    {selectedPayrollUsers.includes(p.user._id) && <CheckCircle2 size={16} />}
+                                                </div>
+                                                <AdminAvatar name={p.user.name} idx={0} gradientColors={gradientColors} />
+                                                <div style={{ flex: 1 }}>
+                                                    <div style={{ fontWeight: '700', fontSize: '0.95rem' }}>{p.user.name}</div>
+                                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{p.user.designation}</div>
+                                                </div>
+                                                {p.hasPayslip && <span style={{ fontSize: '0.65rem', padding: '4px 8px', borderRadius: '6px', background: 'rgba(239,68,68,0.1)', color: '#ef4444', fontWeight: '900' }}>PAYSIP EXISTS</span>}
+                                            </div>
+                                        ))}
+                                    </div>
+                                    
+                                    <div style={{ marginTop: '3rem', display: 'flex', gap: '1rem' }}>
+                                        <button onClick={() => setPayrollStep(1)} style={{ flex: 1, padding: '1rem', borderRadius: '18px', border: rowBorder, background: 'transparent', color: 'var(--text-muted)', fontWeight: '800' }}>Back</button>
+                                        <button onClick={() => setPayrollStep(3)} disabled={selectedPayrollUsers.length === 0} style={{ flex: 2, padding: '1rem', borderRadius: '18px', border: 'none', background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', color: '#fff', fontWeight: '800', cursor: 'pointer', opacity: selectedPayrollUsers.length === 0 ? 0.5 : 1 }}>Preview Calculations ({selectedPayrollUsers.length})</button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Step 3: Calculation Review */}
+                            {payrollStep === 3 && (
+                                <div>
+                                    <h3 style={{ fontSize: '1.2rem', fontWeight: '800', marginBottom: '2rem' }}>Review & Adjust Calculations</h3>
+                                    <div style={{ display: 'grid', gap: '1.5rem' }}>
+                                        {payrollPreviews.filter(p => selectedPayrollUsers.includes(p.user._id)).map(p => (
+                                            <div key={p.user._id} style={{ ...glass, background: isLightMode ? '#fff' : 'rgba(0,0,0,0.2)', padding: '1.5rem', borderRadius: '24px' }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                                        <AdminAvatar name={p.user.name} idx={1} gradientColors={gradientColors} />
+                                                        <div>
+                                                            <div style={{ fontWeight: '800', fontSize: '1rem' }}>{p.user.name}</div>
+                                                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Net Pay: <span style={{ color: 'var(--primary)', fontWeight: '900' }}>₹{(p.netPay + (bonusAmounts[p.user._id] || 0)).toLocaleString()}</span></div>
+                                                        </div>
+                                                    </div>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+                                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.4rem' }}>
+                                                            <label style={{ fontSize: '0.65rem', fontWeight: '900', color: 'var(--text-muted)' }}>SET BONUS</label>
+                                                            <div style={{ position: 'relative', width: '100px' }}>
+                                                                <span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', fontWeight: '800', color: 'var(--text-muted)' }}>₹</span>
+                                                                <input type="number" 
+                                                                    value={bonusAmounts[p.user._id] || ''} 
+                                                                    onChange={e => setBonusAmounts({...bonusAmounts, [p.user._id]: parseInt(e.target.value) || 0})}
+                                                                    placeholder="0"
+                                                                    style={{ width: '100%', padding: '0.4rem 0.6rem 0.4rem 1.6rem', borderRadius: '10px', border: rowBorder, background: isLightMode ? '#f8fafc' : 'rgba(0,0,0,0.1)', color: 'var(--text-main)', fontWeight: '800', fontSize: '0.85rem', outline: 'none' }} 
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                        <button 
+                                                            onClick={() => setExpandedCalculations({...expandedCalculations, [p.user._id]: !expandedCalculations[p.user._id]})}
+                                                            style={{ padding: '0.6rem 1rem', borderRadius: '12px', border: `1.5px solid ${expandedCalculations[p.user._id] ? 'var(--primary)' : 'rgba(0,0,0,0.08)'}`, background: 'transparent', color: expandedCalculations[p.user._id] ? 'var(--primary)' : 'var(--text-muted)', fontSize: '0.7rem', fontWeight: '900', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                                                        >
+                                                            {expandedCalculations[p.user._id] ? 'Hide Calculation' : 'Show Calculation'} 
+                                                            <ChevronDown size={14} style={{ transform: expandedCalculations[p.user._id] ? 'rotate(180deg)' : 'none', transition: '0.3s' }} />
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                {expandedCalculations[p.user._id] && (
+                                                    <div style={{ marginTop: '1.5rem', padding: '1.5rem', borderRadius: '20px', background: isLightMode ? '#f8fafc' : 'rgba(255,255,255,0.03)', border: `1px dashed ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.1)'}`, animation: 'slideDown 0.3s ease-out' }}>
+                                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.5rem', marginBottom: '1.5rem' }}>
+                                                            <div>
+                                                                <div style={{ fontSize: '0.65rem', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '0.4rem' }}>CYCLE START</div>
+                                                                <div style={{ fontWeight: '700', fontSize: '0.85rem' }}>{new Date(p.startDate).toLocaleDateString([], { day: '2-digit', month: 'short' })}</div>
+                                                            </div>
+                                                            <div>
+                                                                <div style={{ fontSize: '0.65rem', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '0.4rem' }}>CYCLE END</div>
+                                                                <div style={{ fontWeight: '700', fontSize: '0.85rem' }}>{new Date(p.endDate).toLocaleDateString([], { day: '2-digit', month: 'short' })}</div>
+                                                            </div>
+                                                            <div>
+                                                                <div style={{ fontSize: '0.65rem', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '0.4rem' }}>PRESENT DAYS</div>
+                                                                <div style={{ fontWeight: '900', fontSize: '0.85rem', color: '#10b981' }}>{p.presentDays}</div>
+                                                            </div>
+                                                            <div>
+                                                                <div style={{ fontSize: '0.65rem', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '0.4rem' }}>STIPEND BASE</div>
+                                                                <div style={{ fontWeight: '900', fontSize: '0.85rem' }}>₹{p.stipend.toLocaleString()}</div>
+                                                            </div>
+                                                        </div>
+                                                        <div style={{ height: '1px', background: isLightMode ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)', margin: '1rem 0' }}></div>
+                                                        <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
+                                                            {Object.entries(p.leaveCounts).map(([type, count]) => (
+                                                                <div key={type} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: type === 'unpaid' || type === 'halfDay' ? '#ef4444' : '#6366f1' }}></div>
+                                                                    <span style={{ fontSize: '0.75rem', fontWeight: '700', textTransform: 'capitalize' }}>{type}: {count}</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                        <div style={{ marginTop: '1.25rem', padding: '1rem', borderRadius: '12px', background: 'rgba(239, 68, 68, 0.05)', color: '#ef4444', fontSize: '0.8rem', fontWeight: '800', display: 'flex', justifyContent: 'space-between' }}>
+                                                            <span>Leave Deductions (Unpaid + HalfDays)</span>
+                                                            <span>- ₹{p.unpaidDeduction.toLocaleString()}</span>
+                                                        </div>
+                                                        {p.proRataAdjustment > 0 && (
+                                                            <div style={{ marginTop: '0.5rem', padding: '1rem', borderRadius: '12px', background: 'rgba(245, 158, 11, 0.05)', color: '#f59e0b', fontSize: '0.8rem', fontWeight: '800', display: 'flex', justifyContent: 'space-between' }}>
+                                                                <span>Joining Date Pro-rata Adjustment</span>
+                                                                <span>- ₹{p.proRataAdjustment.toLocaleString()}</span>
+                                                            </div>
+                                                        )}
+                                                        {bonusAmounts[p.user._id] > 0 && (
+                                                            <div style={{ marginTop: '0.5rem', padding: '1rem', borderRadius: '12px', background: 'rgba(16, 185, 129, 0.05)', color: '#10b981', fontSize: '0.8rem', fontWeight: '800', display: 'flex', justifyContent: 'space-between' }}>
+                                                                <span>Performance Bonus</span>
+                                                                <span>+ ₹{bonusAmounts[p.user._id].toLocaleString()}</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div style={{ marginTop: '3rem', display: 'flex', gap: '1rem' }}>
+                                        <button onClick={() => setPayrollStep(2)} style={{ flex: 1, padding: '1rem', borderRadius: '18px', border: rowBorder, background: 'transparent', color: 'var(--text-muted)', fontWeight: '800' }}>Back</button>
+                                        <button onClick={() => setPayrollStep(4)} style={{ flex: 2, padding: '1rem', borderRadius: '18px', border: 'none', background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', color: '#fff', fontWeight: '800' }}>Finalize Payout Mode</button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Step 4: Finalize */}
+                            {payrollStep === 4 && (
+                                <div style={{ textAlign: 'center', maxWidth: '450px', margin: '0 auto' }}>
+                                    <div style={{ width: '80px', height: '80px', borderRadius: '24px', background: 'rgba(16, 185, 129, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10b981', margin: '0 auto 2rem' }}>
+                                        <Landmark size={40} />
+                                    </div>
+                                    <h3 style={{ fontSize: '1.25rem', fontWeight: '800', marginBottom: '1rem' }}>Processing Payment</h3>
+                                    <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '2.5rem' }}>Select the medium through which you have initiated these payments.</p>
+                                    
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem', marginBottom: '3rem' }}>
+                                        <button onClick={() => setGlobalPaymentMethod('Bank Transfer')} style={{ padding: '1.5rem', borderRadius: '24px', border: `2px solid ${globalPaymentMethod === 'Bank Transfer' ? 'var(--primary)' : (isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.04)')}`, background: globalPaymentMethod === 'Bank Transfer' ? 'rgba(99,102,241,0.05)' : 'transparent', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', transition: '0.2s' }}>
+                                            <Landmark size={24} color={globalPaymentMethod === 'Bank Transfer' ? 'var(--primary)' : 'var(--text-muted)'} />
+                                            <span style={{ fontWeight: '800', fontSize: '0.9rem', color: globalPaymentMethod === 'Bank Transfer' ? 'var(--primary)' : 'var(--text-main)' }}>Bank Transfer</span>
+                                        </button>
+                                        <button onClick={() => setGlobalPaymentMethod('UPI')} style={{ padding: '1.5rem', borderRadius: '24px', border: `2px solid ${globalPaymentMethod === 'UPI' ? 'var(--primary)' : (isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.04)')}`, background: globalPaymentMethod === 'UPI' ? 'rgba(99,102,241,0.05)' : 'transparent', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', transition: '0.2s' }}>
+                                            <Sparkles size={24} color={globalPaymentMethod === 'UPI' ? 'var(--primary)' : 'var(--text-muted)'} />
+                                            <span style={{ fontWeight: '800', fontSize: '0.9rem', color: globalPaymentMethod === 'UPI' ? 'var(--primary)' : 'var(--text-main)' }}>UPI Payout</span>
+                                        </button>
+                                    </div>
+
+                                    <div style={{ padding: '1.5rem', borderRadius: '24px', background: isLightMode ? '#f1f5f9' : 'rgba(0,0,0,0.2)', marginBottom: '3rem', border: '1px solid rgba(0,0,0,0.05)' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.8rem' }}>
+                                            <span style={{ fontWeight: '700', color: 'var(--text-muted)', fontSize: '0.9rem' }}>Total Interns</span>
+                                            <span style={{ fontWeight: '900' }}>{selectedPayrollUsers.length}</span>
+                                        </div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '0.8rem', borderTop: `1px solid ${isLightMode ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)'}` }}>
+                                            <span style={{ fontWeight: '800' }}>Total Payout Amount</span>
+                                            <span style={{ fontWeight: '900', color: '#10b981', fontSize: '1.1rem' }}>
+                                                ₹{payrollPreviews.filter(p => selectedPayrollUsers.includes(p.user._id)).reduce((acc, curr) => acc + curr.netPay + (bonusAmounts[curr.user._id] || 0), 0).toLocaleString()}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <button onClick={handleBulkGenerate} disabled={generatingPayslip} style={{
+                                        width: '100%', padding: '1.1rem', borderRadius: '18px', border: 'none',
+                                        background: 'linear-gradient(135deg,#10b981,#34d399)', color: '#fff',
+                                        fontSize: '1rem', fontWeight: '900', cursor: generatingPayslip ? 'wait' : 'pointer',
+                                        boxShadow: '0 8px 30px rgba(16,185,129,0.35)', transition: 'all 0.3s'
+                                    }}>
+                                        {generatingPayslip ? 'Processing Bulk Payout...' : 'Finalize & Mark as Paid'}
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* ===== SINGLE CALCULATION DETAIL MODAL (Read Only) ===== */}
+            {showSingleCalcModal && selectedPayslipForCalc && (
+                <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.7)', zIndex: 9999, display: 'flex', justifyContent: 'center', alignItems: 'center', backdropFilter: 'blur(8px)' }}
+                    onClick={(e) => { if (e.target === e.currentTarget) setShowSingleCalcModal(false); }}>
+                    <div style={{
+                        background: isLightMode ? '#ffffff' : '#0f172a', borderRadius: '32px',
+                        width: '95%', maxWidth: '600px', padding: '2.5rem',
+                        border: `1px solid ${isLightMode ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.08)'}`,
+                        boxShadow: '0 25px 80px rgba(0,0,0,0.5)',
+                        animation: 'fadeInUp 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+                    }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                <AdminAvatar name={selectedPayslipForCalc.user?.name} idx={0} gradientColors={gradientColors} />
+                                <div>
+                                    <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '900', color: 'var(--text-main)' }}>Payout Breakdown</h2>
+                                    <p style={{ margin: '2px 0 0', fontSize: '0.8rem', color: 'var(--text-muted)' }}>{selectedPayslipForCalc.month} {selectedPayslipForCalc.year} • {selectedPayslipForCalc.status}</p>
+                                </div>
+                            </div>
+                            <button onClick={() => setShowSingleCalcModal(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><X size={24} /></button>
+                        </div>
+
+                        <div style={{ display: 'grid', gap: '2rem' }}>
+                            {/* Summary Cards */}
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+                                <div style={{ padding: '1rem', borderRadius: '18px', background: isLightMode ? '#f8fafc' : 'rgba(255,255,255,0.03)', border: rowBorder }}>
+                                    <div style={{ fontSize: '0.65rem', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '0.4rem', textTransform: 'uppercase' }}>Cycle Days</div>
+                                    <div style={{ fontWeight: '800', fontSize: '1rem' }}>{selectedPayslipForCalc.calculationDetails?.totalDaysInCycle || 30}</div>
+                                </div>
+                                <div style={{ padding: '1rem', borderRadius: '18px', background: isLightMode ? '#f8fafc' : 'rgba(255,255,255,0.03)', border: rowBorder }}>
+                                    <div style={{ fontSize: '0.65rem', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '0.4rem', textTransform: 'uppercase' }}>Present</div>
+                                    <div style={{ fontWeight: '800', fontSize: '1rem', color: '#10b981' }}>{selectedPayslipForCalc.calculationDetails?.presentDays || 0}</div>
+                                </div>
+                                <div style={{ padding: '1rem', borderRadius: '18px', background: isLightMode ? '#f8fafc' : 'rgba(255,255,255,0.03)', border: rowBorder }}>
+                                    <div style={{ fontSize: '0.65rem', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '0.4rem', textTransform: 'uppercase' }}>Unpaid Lvs</div>
+                                    <div style={{ fontWeight: '800', fontSize: '1rem', color: '#ef4444' }}>{selectedPayslipForCalc.calculationDetails?.unpaidLeaveDays || 0}</div>
+                                </div>
+                            </div>
+
+                            {/* Details List */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', borderRadius: '16px', background: isLightMode ? '#fff' : 'rgba(0,0,0,0.2)', border: rowBorder }}>
+                                    <span style={{ fontWeight: '700', color: 'var(--text-muted)' }}>Basic Stipend</span>
+                                    <span style={{ fontWeight: '800' }}>₹{selectedPayslipForCalc.earnings?.basicSalary?.toLocaleString()}</span>
+                                </div>
+                                {selectedPayslipForCalc.earnings?.bonus > 0 && (
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', borderRadius: '16px', background: 'rgba(16, 185, 129, 0.05)', border: '1px solid rgba(16, 185, 129, 0.1)', color: '#10b981' }}>
+                                        <span style={{ fontWeight: '700' }}>Performance Bonus</span>
+                                        <span style={{ fontWeight: '900' }}>+ ₹{selectedPayslipForCalc.earnings.bonus.toLocaleString()}</span>
+                                    </div>
+                                )}
+                                {selectedPayslipForCalc.calculationDetails?.proRataAdjustment > 0 && (
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', borderRadius: '16px', background: 'rgba(245, 158, 11, 0.05)', border: '1px solid rgba(245, 158, 11, 0.1)', color: '#f59e0b' }}>
+                                        <span style={{ fontWeight: '700' }}>Pro-rata Adjust (Joining Date)</span>
+                                        <span style={{ fontWeight: '900' }}>- ₹{selectedPayslipForCalc.calculationDetails.proRataAdjustment.toLocaleString()}</span>
+                                    </div>
+                                )}
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', borderRadius: '16px', background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.1)', color: '#ef4444' }}>
+                                    <span style={{ fontWeight: '700' }}>Leave Deductions</span>
+                                    <span style={{ fontWeight: '900' }}>- ₹{(selectedPayslipForCalc.calculationDetails?.unpaidDeduction || 0).toLocaleString()}</span>
+                                </div>
+                            </div>
+
+                            {/* Net Total */}
+                            <div style={{ 
+                                marginTop: '1rem', padding: '1.5rem', borderRadius: '24px', 
+                                background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', 
+                                color: '#fff', textAlign: 'center', boxShadow: '0 8px 30px rgba(99,102,241,0.3)' 
+                            }}>
+                                <div style={{ fontSize: '0.8rem', fontWeight: '800', textTransform: 'uppercase', opacity: 0.8, marginBottom: '0.5rem', letterSpacing: '1px' }}>Net Paid Amount</div>
+                                <div style={{ fontSize: '2.5rem', fontWeight: '900' }}>₹{selectedPayslipForCalc.netPay?.toLocaleString()}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

@@ -14,7 +14,8 @@ import {
     CheckCircle2,
     Landmark,
     ShieldCheck,
-    Smartphone
+    Smartphone,
+    X
 } from 'lucide-react';
 
 const bankLabelStyle = {
@@ -229,6 +230,22 @@ const FinancesTab = ({
                                             <div style={{ fontSize: '1.1rem', fontWeight: '700', color: 'var(--text-main)', marginTop: '0.15rem' }}>{filteredPayslip.paymentMethod || 'Bank Transfer'}</div>
                                         </div>
                                     </div>
+                                    {filteredPayslip.startDate && filteredPayslip.endDate && (
+                                        <>
+                                            <div style={{ width: '1px', background: isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.06)' }}></div>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+                                                <div style={{ width: '46px', height: '46px', borderRadius: '14px', background: 'rgba(99, 102, 241, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6366f1' }}>
+                                                    <Clock size={22} />
+                                                </div>
+                                                <div>
+                                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.5px' }}>Pay Cycle</div>
+                                                    <div style={{ fontSize: '1rem', fontWeight: '800', color: 'var(--text-main)', marginTop: '0.15rem' }}>
+                                                        {moment(filteredPayslip.startDate).format('DD MMM')} - {moment(filteredPayslip.endDate).format('DD MMM')}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
                                 </>
                             )}
                         </div>
@@ -304,6 +321,38 @@ const FinancesTab = ({
                                 </div>
                             </div>
                         </div>
+
+                        {/* Calculation Details */}
+                        {filteredPayslip.calculationDetails && (
+                            <div style={{ 
+                                marginBottom: '3rem', padding: '2rem', borderRadius: '24px', 
+                                background: isLightMode ? '#f8fafc' : 'rgba(0,0,0,0.1)', 
+                                border: `1px dashed ${isLightMode ? '#cbd5e1' : 'rgba(255,255,255,0.1)'}` 
+                            }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1.5rem' }}>
+                                    <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'rgba(99,102,241,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <Clock size={18} color="#6366f1" />
+                                    </div>
+                                    <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: '800', color: 'var(--text-main)', letterSpacing: '0.5px' }}>ATTENDANCE & CALCULATION SUMMARY</h3>
+                                </div>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '2rem' }}>
+                                    <div>
+                                        <div style={{ fontSize: '0.7rem', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Present Days</div>
+                                        <div style={{ fontSize: '1.2rem', fontWeight: '900', color: '#10b981' }}>{filteredPayslip.calculationDetails.presentDays} / {filteredPayslip.calculationDetails.totalDaysInCycle}</div>
+                                    </div>
+                                    <div>
+                                        <div style={{ fontSize: '0.7rem', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Unpaid Leaves</div>
+                                        <div style={{ fontSize: '1.2rem', fontWeight: '900', color: '#ef4444' }}>{filteredPayslip.calculationDetails.unpaidLeaveDays || 0} Full | {filteredPayslip.calculationDetails.halfDayUnpaidDays || 0} Half</div>
+                                    </div>
+                                    {filteredPayslip.calculationDetails.proRataAdjustment > 0 && (
+                                        <div>
+                                            <div style={{ fontSize: '0.7rem', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Pro-rata Adjust</div>
+                                            <div style={{ fontSize: '1.2rem', fontWeight: '900', color: '#f59e0b' }}>- ₹{filteredPayslip.calculationDetails.proRataAdjustment.toLocaleString()}</div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
 
                         {/* Net Pay Bottom Bar */}
                         <div style={{

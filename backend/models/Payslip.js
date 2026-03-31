@@ -16,10 +16,25 @@ const payslipSchema = new mongoose.Schema(
             tax: { type: Number, default: 0 },
             professionalTax: { type: Number, default: 0 }
         },
+        startDate: { type: Date },
+        endDate: { type: Date },
         netPay: { type: Number, required: true },
         status: { type: String, enum: ['Paid', 'Unpaid', 'Processing'], default: 'Unpaid' },
         paidAt: { type: Date },
         paymentMethod: { type: String, enum: ['Bank Transfer', 'UPI', 'Cash', 'Check'], default: 'Bank Transfer' },
+        calculationDetails: {
+            totalDaysInCycle: Number,
+            presentDays: Number,
+            unpaidLeaveDays: Number,
+            halfDayUnpaidDays: Number,
+            proRataAdjustment: Number,
+            leaveBreakdown: {
+                sick: Number,
+                paid: Number,
+                casual: Number,
+                compOff: Number
+            }
+        },
         pdfUrl: { type: String }
     },
     { timestamps: true }

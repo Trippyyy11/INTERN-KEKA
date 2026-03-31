@@ -1,5 +1,5 @@
 import React from 'react';
-import { Info, Inbox, Check, X, Edit3, Save, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Info, Inbox, Check, X, Edit3, Save, ChevronLeft, ChevronRight, Calendar, Clock, Home } from 'lucide-react';
 import api from '../../api/axios.js';
 
 const InboxTab = ({
@@ -78,9 +78,97 @@ const InboxTab = ({
         }
     };
 
+    const tableContainerStyle = {
+        background: isLightMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(15, 23, 42, 0.5)',
+        backdropFilter: 'blur(16px)',
+        borderRadius: '24px',
+        border: `1px solid ${isLightMode ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)'}`,
+        boxShadow: isLightMode ? '0 4px 24px rgba(0,0,0,0.04)' : '0 4px 24px rgba(0,0,0,0.2)',
+        overflow: 'hidden',
+        width: '100%'
+    };
+
+
+    const tdStyle = {
+        padding: '1.1rem 1.5rem',
+        fontSize: '0.85rem',
+        borderBottom: `1px solid ${isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.03)'}`,
+        color: 'var(--text-main)',
+        verticalAlign: 'middle'
+    };
+
+    const stats = {
+        total: inboxRequests.filter(r => r.status === 'Pending').length,
+        leave: inboxRequests.filter(r => r.type === 'Leave Application' || r.type === 'Leave Cancellation').length,
+        attendance: inboxRequests.filter(r => r.type === 'Attendance Regularization').length,
+        others: inboxRequests.filter(r => r.type === 'Work From Home' || (r.type !== 'Leave Application' && r.type !== 'Leave Cancellation' && r.type !== 'Attendance Regularization')).length
+    };
+
+    const cardStyle = (gradient) => ({
+        flex: 1,
+        minWidth: '200px',
+        background: gradient,
+        borderRadius: '24px',
+        padding: '1.25rem',
+        color: 'white',
+        position: 'relative',
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '0.5rem',
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        cursor: 'default',
+        boxShadow: '0 10px 20px -5px rgba(0,0,0,0.15)',
+        border: '1px solid rgba(255,255,255,0.1)'
+    });
+
+    const StatsCard = ({ title, count, icon: Icon, gradient }) => (
+        <div 
+            style={cardStyle(gradient)}
+            onMouseOver={e => {
+                e.currentTarget.style.transform = 'translateY(-5px) scale(1.02)';
+                e.currentTarget.style.boxShadow = '0 20px 40px -10px rgba(0,0,0,0.25)';
+            }}
+            onMouseOut={e => {
+                e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                e.currentTarget.style.boxShadow = '0 10px 20px -5px rgba(0,0,0,0.15)';
+            }}
+        >
+            <div style={{
+                position: 'absolute', top: '-10%', right: '-10%', opacity: 0.15, transform: 'rotate(-15deg)'
+            }}>
+                <Icon size={100} />
+            </div>
+            <div style={{
+                width: '32px', height: '32px', borderRadius: '10px', background: 'rgba(255,255,255,0.2)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '4px'
+            }}>
+                <Icon size={18} />
+            </div>
+            <div style={{ fontSize: '0.75rem', fontWeight: '700', opacity: 0.9, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{title}</div>
+            <div style={{ fontSize: '1.8rem', fontWeight: '900', lineHeight: 1 }}>{count}</div>
+        </div>
+    );
+
+    const thStyle = {
+        padding: '1.25rem 1.5rem',
+        fontSize: '0.72rem',
+        fontWeight: '800',
+        textTransform: 'uppercase',
+        letterSpacing: '1px',
+        color: isLightMode ? 'var(--primary)' : '#fff',
+        borderBottom: `2px solid ${isLightMode ? 'rgba(var(--primary-rgb), 0.2)' : 'rgba(255,255,255,0.1)'}`,
+        textAlign: 'left',
+        background: isLightMode ? 'rgba(var(--primary-rgb), 0.12)' : 'rgba(var(--primary-rgb), 0.25)',
+        backdropFilter: 'blur(12px)',
+        position: 'sticky',
+        top: 0,
+        zIndex: 10
+    };
+
     return (
-        <div style={{ padding: '0 1.5rem', marginTop: '1rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '2rem' }}>
+        <div style={{ padding: '0 1.5rem', marginTop: '1rem', animation: 'fadeInTab 0.4s ease-out' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
                 <div style={{
                     width: '42px', height: '42px', borderRadius: '14px',
                     background: 'linear-gradient(135deg, rgba(var(--primary-rgb), 0.15), rgba(var(--primary-rgb), 0.05))',
@@ -96,176 +184,229 @@ const InboxTab = ({
                 </div>
             </div>
 
-            <div style={{ ...bentoPanelStyle, padding: '0' }}>
+            <div style={{ 
+                display: 'flex', 
+                gap: '1.25rem', 
+                marginBottom: '2.5rem', 
+                flexWrap: 'wrap' 
+            }}>
+                <StatsCard 
+                    title="Total Pending" 
+                    count={stats.total} 
+                    icon={Inbox} 
+                    gradient="linear-gradient(135deg, #3b82f6, #2563eb)" 
+                />
+                <StatsCard 
+                    title="Leave Requests" 
+                    count={stats.leave} 
+                    icon={Calendar} 
+                    gradient="linear-gradient(135deg, #10b981, #059669)" 
+                />
+                <StatsCard 
+                    title="Attendance" 
+                    count={stats.attendance} 
+                    icon={Clock} 
+                    gradient="linear-gradient(135deg, #f59e0b, #d97706)" 
+                />
+                <StatsCard 
+                    title="Work From Home" 
+                    count={stats.others} 
+                    icon={Home} 
+                    gradient="linear-gradient(135deg, #8b5cf6, #7c3aed)" 
+                />
+            </div>
+
+            <div style={tableContainerStyle}>
                 <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 0.75rem', padding: '0 1rem' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                         <thead>
                             <tr>
-                                {['Dates', 'Request Type', 'Status', 'Requested By', 'Action Taken On', 'Leave / WFH Note', 'Action Note', 'Actions'].map((header, idx) => (
-                                    <th key={idx} style={{
-                                        textAlign: 'left',
-                                        padding: '1.25rem',
-                                        fontSize: '0.75rem',
-                                        fontWeight: '800',
-                                        color: 'var(--text-muted)',
-                                        textTransform: 'uppercase',
-                                        letterSpacing: '1px'
-                                    }}>{header}</th>
-                                ))}
+                                <th style={thStyle}>Date</th>
+                                <th style={thStyle}>Employee</th>
+                                <th style={thStyle}>Request Details</th>
+                                <th style={thStyle}>Duration & Dates</th>
+                                <th style={thStyle}>Reason</th>
+                                <th style={thStyle}>Manager Note</th>
+                                <th style={thStyle}>Status</th>
+                                <th style={thStyle}>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                             {currentRequests.length > 0 ? currentRequests.map(r => (
-                                <tr key={r._id} style={{
-                                    background: isLightMode ? '#ffffff' : 'rgba(255,255,255,0.02)',
-                                    transition: 'all 0.2s ease',
-                                    borderRadius: '16px',
-                                    boxShadow: isLightMode ? '0 1px 3px rgba(0,0,0,0.02)' : 'none'
-                                }}
-                                    onMouseOver={e => {
-                                        e.currentTarget.style.transform = 'translateY(-2px)';
-                                        e.currentTarget.style.boxShadow = isLightMode ? '0 8px 16px rgba(0,0,0,0.04)' : '0 8px 16px rgba(0,0,0,0.2)';
-                                        e.currentTarget.style.background = isLightMode ? '#ffffff' : 'rgba(255,255,255,0.05)';
-                                    }}
-                                    onMouseOut={e => {
-                                        e.currentTarget.style.transform = 'translateY(0)';
-                                        e.currentTarget.style.boxShadow = isLightMode ? '0 1px 3px rgba(0,0,0,0.02)' : 'none';
-                                        e.currentTarget.style.background = isLightMode ? '#ffffff' : 'rgba(255,255,255,0.02)';
-                                    }}
-                                >
-                                    <td style={{ padding: '1.25rem', borderRadius: '16px 0 0 16px', fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-main)' }}>
-                                        {new Date(r.startDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
-                                        {r.startDate !== r.endDate && ` - ${new Date(r.endDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}`}
-                                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '4px', fontWeight: '500' }}>
-                                            {r.type === 'Half Day' ? '0.5' : (Math.ceil((new Date(r.endDate) - new Date(r.startDate)) / (1000 * 60 * 60 * 24)) + 1)} day(s)
-                                        </div>
-                                    </td>
-                                    <td style={{ padding: '1.25rem', fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-main)' }}>
-                                        {r.type}{r.type === 'Half Day' && r.leaveType ? ` (${r.leaveType})` : ''}
-                                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '4px', fontWeight: '500' }}>
-                                            Requested on {new Date(r.createdAt).toLocaleDateString()}
-                                        </div>
-                                    </td>
-                                    <td style={{ padding: '1.25rem' }}>
-                                        <span style={{
-                                            padding: '0.3rem 0.7rem',
-                                            borderRadius: '20px',
-                                            fontSize: '0.7rem',
-                                            fontWeight: '700',
-                                            textTransform: 'uppercase',
-                                            letterSpacing: '0.5px',
-                                            ...getStatusStyle(r.status)
-                                        }}>
-                                            {r.status}
-                                        </span>
-                                        {r.status !== 'Pending' && r.actionBy && (
-                                            <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '6px', fontWeight: '600' }}>by {r.actionBy.name}</div>
-                                        )}
-                                    </td>
-                                    <td style={{ padding: '1.25rem', fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-main)' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                            <div style={{
-                                                width: '24px', height: '24px', borderRadius: '8px',
-                                                background: 'var(--primary)', color: 'white',
-                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                fontSize: '0.6rem', fontWeight: '800'
-                                            }}>{r.user?.name?.substring(0, 1).toUpperCase()}</div>
-                                            {r.user?.name}
-                                        </div>
-                                    </td>
-                                    <td style={{ padding: '1.25rem', fontSize: '0.85rem', fontWeight: '500', color: 'var(--text-muted)' }}>
-                                        {r.status !== 'Pending' && r.actionDate ? new Date(r.actionDate).toLocaleDateString() : '-'}
-                                    </td>
-                                    <td style={{ padding: '1.25rem', fontSize: '0.8rem', color: 'var(--text-muted)', maxWidth: '160px', fontWeight: '500' }}>
-                                        <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.message || '-'}</div>
-                                        {r.expectedClockIn && r.expectedClockOut && (
-                                            <div style={{ marginTop: '0.25rem', fontSize: '0.7rem', color: 'var(--primary)', fontWeight: '700' }}>
-                                                Expected: {new Date(r.expectedClockIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {new Date(r.expectedClockOut).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                            </div>
-                                        )}
-                                    </td>
-                                    <td style={{ padding: '1.25rem', fontSize: '0.8rem', color: 'var(--text-muted)', maxWidth: '140px', fontWeight: '500' }}>
-                                        <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.actionNote || '-'}</div>
-                                    </td>
-                                    <td style={{ padding: '1.25rem', borderRadius: '0 16px 16px 0' }}>
-                                        {r.status === 'Pending' ? (
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                <input
-                                                    type="text"
-                                                    placeholder="Optional Note"
-                                                    value={localNotes[r._id] || ''}
-                                                    onChange={(e) => setLocalNotes({ ...localNotes, [r._id]: e.target.value })}
-                                                    style={inputStyle}
-                                                />
-                                                <div style={{ display: 'flex', gap: '0.3rem' }}>
-                                                    {r.type === 'Attendance Regularization' && (
-                                                        <button
-                                                            onClick={() => handleOpenEdit(r)}
-                                                            style={{
-                                                                width: '32px', height: '32px', borderRadius: '10px',
-                                                                background: 'rgba(59, 130, 246, 0.15)', color: 'var(--primary)', border: 'none',
-                                                                display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-                                                                transition: 'background 0.2s',
-                                                            }}
-                                                            onMouseOver={e => e.currentTarget.style.background = 'rgba(59, 130, 246, 0.25)'}
-                                                            onMouseOut={e => e.currentTarget.style.background = 'rgba(59, 130, 246, 0.15)'}
-                                                            title="Edit Attendance & Approve"
-                                                        >
-                                                            <Edit3 size={16} strokeWidth={2} />
-                                                        </button>
-                                                    )}
-                                                    <button
-                                                        onClick={() => {
-                                                            handleRequestAction(r._id, 'Approved', localNotes[r._id]);
-                                                            setLocalNotes({ ...localNotes, [r._id]: '' });
-                                                        }}
-                                                        style={{
-                                                            width: '32px', height: '32px', borderRadius: '10px',
-                                                            background: 'rgba(16, 185, 129, 0.15)', color: 'var(--success)', border: 'none',
-                                                            display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-                                                            transition: 'background 0.2s',
-                                                        }}
-                                                        onMouseOver={e => e.currentTarget.style.background = 'rgba(16, 185, 129, 0.25)'}
-                                                        onMouseOut={e => e.currentTarget.style.background = 'rgba(16, 185, 129, 0.15)'}
-                                                        title="Approve"
-                                                    >
-                                                        <Check size={16} strokeWidth={3} />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => {
-                                                            handleRequestAction(r._id, 'Rejected', localNotes[r._id]);
-                                                            setLocalNotes({ ...localNotes, [r._id]: '' });
-                                                        }}
-                                                        style={{
-                                                            width: '32px', height: '32px', borderRadius: '10px',
-                                                            background: 'rgba(239, 68, 68, 0.15)', color: 'var(--danger)', border: 'none',
-                                                            display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-                                                            transition: 'background 0.2s',
-                                                        }}
-                                                        onMouseOver={e => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.25)'}
-                                                        onMouseOut={e => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)'}
-                                                        title="Reject"
-                                                    >
-                                                        <X size={16} strokeWidth={3} />
-                                                    </button>
+                            {currentRequests.length > 0 ? (
+                                currentRequests.map((r, idx) => {
+                                    const appliedDate = r.createdAt ? new Date(r.createdAt).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A';
+                                    const dateRange = new Date(r.startDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short' }) + 
+                                        (r.startDate !== r.endDate ? ` - ${new Date(r.endDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}` : `, ${new Date(r.startDate).getFullYear()}`);
+                                    const duration = Math.ceil((new Date(r.endDate) - new Date(r.startDate)) / (1000 * 60 * 60 * 24)) + 1;
+                                    
+                                    return (
+                                        <tr 
+                                            key={r._id} 
+                                            className="inbox-row"
+                                            style={{ 
+                                                transition: 'all 0.2s ease', 
+                                                borderLeft: r.status === 'Pending' ? '4px solid var(--primary)' : '4px solid transparent',
+                                                background: idx % 2 === 0 ? 'transparent' : (isLightMode ? 'rgba(0,0,0,0.01)' : 'rgba(255,255,255,0.01)')
+                                            }}
+                                        >
+                                            <td style={{ ...tdStyle, fontSize: '0.75rem', fontWeight: '600', color: 'var(--text-muted)' }}>
+                                                {appliedDate}
+                                            </td>
+
+                                            <td style={tdStyle}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                                    <div style={{
+                                                        width: '36px', height: '36px', borderRadius: '10px',
+                                                        background: 'linear-gradient(135deg, var(--primary), #6366f1)', 
+                                                        color: 'white',
+                                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                        fontSize: '0.85rem', fontWeight: '800',
+                                                        boxShadow: '0 4px 10px rgba(99, 102, 241, 0.2)'
+                                                    }}>{r.user?.name?.substring(0, 1).toUpperCase()}</div>
+                                                    <div>
+                                                        <div style={{ fontWeight: '700', fontSize: '0.9rem', color: 'var(--text-main)' }}>{r.user?.name}</div>
+                                                        <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>ID: {r.user?._id?.substring(18)}</div>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        ) : (
-                                            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '600' }}>
-                                                No actions
-                                            </div>
-                                        )}
-                                    </td>
-                                </tr>
-                            )) : (
+                                            </td>
+
+                                            <td style={tdStyle}>
+                                                <div style={{ 
+                                                    fontSize: '0.7rem', color: 'var(--primary)', fontWeight: '800', 
+                                                    textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' 
+                                                }}>{r.type}</div>
+                                                {r.expectedClockIn && r.expectedClockOut && (
+                                                    <div style={{ display: 'flex', gap: '8px', fontSize: '0.75rem', fontWeight: '600', color: 'var(--text-muted)' }}>
+                                                        <span style={{ color: '#10b981' }}>In: {new Date(r.expectedClockIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                                        <span style={{ opacity: 0.3 }}>|</span>
+                                                        <span style={{ color: '#ef4444' }}>Out: {new Date(r.expectedClockOut).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                                    </div>
+                                                )}
+                                            </td>
+
+                                            <td style={tdStyle}>
+                                                <div style={{ fontWeight: '700', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                    {duration} <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: '600' }}>DAY(S)</span>
+                                                </div>
+                                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>{dateRange}</div>
+                                            </td>
+
+                                            <td style={tdStyle}>
+                                                <div style={{ 
+                                                    maxWidth: '180px', fontSize: '0.8rem', color: 'var(--text-muted)', 
+                                                    fontStyle: r.message ? 'italic' : 'normal', overflow: 'hidden', 
+                                                    textOverflow: 'ellipsis', whiteSpace: 'nowrap' 
+                                                }} title={r.message}>
+                                                    {r.message ? `"${r.message}"` : <span style={{ opacity: 0.4 }}>No note</span>}
+                                                </div>
+                                            </td>
+
+                                            <td style={tdStyle}>
+                                                <div style={{ 
+                                                    maxWidth: '180px', fontSize: '0.8rem', color: 'var(--text-muted)', 
+                                                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' 
+                                                }} title={r.actionNote}>
+                                                    {r.actionNote ? `"${r.actionNote}"` : <span style={{ opacity: 0.4 }}>-</span>}
+                                                </div>
+                                            </td>
+
+                                            <td style={tdStyle}>
+                                                <span style={{
+                                                    padding: '0.3rem 0.6rem',
+                                                    borderRadius: '8px',
+                                                    fontSize: '0.65rem',
+                                                    fontWeight: '800',
+                                                    textTransform: 'uppercase',
+                                                    letterSpacing: '0.5px',
+                                                    ...getStatusStyle(r.status)
+                                                }}>
+                                                    {r.status}
+                                                </span>
+                                            </td>
+
+                                            <td style={{ ...tdStyle, paddingLeft: 0 }}>
+                                                {r.status === 'Pending' ? (
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                                        <input
+                                                            type="text"
+                                                            placeholder="Note..."
+                                                            value={localNotes[r._id] || ''}
+                                                            onChange={(e) => setLocalNotes({ ...localNotes, [r._id]: e.target.value })}
+                                                            style={{
+                                                                ...inputStyle,
+                                                                width: '100px',
+                                                                padding: '0.4rem 0.75rem',
+                                                                fontSize: '0.75rem'
+                                                            }}
+                                                        />
+                                                        <div style={{ display: 'flex', gap: '4px' }}>
+                                                            {r.type === 'Attendance Regularization' && (
+                                                                <button
+                                                                    onClick={() => handleOpenEdit(r)}
+                                                                    style={{
+                                                                        padding: '0.4rem', borderRadius: '8px',
+                                                                        background: 'rgba(59, 130, 246, 0.1)', color: 'var(--primary)', border: 'none',
+                                                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                                        cursor: 'pointer', transition: 'all 0.2s'
+                                                                    }}
+                                                                    title="Adjust & Approve"
+                                                                >
+                                                                    <Edit3 size={14} />
+                                                                </button>
+                                                            )}
+                                                            <button
+                                                                onClick={() => {
+                                                                    handleRequestAction(r._id, 'Approved', localNotes[r._id]);
+                                                                    setLocalNotes({ ...localNotes, [r._id]: '' });
+                                                                }}
+                                                                style={{
+                                                                    padding: '0.4rem', borderRadius: '8px',
+                                                                    background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', border: 'none',
+                                                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                                    cursor: 'pointer', transition: 'all 0.2s'
+                                                                }}
+                                                                title="Quick Approve"
+                                                            >
+                                                                <Check size={14} strokeWidth={3} />
+                                                            </button>
+                                                            <button
+                                                                onClick={() => {
+                                                                    handleRequestAction(r._id, 'Rejected', localNotes[r._id]);
+                                                                    setLocalNotes({ ...localNotes, [r._id]: '' });
+                                                                }}
+                                                                style={{
+                                                                    padding: '0.4rem', borderRadius: '8px',
+                                                                    background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: 'none',
+                                                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                                    cursor: 'pointer', transition: 'all 0.2s'
+                                                                }}
+                                                                title="Reject"
+                                                            >
+                                                                <X size={14} strokeWidth={3} />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: '600' }}>
+                                                        {r.actionBy?.name ? `By ${r.actionBy.name}` : 'Completed'}
+                                                    </div>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    );
+                                })
+                            ) : (
                                 <tr>
-                                    <td colSpan="8" style={{ padding: '4rem 0', textAlign: 'center' }}>
+                                    <td colSpan="6" style={{ padding: '6rem 0', textAlign: 'center' }}>
                                         <div style={{
                                             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                                             color: 'var(--text-muted)',
                                         }}>
-                                            <Info size={32} style={{ opacity: 0.2, marginBottom: '1rem' }} />
-                                            <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: '600' }}>No requests in your inbox.</p>
+                                            <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(var(--primary-rgb), 0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1rem' }}>
+                                                <Inbox size={32} style={{ opacity: 0.3 }} />
+                                            </div>
+                                            <p style={{ margin: 0, fontSize: '0.95rem', fontWeight: '800', color: 'var(--text-main)' }}>Your inbox is empty!</p>
+                                            <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: 'var(--text-muted)' }}>You've cleared all pending requests.</p>
                                         </div>
                                     </td>
                                 </tr>
@@ -274,73 +415,51 @@ const InboxTab = ({
                     </table>
                 </div>
 
-                {/* Pagination Controls */}
                 {totalPages > 1 && (
                     <div style={{
-                        padding: '1.25rem 1.5rem',
+                        padding: '1rem 1.5rem',
                         display: 'flex',
                         justifyContent: 'space-between',
                         alignItems: 'center',
-                        borderTop: `1px solid ${isLightMode ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)'}`,
-                        background: isLightMode ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.1)'
+                        background: isLightMode ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.1)',
+                        borderTop: `1px solid ${isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.05)'}`
                     }}>
-                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '600' }}>
-                            Showing {indexOfFirstRow + 1} to {Math.min(indexOfLastRow, inboxRequests.length)} of {inboxRequests.length} requests
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '600' }}>
+                            Showing {indexOfFirstRow + 1} to {Math.min(indexOfLastRow, inboxRequests.length)} of {inboxRequests.length}
                         </div>
-                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
                             <button
                                 onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                                 disabled={currentPage === 1}
                                 style={{
-                                    padding: '0.5rem',
-                                    borderRadius: '10px',
-                                    border: 'none',
-                                    background: isLightMode ? '#ffffff' : 'rgba(255,255,255,0.05)',
-                                    color: 'var(--text-main)',
-                                    cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
-                                    opacity: currentPage === 1 ? 0.5 : 1,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    transition: 'all 0.2s',
-                                    boxShadow: isLightMode ? '0 1px 3px rgba(0,0,0,0.05)' : 'none'
+                                    padding: '0.4rem', borderRadius: '8px', border: 'none',
+                                    background: isLightMode ? '#fff' : 'rgba(255,255,255,0.05)',
+                                    color: 'var(--text-main)', cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                                    opacity: currentPage === 1 ? 0.5 : 1, display: 'flex', alignItems: 'center'
                                 }}
                             >
-                                <ChevronLeft size={18} />
+                                <ChevronLeft size={16} />
                             </button>
 
                             {[...Array(totalPages)].map((_, i) => {
                                 const pageNum = i + 1;
-                                // Only show current, first, last, and pages around current
-                                if (
-                                    pageNum === 1 ||
-                                    pageNum === totalPages ||
-                                    (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)
-                                ) {
+                                if (pageNum === 1 || pageNum === totalPages || (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)) {
                                     return (
                                         <button
                                             key={pageNum}
                                             onClick={() => setCurrentPage(pageNum)}
                                             style={{
-                                                width: '36px',
-                                                height: '36px',
-                                                borderRadius: '10px',
-                                                border: 'none',
-                                                background: currentPage === pageNum ? 'var(--primary)' : (isLightMode ? '#ffffff' : 'rgba(255,255,255,0.05)'),
-                                                color: currentPage === pageNum ? '#ffffff' : 'var(--text-main)',
-                                                fontWeight: '800',
-                                                cursor: 'pointer',
-                                                transition: 'all 0.2s',
-                                                boxShadow: (currentPage === pageNum || isLightMode) ? '0 2px 8px rgba(0,0,0,0.05)' : 'none'
+                                                minWidth: '32px', height: '32px', borderRadius: '8px', border: 'none',
+                                                background: currentPage === pageNum ? 'var(--primary)' : (isLightMode ? '#fff' : 'rgba(255,255,255,0.05)'),
+                                                color: currentPage === pageNum ? '#fff' : 'var(--text-main)',
+                                                fontWeight: '700', cursor: 'pointer', fontSize: '0.8rem'
                                             }}
                                         >
                                             {pageNum}
                                         </button>
                                     );
-                                } else if (
-                                    pageNum === currentPage - 2 ||
-                                    pageNum === currentPage + 2
-                                ) {
-                                    return <span key={pageNum} style={{ color: 'var(--text-muted)' }}>...</span>;
+                                } else if (pageNum === currentPage - 2 || pageNum === currentPage + 2) {
+                                    return <span key={pageNum} style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>...</span>;
                                 }
                                 return null;
                             })}
@@ -349,33 +468,25 @@ const InboxTab = ({
                                 onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                                 disabled={currentPage === totalPages}
                                 style={{
-                                    padding: '0.5rem',
-                                    borderRadius: '10px',
-                                    border: 'none',
-                                    background: isLightMode ? '#ffffff' : 'rgba(255,255,255,0.05)',
-                                    color: 'var(--text-main)',
-                                    cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
-                                    opacity: currentPage === totalPages ? 0.5 : 1,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    transition: 'all 0.2s',
-                                    boxShadow: isLightMode ? '0 1px 3px rgba(0,0,0,0.05)' : 'none'
+                                    padding: '0.4rem', borderRadius: '8px', border: 'none',
+                                    background: isLightMode ? '#fff' : 'rgba(255,255,255,0.05)',
+                                    color: 'var(--text-main)', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+                                    opacity: currentPage === totalPages ? 0.5 : 1, display: 'flex', alignItems: 'center'
                                 }}
                             >
-                                <ChevronRight size={18} />
+                                <ChevronRight size={16} />
                             </button>
                         </div>
                     </div>
                 )}
             </div>
 
-            {/* Edit Attendance Modal */}
             {showEditModal && editLogData && (
                 <div style={{
                     position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
                     background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(10px)',
                     zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    animation: 'fadeIn 0.3s ease-out', padding: '1.5rem'
+                    animation: 'fadeInDialog 0.3s ease-out', padding: '1.5rem'
                 }}>
                     <div style={{
                         background: isLightMode ? '#ffffff' : '#1e293b',
@@ -443,6 +554,17 @@ const InboxTab = ({
                     </div>
                 </div>
             )}
+
+            <style>{`
+                .inbox-row:hover {
+                    background: ${isLightMode ? 'rgba(var(--primary-rgb), 0.03)' : 'rgba(var(--primary-rgb), 0.05)'} !important;
+                    transform: translateX(4px);
+                }
+                @keyframes fadeIn {
+                    from { opacity: 0; }
+                    to { opacity: 1; }
+                }
+            `}</style>
         </div>
     );
 };

@@ -4,6 +4,7 @@ const settingsSchema = new mongoose.Schema(
     {
         // Define settings the admin can change dynamically
         workingHoursPerDay: { type: Number, default: 8 },
+        paymentDate: { type: Number, default: 1 }, // 1-31
         defaultLeaveQuotas: {
             paid: { type: Number, default: 12 },
             sick: { type: Number, default: 6 },

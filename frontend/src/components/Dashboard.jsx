@@ -1551,7 +1551,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
                         setModalTab={setModalTab}
                         handleShowAttendance={handleShowAttendance}
                         isLightMode={isLightMode}
-                        globalFinances={globalFinances}
+                        globalPayslips={globalFinances}
                         handleUpdatePayslipStatus={handleUpdatePayslipStatus}
                         user={user}
                     />
@@ -2737,11 +2737,10 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                     </div>
                                     <div className="grid" style={{ gridTemplateColumns: 'repeat(5, 1fr)', gap: '1rem' }}>
                                         {[
-                                            { label: 'Annual Leave', key: 'annual', color: '#6366f1' },
                                             { label: 'Paid Leave', key: 'paid', color: '#f59e0b' },
                                             { label: 'Sick Leave', key: 'sick', color: '#ef4444' },
                                             { label: 'Casual Leave', key: 'casual', color: '#10b981' },
-                                            { label: 'Comp Off', key: 'compOff', color: '#3b82f6' }
+                                            { label: 'Comp Off', key: 'compOff', color: '#6366f1' }
                                         ].map(item => (
                                             <div key={item.key} style={{
                                                 background: isLightMode ? '#fff' : 'rgba(0,0,0,0.2)',
