@@ -542,7 +542,7 @@ export default function EngageTab({
                                                         <div style={{ fontSize: '1.1rem', color: 'var(--text-main)', fontWeight: '600', marginBottom: '0.6rem' }}>
                                                             Recognized <span style={{ fontWeight: '900', color: '#6366f1', textDecoration: 'underline decoration-thickness-2' }}>{activity.praiseData?.recipient?.name}</span>
                                                         </div>
-                                                        <div style={{ fontSize: '1rem', color: 'var(--text-muted)', lineHeight: '1.6', fontStyle: 'italic', fontWeight: '500', color: isLightMode ? '#475569' : '#94a3b8' }}>
+                                                        <div style={{ fontSize: '1rem', lineHeight: '1.6', fontStyle: 'italic', fontWeight: '500', color: isLightMode ? '#475569' : '#94a3b8' }}>
                                                             "{activity.content}"
                                                         </div>
                                                     </div>

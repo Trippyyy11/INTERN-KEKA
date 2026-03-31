@@ -231,7 +231,7 @@ const FutureAvailabilityTab = ({ user, isLightMode }) => {
                                 {formatDay(date)}
                             </div>
                             <div style={{
-                                fontSize: '0.95rem', fontWeight: '800', color: 'var(--text-main)',
+                                fontSize: '0.95rem', fontWeight: '800',
                                 padding: isToday(date) ? '0.2rem 0.75rem' : '0',
                                 background: isToday(date) ? 'var(--primary)' : 'transparent',
                                 color: isToday(date) ? '#fff' : 'var(--text-main)',
