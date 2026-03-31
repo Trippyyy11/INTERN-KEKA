@@ -313,82 +313,37 @@ const FutureAvailabilityTab = ({ user, isLightMode }) => {
 
                                             return (
                                                 <td key={date.toISOString()} style={{ padding: '0.85rem 0.75rem', textAlign: 'center', position: 'relative' }}>
-                                                    {isEditing ? (
-                                                        <div style={{ 
-                                                            position: 'absolute', 
-                                                            top: '50%', 
-                                                            left: '50%', 
-                                                            transform: 'translate(-50%, -50%)',
-                                                            zIndex: 10,
-                                                            background: isLightMode ? '#ffffff' : '#1e293b',
-                                                            border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.1)'}`,
-                                                            borderRadius: '14px',
-                                                            padding: '0.5rem',
-                                                            display: 'flex',
-                                                            gap: '0.5rem',
-                                                            boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
-                                                            width: 'max-content'
-                                                        }}>
-                                                            {Object.entries(statusConfig).map(([key, cfg]) => (
-                                                                <button
-                                                                    key={key}
-                                                                    onClick={() => handleStatusChange(u._id, date, key)}
-                                                                    style={{
-                                                                        padding: '0.5rem 0.75rem', borderRadius: '10px',
-                                                                        border: status === key ? `2px solid ${cfg.color}` : `1px solid transparent`,
-                                                                        background: cfg.bg, color: cfg.color,
-                                                                        fontSize: '0.75rem', fontWeight: '800', cursor: 'pointer',
-                                                                        transition: 'all 0.2s',
-                                                                        whiteSpace: 'nowrap'
-                                                                    }}
-                                                                >
-                                                                    {cfg.emoji} {cfg.label}
-                                                                </button>
-                                                            ))}
-                                                            <button
-                                                                onClick={() => setEditingCell(null)}
-                                                                style={{
-                                                                    padding: '0.5rem 0.75rem', borderRadius: '10px',
-                                                                    border: 'none', background: 'rgba(244, 63, 94, 0.1)', color: '#f43f5e',
-                                                                    fontSize: '0.75rem', fontWeight: '800', cursor: 'pointer'
-                                                                }}
-                                                            >
-                                                                Cancel
-                                                            </button>
-                                                        </div>
-                                                    ) : (
-                                                        <div
-                                                            onClick={(e) => {
-                                                                if (editable) {
-                                                                    setEditingCell({ userId: u._id, date });
-                                                                }
-                                                            }}
-                                                            style={{
-                                                                display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
-                                                                padding: '0.45rem 0.9rem', borderRadius: '10px',
-                                                                background: status ? statusConfig[status]?.bg : (isLightMode ? '#f8fafc' : 'rgba(255,255,255,0.04)'),
-                                                                color: status ? statusConfig[status]?.color : 'var(--text-muted)',
-                                                                fontSize: '0.8rem', fontWeight: '700',
-                                                                cursor: editable ? 'pointer' : 'default',
-                                                                transition: 'all 0.2s',
-                                                                border: `1px solid ${status ? statusConfig[status]?.color + '30' : 'transparent'}`,
-                                                                minWidth: '100px', justifyContent: 'center'
-                                                            }}
-                                                            onMouseOver={e => editable && (e.currentTarget.style.filter = 'brightness(1.1)')}
-                                                            onMouseOut={e => editable && (e.currentTarget.style.filter = 'brightness(1)')}
-                                                        >
-                                                            {status ? (
-                                                                <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                                                                    {statusConfig[status]?.emoji} {statusConfig[status]?.label}
-                                                                </span>
-                                                            ) : (
-                                                                <span style={{ opacity: 0.3 }}>Not set</span>
-                                                            )}
-                                                            {editable && (
-                                                                <Edit3 size={12} style={{ opacity: 0.5, marginLeft: '0.3rem' }} />
-                                                            )}
-                                                        </div>
-                                                    )}
+                                                    <div
+                                                        onClick={(e) => {
+                                                            if (editable) {
+                                                                setEditingCell({ userId: u._id, date, rect: e.currentTarget.getBoundingClientRect() });
+                                                            }
+                                                        }}
+                                                        style={{
+                                                            display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
+                                                            padding: '0.45rem 0.9rem', borderRadius: '10px',
+                                                            background: status ? statusConfig[status]?.bg : (isLightMode ? '#f8fafc' : 'rgba(255,255,255,0.04)'),
+                                                            color: status ? statusConfig[status]?.color : 'var(--text-muted)',
+                                                            fontSize: '0.8rem', fontWeight: '700',
+                                                            cursor: editable ? 'pointer' : 'default',
+                                                            transition: 'all 0.2s',
+                                                            border: `1px solid ${status ? statusConfig[status]?.color + '30' : 'transparent'}`,
+                                                            minWidth: '100px', justifyContent: 'center'
+                                                        }}
+                                                        onMouseOver={e => editable && (e.currentTarget.style.filter = 'brightness(1.1)')}
+                                                        onMouseOut={e => editable && (e.currentTarget.style.filter = 'brightness(1)')}
+                                                    >
+                                                        {status ? (
+                                                            <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                                                                {statusConfig[status]?.emoji} {statusConfig[status]?.label}
+                                                            </span>
+                                                        ) : (
+                                                            <span style={{ opacity: 0.3 }}>Not set</span>
+                                                        )}
+                                                        {editable && (
+                                                            <Edit3 size={12} style={{ opacity: 0.5, marginLeft: '0.3rem' }} />
+                                                        )}
+                                                    </div>
                                                 </td>
                                             );
                                         })}
@@ -412,6 +367,68 @@ const FutureAvailabilityTab = ({ user, isLightMode }) => {
                     </div>
                 ))}
             </div>
+            
+            {/* Editing Menu Overlay */}
+            {editingCell && editingCell.rect && (
+                <div 
+                    style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999 }}
+                    onClick={() => setEditingCell(null)}
+                >
+                    <div 
+                        style={{ 
+                            position: 'absolute', 
+                            top: `${editingCell.rect.top + (editingCell.rect.height / 2)}px`,
+                            left: `${editingCell.rect.left + (editingCell.rect.width / 2)}px`,
+                            transform: 'translate(-50%, -50%)',
+                            zIndex: 10000,
+                            background: isLightMode ? '#ffffff' : '#1e293b',
+                            border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.1)'}`,
+                            borderRadius: '14px',
+                            padding: '0.5rem',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '0.5rem',
+                            boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
+                            width: 'max-content'
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {Object.entries(statusConfig).map(([key, cfg]) => {
+                            const currentStatus = getStatus(editingCell.userId, editingCell.date);
+                            return (
+                                <button
+                                    key={key}
+                                    onClick={() => handleStatusChange(editingCell.userId, editingCell.date, key)}
+                                    style={{
+                                        padding: '0.6rem 1rem', borderRadius: '10px',
+                                        border: currentStatus === key ? `2px solid ${cfg.color}` : `1px solid transparent`,
+                                        background: cfg.bg, color: cfg.color,
+                                        fontSize: '0.8rem', fontWeight: '800', cursor: 'pointer',
+                                        transition: 'all 0.2s',
+                                        whiteSpace: 'nowrap',
+                                        textAlign: 'left',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '0.5rem'
+                                    }}
+                                >
+                                    {cfg.emoji} {cfg.label}
+                                </button>
+                            );
+                        })}
+                        <button
+                            onClick={() => setEditingCell(null)}
+                            style={{
+                                padding: '0.5rem 0.75rem', borderRadius: '10px',
+                                border: 'none', background: 'rgba(244, 63, 94, 0.1)', color: '#f43f5e',
+                                fontSize: '0.75rem', fontWeight: '800', cursor: 'pointer'
+                            }}
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

@@ -18,15 +18,15 @@ const initSuperAdmin = async () => {
         console.log('Connected to database.');
 
         const userCount = await User.countDocuments();
-        
+
         if (userCount > 0) {
             console.log(`Safety Abort: There are already ${userCount} users in the database.`);
             console.log('This script is only meant for initializing a blank database.');
             process.exit(0);
         }
 
-        const adminEmail = process.env.SUPERADMIN_EMAIL || 'admin@intern.com';
-        const adminPassword = process.env.SUPERADMIN_PASSWORD || 'admin123';
+        const adminEmail = process.env.SUPERADMIN_EMAIL;
+        const adminPassword = process.env.SUPERADMIN_PASSWORD;
 
         console.log(`Creating Super Admin with Email: ${adminEmail}`);
 
