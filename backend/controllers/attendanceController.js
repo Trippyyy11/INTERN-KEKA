@@ -298,7 +298,14 @@ export const getUserLogs = async (req, res) => {
 // @access  Private/Admin
 export const getAllLogs = async (req, res) => {
     try {
-        const logs = await Attendance.find({}).populate('user', 'name email department').sort({ date: -1 }).limit(100);
+        const teamQuery = getVisibilityQuery(req.user);
+        const teammateIds = (await User.find(teamQuery).select('_id')).map(u => u._id);
+
+        const logs = await Attendance.find({ user: { $in: teammateIds } })
+            .populate('user', 'name email department')
+            .sort({ date: -1 })
+            .limit(100);
+            
         res.status(200).json(logs);
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -318,11 +325,23 @@ export const updateAttendance = async (req, res) => {
             return res.status(404).json({ message: 'Attendance record not found.' });
         }
 
+        // Preserve original times on the very first edit
+        if (log.clockInTime && !log.originalClockInTime) {
+            log.originalClockInTime = log.clockInTime;
+        }
+        if (log.clockOutTime && !log.originalClockOutTime) {
+            log.originalClockOutTime = log.clockOutTime;
+        }
+
         if (clockInTime) log.clockInTime = new Date(clockInTime);
         if (clockOutTime) log.clockOutTime = new Date(clockOutTime);
         if (status) log.status = status;
 
-        if (log.clockInTime && log.clockOutTime) {
+        if (log.status === 'On Leave' || log.status === 'Leave') {
+            log.totalHours = 0;
+            log.clockInTime = undefined;
+            log.clockOutTime = undefined;
+        } else if (log.clockInTime && log.clockOutTime) {
             let breakMs = 0;
             if (log.breaks && log.breaks.length > 0) {
                 log.breaks.forEach(b => {

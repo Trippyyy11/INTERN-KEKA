@@ -578,46 +578,49 @@ const AdminTab = ({
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {permissionsUsers.map((u, idx) => {
-                                        const accessCount = PERMISSION_KEYS.filter(p => u.permissions?.[p.key]).length;
-                                        return (
-                                        <tr key={u._id} style={{ borderTop: rowBorder, transition: 'background 0.2s' }}
-                                            onMouseOver={e => e.currentTarget.style.background = isLightMode ? 'rgba(99,102,241,0.03)' : 'rgba(255,255,255,0.02)'}
-                                            onMouseOut={e => e.currentTarget.style.background = 'transparent'}>
-                                            <td style={{ ...tdStyle, paddingLeft: '2rem' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                                    <AdminAvatar name={u.name} idx={idx} gradientColors={gradientColors} />
-                                                    <div>
-                                                        <div style={{ fontWeight: '700', fontSize: '0.95rem', color: 'var(--text-main)' }}>{u.name}</div>
-                                                        <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{u.email}</div>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td style={tdStyle}><RoleBadge role={u.role} isLightMode={isLightMode} /></td>
-                                            <td style={{ ...tdStyle, textAlign: 'center' }}>
-                                                <span style={{
-                                                    background: accessCount > 0 ? 'rgba(16,185,129,0.1)' : 'rgba(148,163,184,0.1)',
-                                                    color: accessCount > 0 ? '#10b981' : 'var(--text-muted)',
-                                                    padding: '0.4rem 0.8rem', borderRadius: '12px', fontSize: '0.75rem', fontWeight: '800'
-                                                }}>
-                                                    {accessCount} / {PERMISSION_KEYS.length} Granted
-                                                </span>
-                                            </td>
-                                            <td style={{ ...tdStyle, textAlign: 'center' }}>
-                                                <button onClick={() => {
-                                                    setSelectedPermissionsUser({ ...u, permissions: u.permissions || {} });
-                                                    setShowPermissionsModal(true);
-                                                }} style={{
-                                                    padding: '0.5rem 1rem', borderRadius: '10px', border: '1px solid var(--primary)', 
-                                                    background: 'transparent', color: 'var(--primary)', fontSize: '0.75rem', 
-                                                    fontWeight: '700', cursor: 'pointer', transition: 'all 0.2s'
-                                                }} onMouseOver={e => { e.currentTarget.style.background = 'var(--primary)'; e.currentTarget.style.color = '#fff'; }}
-                                                   onMouseOut={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--primary)'; }}>
-                                                    Manage Permissions
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    )})}
+                                    {permissionsUsers
+                                        .filter(u => u.role?.toLowerCase().replace(/\s/g, '') === 'reportingmanager')
+                                        .map((u, idx) => {
+                                            const accessCount = PERMISSION_KEYS.filter(p => u.permissions?.[p.key]).length;
+                                            return (
+                                                <tr key={u._id} style={{ borderTop: rowBorder, transition: 'background 0.2s' }}
+                                                    onMouseOver={e => e.currentTarget.style.background = isLightMode ? 'rgba(99,102,241,0.03)' : 'rgba(255,255,255,0.02)'}
+                                                    onMouseOut={e => e.currentTarget.style.background = 'transparent'}>
+                                                    <td style={{ ...tdStyle, paddingLeft: '2rem' }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                                            <AdminAvatar name={u.name} idx={idx} gradientColors={gradientColors} />
+                                                            <div>
+                                                                <div style={{ fontWeight: '700', fontSize: '0.95rem', color: 'var(--text-main)' }}>{u.name}</div>
+                                                                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{u.email}</div>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td style={tdStyle}><RoleBadge role={u.role} isLightMode={isLightMode} /></td>
+                                                    <td style={{ ...tdStyle, textAlign: 'center' }}>
+                                                        <span style={{
+                                                            background: accessCount > 0 ? 'rgba(16,185,129,0.1)' : 'rgba(148,163,184,0.1)',
+                                                            color: accessCount > 0 ? '#10b981' : 'var(--text-muted)',
+                                                            padding: '0.4rem 0.8rem', borderRadius: '12px', fontSize: '0.75rem', fontWeight: '800'
+                                                        }}>
+                                                            {accessCount} / {PERMISSION_KEYS.length} Granted
+                                                        </span>
+                                                    </td>
+                                                    <td style={{ ...tdStyle, textAlign: 'center' }}>
+                                                        <button onClick={() => {
+                                                            setSelectedPermissionsUser({ ...u, permissions: u.permissions || {} });
+                                                            setShowPermissionsModal(true);
+                                                        }} style={{
+                                                            padding: '0.5rem 1rem', borderRadius: '10px', border: '1px solid var(--primary)',
+                                                            background: 'transparent', color: 'var(--primary)', fontSize: '0.75rem',
+                                                            fontWeight: '700', cursor: 'pointer', transition: 'all 0.2s'
+                                                        }} onMouseOver={e => { e.currentTarget.style.background = 'var(--primary)'; e.currentTarget.style.color = '#fff'; }}
+                                                           onMouseOut={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--primary)'; }}>
+                                                            Manage Permissions
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
                                 </tbody>
                             </table>
                         </div>

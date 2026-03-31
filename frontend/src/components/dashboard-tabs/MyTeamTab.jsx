@@ -228,7 +228,7 @@ const MyTeamTab = ({
                 const attUserId = a.user?._id?.toString() || a.user?.toString();
                 return attUserId === memberId && moment(a.date).isSame(dateStr, 'day');
             });
-            if (att && (att.status === 'WFH' || att.workingMode === 'Remote')) return { color: statusColors.wfh, label: 'W', tooltip: 'Work From Home' };
+            if (att && (att.status === 'On Leave' || att.status === 'Leave')) return { color: statusColors.leave, label: 'L', tooltip: 'On Leave' };
             if (isPastOrToday) {
                 const holiday = holidays.find(hol => moment(hol.date).isSame(dateStr, 'day'));
                 if (holiday) return { color: statusColors.holiday, label: 'H', tooltip: holiday.name };

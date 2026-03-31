@@ -18,7 +18,7 @@ const attendanceSchema = new mongoose.Schema(
             lng: { type: Number },
             address: { type: String }
         },
-        status: { type: String, enum: ['Present', 'Absent', 'WFH', 'Leave', 'Holiday'], default: 'Present' },
+        status: { type: String, enum: ['Present', 'Absent', 'WFH', 'Leave', 'On Leave', 'Holiday'], default: 'Present' },
         workingMode: { type: String, enum: ['On-site', 'Remote'], default: 'On-site' },
         totalHours: { type: Number, default: 0 },
         isLate: { type: Boolean, default: false },

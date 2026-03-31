@@ -54,9 +54,34 @@ export const getDashboardStats = async (req, res) => {
         }).populate('user', 'name department avatar profilePicture gender place bloodGroup dob welcomeProfile designation phoneNumber');
 
         // Filter out leaves where user didn't match the department filter
-        const teamLeavesToday = leavesToday.filter(l => l.user !== null);
+        const teamLeavesTodayFromLeaveModel = leavesToday.filter(l => l.user !== null);
 
-        // 3. Working Remotely (WFH - Team + Self)
+        // 3. Attendance-based Leaves (On Leave status in Attendance)
+        const attendanceLeavesToday = await Attendance.find({
+            date: { $gte: startOfToday, $lte: endOfToday },
+            status: { $in: ['On Leave', 'Leave'] },
+            user: { $in: teamMemberIds }
+        }).populate('user', 'name department avatar profilePicture gender place bloodGroup dob welcomeProfile designation phoneNumber');
+
+        // Combine both sources of leaves
+        const teamLeavesToday = [...teamLeavesTodayFromLeaveModel];
+        
+        // Add attendance-based leaves if not already in the list
+        attendanceLeavesToday.forEach(attLeave => {
+            if (attLeave.user && !teamLeavesToday.some(l => l.user._id.toString() === attLeave.user._id.toString())) {
+                // Mock a leave-like object for the frontend
+                teamLeavesToday.push({
+                    _id: attLeave._id,
+                    user: attLeave.user,
+                    startDate: attLeave.date,
+                    endDate: attLeave.date,
+                    status: 'Approved',
+                    type: 'Leave (Updated)'
+                });
+            }
+        });
+
+        // 4. Working Remotely (WFH - Team + Self)
         const workingRemotely = await Attendance.find({
             date: { $gte: startOfToday, $lte: endOfToday },
             status: 'WFH',
@@ -107,7 +132,7 @@ export const getDashboardStats = async (req, res) => {
 
         teamAttendance.forEach(att => {
             if (att.status === 'WFH') wfhCount++;
-            if (att.workingMode === 'Remote') remoteCount++;
+            if (att.workingMode === 'Remote' || att.status === 'WFH') remoteCount++;
 
             const user = teamMembers.find(m => m._id.toString() === att.user.toString());
             if (user && user.workingSchedule && att.clockInTime) {

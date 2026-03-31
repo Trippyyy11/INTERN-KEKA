@@ -740,6 +740,7 @@ const AttendanceTab = ({
                                     </thead>
                                     <tbody>
                                         {filteredAttendanceLogs.length > 0 ? filteredAttendanceLogs.map((log, index) => {
+                                            const isOnLeave = log.status === 'On Leave' || log.status === 'Leave' || log.isLeave;
                                             const isRegularized = !!(log.originalClockInTime || log.originalClockOutTime);
                                             const dayName = new Date(log.date).toLocaleDateString('en-US', { weekday: 'long' });
                                             const isWeekOff = (user?.workingSchedule?.weekOffs || []).includes(dayName);
@@ -749,25 +750,25 @@ const AttendanceTab = ({
                                                     borderBottom: `1px solid ${isLightMode ? '#e2e8f0' : 'var(--border-dark)'}`,
                                                     transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                                                     cursor: 'default',
-                                                    background: log.isLeave ? (isLightMode ? 'rgba(139, 92, 246, 0.03)' : 'rgba(139, 92, 246, 0.05)') : 'transparent'
-                                                }} onMouseOver={e => e.currentTarget.style.backgroundColor = log.isLeave ? (isLightMode ? 'rgba(139, 92, 246, 0.08)' : 'rgba(139, 92, 246, 0.1)') : (isLightMode ? '#f8fafc' : 'rgba(255,255,255,0.02)')} onMouseOut={e => e.currentTarget.style.backgroundColor = log.isLeave ? (isLightMode ? 'rgba(139, 92, 246, 0.03)' : 'rgba(139, 92, 246, 0.05)') : 'transparent'}>
+                                                    background: isOnLeave ? (isLightMode ? 'rgba(139, 92, 246, 0.03)' : 'rgba(139, 92, 246, 0.05)') : 'transparent'
+                                                }} onMouseOver={e => e.currentTarget.style.backgroundColor = isOnLeave ? (isLightMode ? 'rgba(139, 92, 246, 0.08)' : 'rgba(139, 92, 246, 0.1)') : (isLightMode ? '#f8fafc' : 'rgba(255,255,255,0.02)')} onMouseOut={e => e.currentTarget.style.backgroundColor = isOnLeave ? (isLightMode ? 'rgba(139, 92, 246, 0.03)' : 'rgba(139, 92, 246, 0.05)') : 'transparent'}>
                                                     <td style={{ fontSize: '0.85rem', fontWeight: '700', padding: '0.75rem 1rem', color: 'var(--text-main)' }}>
                                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                                             {new Date(log.date).toLocaleDateString('en-US', { weekday: 'short', day: '2-digit', month: 'short' })}
-                                                            {isWeekOff && !log.isLeave && (
+                                                            {isWeekOff && !isOnLeave && (
                                                                 <span style={{ fontSize: '0.6rem', color: '#8b5cf6', background: 'rgba(139, 92, 246, 0.1)', padding: '2px 6px', borderRadius: '4px', border: '1px solid rgba(139, 92, 246, 0.2)', width: 'fit-content', fontWeight: '800' }}>{log.isNoRecord ? 'Scheduled Off' : 'Worked on Week Off'}</span>
                                                             )}
                                                         </div>
                                                     </td>
                                                     <td style={{ fontSize: '0.85rem', color: 'var(--text-muted)', padding: '0.75rem 1rem', fontWeight: '500' }}>
                                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                                            {log.isLeave ? (
+                                                            {isOnLeave ? (
                                                                 <span style={{ fontWeight: '700', color: '#8b5cf6' }}>On Leave</span>
                                                             ) : log.isNoRecord ? (
                                                                 <span>{isWeekOff ? 'Week Off' : '-'}</span>
                                                             ) : (
                                                                 <>
-                                                                    <span>{log.totalHours ? `${Math.floor(log.totalHours)}h ${Math.round((log.totalHours % 1) * 60)}m` : (log.clockInTime ? 'Ongoing' : '0h 0m')}</span>
+                                                                    <span>{log.totalHours && Number(log.totalHours) > 0 ? `${Math.floor(log.totalHours)}h ${Math.round((log.totalHours % 1) * 60)}m` : (log.clockInTime ? 'Ongoing' : (isWeekOff ? '-' : '0h 0m'))}</span>
                                                                     {log.autoClockOut && (
                                                                         <span style={{ fontSize: '0.65rem', color: 'var(--danger)', fontWeight: '700', background: 'rgba(239, 68, 68, 0.1)', padding: '2px 6px', borderRadius: '4px', width: 'fit-content', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
                                                                             Forgot to Clock Out
@@ -779,11 +780,91 @@ const AttendanceTab = ({
                                                     </td>
                                                     <td style={{ fontSize: '0.8rem', padding: '0.75rem 1rem' }}>
                                                         {(() => {
-                                                            if (log.isLeave) {
+                                                            if (isOnLeave) {
                                                                 return (
-                                                                    <span style={{ padding: '0.3rem 0.6rem', background: 'rgba(139, 92, 246, 0.1)', color: '#8b5cf6', borderRadius: '12px', fontWeight: '700', fontSize: '0.7rem', border: '1px solid rgba(139, 92, 246, 0.2)' }}>
-                                                                        {log.leaveType}
-                                                                    </span>
+                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                                        <span style={{ padding: '0.3rem 0.6rem', background: 'rgba(139, 92, 246, 0.1)', color: '#8b5cf6', borderRadius: '12px', fontWeight: '700', fontSize: '0.7rem', border: '1px solid rgba(139, 92, 246, 0.2)' }}>
+                                                                            {log.leaveType || 'Leave (Override)'}
+                                                                        </span>
+                                                                        {isRegularized && (
+                                                                            <div 
+                                                                                style={{ position: 'relative', display: 'flex', alignItems: 'center' }}
+                                                                                onMouseEnter={() => setActiveTooltip(log._id)}
+                                                                                onMouseLeave={() => setActiveTooltip(null)}
+                                                                            >
+                                                                                <HelpCircle size={14} style={{ cursor: 'help', color: 'var(--primary)' }} />
+                                                                                <AnimatePresence>
+                                                                                    {activeTooltip === log._id && (
+                                                                                        <motion.div
+                                                                                            initial={{ opacity: 0, y: index === 0 ? -10 : 10, scale: 0.95 }}
+                                                                                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                                                            exit={{ opacity: 0, y: index === 0 ? -10 : 10, scale: 0.95 }}
+                                                                                            transition={{ duration: 0.2, ease: "easeOut" }}
+                                                                                            style={{
+                                                                                                position: 'absolute',
+                                                                                                top: index === 0 ? 'calc(100% + 12px)' : 'auto',
+                                                                                                bottom: index === 0 ? 'auto' : 'calc(100% + 12px)',
+                                                                                                left: '50%',
+                                                                                                transform: 'translateX(-50%)',
+                                                                                                width: '260px',
+                                                                                                background: isLightMode ? '#1e293b' : 'rgba(15, 23, 42, 0.95)',
+                                                                                                backdropFilter: 'blur(12px)',
+                                                                                                padding: '1.25rem',
+                                                                                                borderRadius: '24px',
+                                                                                                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+                                                                                                color: '#fff',
+                                                                                                zIndex: 1000,
+                                                                                                border: '1px solid rgba(255,255,255,0.1)',
+                                                                                                pointerEvents: 'none'
+                                                                                            }}
+                                                                                        >
+                                                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '10px' }}>
+                                                                                                <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'rgba(59, 130, 246, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                                                                    <Zap size={18} color="#60a5fa" />
+                                                                                                </div>
+                                                                                                <div>
+                                                                                                    <div style={{ fontSize: '0.8rem', fontWeight: '800', letterSpacing: '0.5px', color: '#fff' }}>ADJUSTMENT LOG</div>
+                                                                                                    <div style={{ fontSize: '0.6rem', color: '#94a3b8', fontWeight: '600' }}>Manual Override</div>
+                                                                                                </div>
+                                                                                            </div>
+                                                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                                                                                <div style={{ padding: '0.85rem', background: 'rgba(255,255,255,0.03)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+                                                                                                        <History size={12} color="#94a3b8" />
+                                                                                                        <span style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Original State</span>
+                                                                                                    </div>
+                                                                                                    <div style={{ fontSize: '0.9rem', fontWeight: '700', color: '#cbd5e1', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                                                                        {log.originalClockInTime ? new Date(log.originalClockInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'} 
+                                                                                                        <ArrowRight size={12} color="#475569" /> 
+                                                                                                        {log.originalClockOutTime ? new Date(log.originalClockOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                                <div style={{ padding: '0.85rem', background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(185, 28, 28, 0.05))', borderRadius: '16px', border: '1px solid rgba(239, 68, 68, 0.25)' }}>
+                                                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+                                                                                                        <CheckCircle2 size={12} color="#fca5a5" />
+                                                                                                        <span style={{ fontSize: '0.65rem', color: '#fca5a5', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Revised Logic</span>
+                                                                                                    </div>
+                                                                                                    <div style={{ fontSize: '0.95rem', fontWeight: '900', color: '#fff' }}>
+                                                                                                        Marked as On Leave
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                            </div>
+                                                                                            <div style={{
+                                                                                                position: 'absolute',
+                                                                                                top: index === 0 ? '-6px' : 'auto',
+                                                                                                bottom: index === 0 ? 'auto' : '-6px',
+                                                                                                left: '50%',
+                                                                                                transform: 'translateX(-50%) rotate(45deg)',
+                                                                                                width: '12px',
+                                                                                                height: '12px',
+                                                                                                background: isLightMode ? '#1e293b' : 'rgba(15, 23, 42, 0.95)',
+                                                                                            }}></div>
+                                                                                        </motion.div>
+                                                                                    )}
+                                                                                </AnimatePresence>
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
                                                                 );
                                                             }
                                                             if (log.isNoRecord) return '-';

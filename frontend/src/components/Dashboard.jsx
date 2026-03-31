@@ -273,7 +273,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
     // Custom states for RBAC & Org management
     const [todayStatus, setTodayStatus] = useState([]);
     const [birthdays, setBirthdays] = useState([]);
-    const [globalPayslips, setGlobalPayslips] = useState([]);
+    const [globalFinances, setGlobalFinances] = useState([]);
     const [orgConfigs, setOrgConfigs] = useState([]);
     const [showEditModal, setShowEditModal] = useState(false);
     const [selectedUser, setSelectedUser] = useState(null);
@@ -1442,7 +1442,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
                     setUser={setUser}
                     activeSubTab={activeSubTab}
                     setActiveSubTab={setActiveSubTab}
-                    globalPayslips={globalPayslips}
+                    globalFinances={globalFinances}
                     payslips={payslips}
                     isLightMode={isLightMode}
                 />
@@ -1498,7 +1498,7 @@ export default function Dashboard({ user, onLogout, setUser }) {
                         setModalTab={setModalTab}
                         handleShowAttendance={handleShowAttendance}
                         isLightMode={isLightMode}
-                        globalPayslips={globalPayslips}
+                        globalFinances={globalFinances}
                         handleUpdatePayslipStatus={handleUpdatePayslipStatus}
                         user={user}
                     />
@@ -1998,12 +1998,12 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                 <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
                                     <thead style={{ background: isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.02)' }}>
                                         <tr style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                                            <th style={{ padding: '1.25rem 2rem', textAlign: 'left', fontWeight: '800', width: '160px' }}>Date</th>
+                                            <th style={{ padding: '1.25rem 2rem', textAlign: 'left', fontWeight: '800', width: '130px' }}>Date</th>
                                             <th style={{ padding: '1.25rem 1rem', textAlign: 'left', fontWeight: '800', width: '140px' }}>Status</th>
-                                            <th style={{ padding: '1.25rem 1rem', textAlign: 'left', fontWeight: '800', minWidth: '200px' }}>Clock-In</th>
-                                            <th style={{ padding: '1.25rem 1rem', textAlign: 'left', fontWeight: '800', minWidth: '200px' }}>Clock-Out</th>
-                                            <th style={{ padding: '1.25rem 1rem', textAlign: '800', width: '120px' }}>Total</th>
-                                            <th style={{ padding: '1.25rem 2rem', textAlign: 'right', fontWeight: '800' }}>Actions</th>
+                                            <th style={{ padding: '1.25rem 1rem', textAlign: 'left', fontWeight: '800', minWidth: '150px' }}>Clock-In</th>
+                                            <th style={{ padding: '1.25rem 1rem', textAlign: 'left', fontWeight: '800', minWidth: '150px' }}>Clock-Out</th>
+                                            <th style={{ padding: '1.25rem 1rem', textAlign: '800', width: '100px' }}>Total</th>
+                                            <th style={{ padding: '1.25rem 2rem', textAlign: 'right', fontWeight: '800', width: '140px' }}>Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -2051,44 +2051,56 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                                 </td>
                                                 <td style={{ padding: '1.5rem 1rem', color: 'var(--text-main)', fontSize: '0.9rem' }}>
                                                     {editLogId === log._id ? (
-                                                        <input 
-                                                            type="datetime-local" 
-                                                            value={editForm.clockInTime ? new Date(new Date(editForm.clockInTime).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ''} 
-                                                            onChange={(e) => setEditForm({...editForm, clockInTime: e.target.value})}
-                                                            style={{ 
-                                                                padding: '0.6rem 0.8rem', 
-                                                                borderRadius: '12px', 
-                                                                background: 'var(--bg-main)', 
-                                                                color: 'var(--text-main)', 
-                                                                border: '1px solid var(--border-dark)', 
-                                                                fontSize: '0.95rem',
-                                                                width: '100%',
-                                                                outline: 'none',
-                                                                transition: 'border-color 0.2s'
-                                                            }}
-                                                        />
+                                                        editForm.status === 'On Leave' ? (
+                                                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', background: 'var(--bg-panel)', padding: '0.6rem', borderRadius: '10px', textAlign: 'center', border: '1px dashed var(--border-dark)' }}>
+                                                                N/A (Leave)
+                                                            </div>
+                                                        ) : (
+                                                            <input 
+                                                                type="datetime-local" 
+                                                                value={editForm.clockInTime ? new Date(new Date(editForm.clockInTime).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ''} 
+                                                                onChange={(e) => setEditForm({...editForm, clockInTime: e.target.value})}
+                                                                style={{ 
+                                                                    padding: '0.4rem 0.6rem', 
+                                                                    borderRadius: '10px', 
+                                                                    background: 'var(--bg-main)', 
+                                                                    color: 'var(--text-main)', 
+                                                                    border: '1px solid var(--border-dark)', 
+                                                                    fontSize: '0.85rem',
+                                                                    width: '100%',
+                                                                    outline: 'none',
+                                                                    transition: 'border-color 0.2s'
+                                                                }}
+                                                            />
+                                                        )
                                                     ) : (
                                                         <span style={{ fontWeight: '500' }}>{log.clockInTime ? new Date(log.clockInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}</span>
                                                     )}
                                                 </td>
                                                 <td style={{ padding: '1.5rem 1rem', color: 'var(--text-main)', fontSize: '0.9rem' }}>
                                                     {editLogId === log._id ? (
-                                                        <input 
-                                                            type="datetime-local" 
-                                                            value={editForm.clockOutTime ? new Date(new Date(editForm.clockOutTime).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ''} 
-                                                            onChange={(e) => setEditForm({...editForm, clockOutTime: e.target.value})}
-                                                            style={{ 
-                                                                padding: '0.6rem 0.8rem', 
-                                                                borderRadius: '12px', 
-                                                                background: 'var(--bg-main)', 
-                                                                color: 'var(--text-main)', 
-                                                                border: '1px solid var(--border-dark)', 
-                                                                fontSize: '0.95rem',
-                                                                width: '100%',
-                                                                outline: 'none',
-                                                                transition: 'border-color 0.2s'
-                                                            }}
-                                                        />
+                                                        editForm.status === 'On Leave' ? (
+                                                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', background: 'var(--bg-panel)', padding: '0.6rem', borderRadius: '10px', textAlign: 'center', border: '1px dashed var(--border-dark)' }}>
+                                                                N/A (Leave)
+                                                            </div>
+                                                        ) : (
+                                                            <input 
+                                                                type="datetime-local" 
+                                                                value={editForm.clockOutTime ? new Date(new Date(editForm.clockOutTime).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ''} 
+                                                                onChange={(e) => setEditForm({...editForm, clockOutTime: e.target.value})}
+                                                                style={{ 
+                                                                    padding: '0.4rem 0.6rem', 
+                                                                    borderRadius: '10px', 
+                                                                    background: 'var(--bg-main)', 
+                                                                    color: 'var(--text-main)', 
+                                                                    border: '1px solid var(--border-dark)', 
+                                                                    fontSize: '0.85rem',
+                                                                    width: '100%',
+                                                                    outline: 'none',
+                                                                    transition: 'border-color 0.2s'
+                                                                }}
+                                                            />
+                                                        )
                                                     ) : (
                                                         log.clockOutTime ? 
                                                         <span style={{ fontWeight: '500' }}>{new Date(log.clockOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span> : 
@@ -2100,32 +2112,34 @@ export default function Dashboard({ user, onLogout, setUser }) {
                                                 </td>
                                                 <td style={{ padding: '1.5rem 1.5rem', textAlign: 'right' }}>
                                                     {editLogId === log._id ? (
-                                                        <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', alignItems: 'flex-end' }}>
                                                             <button 
                                                                 onClick={() => handleSaveAttendanceEdit(log._id)}
                                                                 style={{ 
-                                                                    padding: '0.5rem 1.25rem', 
-                                                                    borderRadius: '12px', 
+                                                                    padding: '0.4rem 0.8rem', 
+                                                                    borderRadius: '8px', 
                                                                     background: 'linear-gradient(135deg, var(--primary), #6366f1)', 
                                                                     color: 'white', border: 'none', cursor: 'pointer', 
-                                                                    fontSize: '0.8rem', fontWeight: '700',
-                                                                    boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)',
-                                                                    transition: 'all 0.2s'
+                                                                    fontSize: '0.7rem', fontWeight: '700',
+                                                                    boxShadow: '0 2px 8px rgba(59, 130, 246, 0.2)',
+                                                                    transition: 'all 0.2s',
+                                                                    width: '100px'
                                                                 }}
-                                                                onMouseOver={e => e.currentTarget.style.transform = 'translateY(-2px)'}
+                                                                onMouseOver={e => e.currentTarget.style.transform = 'translateY(-1px)'}
                                                                 onMouseOut={e => e.currentTarget.style.transform = 'translateY(0)'}
                                                             >
-                                                                Save Changes
+                                                                Save
                                                             </button>
                                                             <button 
                                                                 onClick={() => setEditLogId(null)}
                                                                 style={{ 
-                                                                    padding: '0.5rem 1rem', 
-                                                                    borderRadius: '12px', 
+                                                                    padding: '0.4rem 0.8rem', 
+                                                                    borderRadius: '8px', 
                                                                     background: isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.08)', 
                                                                     color: 'var(--text-main)', border: 'none', cursor: 'pointer', 
-                                                                    fontSize: '0.8rem', fontWeight: '600',
-                                                                    transition: 'all 0.2s'
+                                                                    fontSize: '0.7rem', fontWeight: '600',
+                                                                    transition: 'all 0.2s',
+                                                                    width: '100px'
                                                                 }}
                                                                 onMouseOver={e => e.currentTarget.style.background = isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.12)'}
                                                                 onMouseOut={e => e.currentTarget.style.background = isLightMode ? '#f1f5f9' : 'rgba(255,255,255,0.08)'}

@@ -9,18 +9,20 @@
 export const getVisibilityQuery = (requestingUser) => {
     const normalizedRole = requestingUser?.role?.toLowerCase().replace(/\s/g, '');
     
-    // Base rule: We only want to see Interns who are not deleted and are active.
-    console.log(`getVisibilityQuery called for User: ${requestingUser?.name}, Role: ${normalizedRole}, Dept: ${requestingUser?.department}`);
+    // Base rule: We only want to see active, non-deleted users.
     const query = { 
-        role: 'Intern', 
         isDeleted: { $ne: true },
         isActive: true
     };
 
     if (normalizedRole === 'superadmin') {
-        console.log('Role is Super Admin, returning Intern-only query');
+        console.log('Role is Super Admin, returning Intern and Reporting Manager query');
+        query.role = { $in: ['Intern', 'Reporting Manager'] };
         return query;
     }
+
+    // For all other roles, we restrict to 'Intern' only
+    query.role = 'Intern';
 
     if (normalizedRole === 'reportingmanager') {
         // Managers see only the interns that report directly to them
