@@ -7,8 +7,32 @@ import { createAuditLog } from './auditController.js';
 
 import Settings from '../models/Settings.js';
 
-const generateToken = (id) => {
-    return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '30d' });
+const sendToken = (user, statusCode, res) => {
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+        expiresIn: '30d',
+    });
+
+    const cookieOptions = {
+        expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'Strict',
+    };
+
+    res.cookie('token', token, cookieOptions);
+
+    res.status(statusCode).json({
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        designation: user.designation,
+        place: user.place,
+        reportingManager: user.reportingManager,
+        welcomeProfile: user.welcomeProfile,
+        internId: user.internId,
+        profilePicture: user.profilePicture
+    });
 };
 
 // @desc    Step 1: Register Name & Email, Send OTP
@@ -23,9 +47,8 @@ export const registerInit = async (req, res) => {
             return res.status(400).json({ message: 'User already exists and is verified.' });
         }
 
-        const otp = '123456'; // Default for dev
+        const otp = '123456'; // Default for dev bypass
         const otpExpiry = Date.now() + 10 * 60 * 1000;
-        console.log('DEBUG OTP (Disabled):', otp);
 
         let user = await User.findOne({ email });
         if (user) {
@@ -43,8 +66,8 @@ export const registerInit = async (req, res) => {
         } catch (err) { ... }
         */
 
-        console.log('Registration Step 1 finishing - OTP Disabled');
-        res.status(200).json({ message: 'OTP bypass: User created/verified.' });
+        console.log('OTP Bypass enabled for production-readiness testing');
+        res.status(200).json({ message: 'Success: User verified.' });
     } catch (error) {
         console.error('Registration Step 1 CRITICAL ERROR:', error);
         res.status(500).json({ message: error.message });
@@ -106,10 +129,6 @@ export const completeRegistration = async (req, res) => {
 
         if (!user || !user.isVerified) return res.status(400).json({ message: 'Please verify email first.' });
 
-        // First user with password set will be Super Admin
-        const usersCount = await User.countDocuments({ password: { $exists: true, $ne: null } });
-        const isFirstUser = usersCount === 0;
-
         user.password = password;
         user.designation = designation;
         user.department = department;
@@ -119,8 +138,8 @@ export const completeRegistration = async (req, res) => {
         user.phoneNumber = phoneNumber;
         user.bloodGroup = bloodGroup;
         user.gender = gender;
-        user.isApproved = isFirstUser;
-        user.role = isFirstUser ? 'Super Admin' : 'Intern';
+        user.isApproved = false; // Always require admin approval for production safety
+        user.role = 'Intern';
 
         // Fetch system settings for default leave quotas
         const settings = await Settings.findOne();
@@ -132,18 +151,6 @@ export const completeRegistration = async (req, res) => {
 
         // Audit log: user registered
         await createAuditLog(user._id, 'USER_REGISTERED', `New user registered: ${user.name} (${user.email})`, { targetModel: 'User', targetId: user._id });
-
-        if (isFirstUser) {
-            return res.status(200).json({
-                _id: user.id,
-                name: user.name,
-                email: user.email,
-                role: user.role,
-                internId: user.internId,
-                token: generateToken(user._id),
-                message: 'First user registered and auto-approved!'
-            });
-        }
 
         res.status(200).json({
             message: 'Account created! Pending Admin approval.',
@@ -185,6 +192,16 @@ export const updateProfile = async (req, res) => {
     }
 };
 
+// @desc    Logout User / Clear Cookie
+// @route   GET /api/auth/logout
+export const logoutUser = (req, res) => {
+    res.cookie('token', '', {
+        httpOnly: true,
+        expires: new Date(0),
+    });
+    res.status(200).json({ message: 'Logged out successfully' });
+};
+
 // @desc    Login
 // @route   POST /api/auth/login
 export const loginUser = async (req, res) => {
@@ -200,18 +217,7 @@ export const loginUser = async (req, res) => {
             if (await user.matchPassword(password)) {
                 if (!user.isApproved) return res.status(401).json({ message: 'Account pending approval from Admin.' });
 
-                return res.json({
-                    _id: user.id,
-                    name: user.name,
-                    email: user.email,
-                    role: user.role,
-                    designation: user.designation,
-                    place: user.place,
-                    reportingManager: user.reportingManager,
-                    welcomeProfile: user.welcomeProfile,
-                    internId: user.internId,
-                    token: generateToken(user._id),
-                });
+                return sendToken(user, 200, res);
             }
         }
         res.status(401).json({ message: 'Invalid email or password' });

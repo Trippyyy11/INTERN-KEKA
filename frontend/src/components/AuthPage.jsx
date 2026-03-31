@@ -45,11 +45,8 @@ export default function AuthPage({ onLogin }) {
     };
 
     const completeLogin = (data) => {
-        if (data.token) {
-            localStorage.setItem('token', data.token);
-            localStorage.setItem('user', JSON.stringify(data));
-            onLogin(data);
-        }
+        localStorage.setItem('user', JSON.stringify(data));
+        onLogin(data);
     };
 
     return (

@@ -1,5 +1,5 @@
 import express from 'express';
-import { registerInit, verifyOTP, completeRegistration, loginUser, getMe, promoteToSuperAdmin, getOrgOptions, resendOTP, updateWelcomeProfile, updateProfile, updateBankDetails, updateProfilePicture } from '../controllers/authController.js';
+import { registerInit, verifyOTP, completeRegistration, loginUser, logoutUser, getMe, promoteToSuperAdmin, getOrgOptions, resendOTP, updateWelcomeProfile, updateProfile, updateBankDetails, updateProfilePicture } from '../controllers/authController.js';
 import { protect, authorize } from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
@@ -9,6 +9,7 @@ router.post('/verify-otp', verifyOTP); // Step 2
 router.post('/complete-registration', completeRegistration); // Step 3
 router.post('/resend-otp', resendOTP);
 router.post('/login', loginUser);
+router.post('/logout', logoutUser);
 router.get('/options', getOrgOptions); // For registration dropdowns
 
 router.get('/me', protect, getMe);
